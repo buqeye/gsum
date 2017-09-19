@@ -3,15 +3,16 @@ from distutils.core import setup
 setup(
     name='buqeyemodel',
     packages=['buqeyemodel'],
-    version='0.1.0',
+    version='0.1.1',
     description='A statistical model of EFT convergence.',
     author='Jordan Melendez',
     author_email='jmelendez1992@gmail.com',
+    license='MIT',
     url='https://github.com/jordan-melendez/buqeyemodel',
-    download_url='https://github.com/jordan-melendez/buqeyemodel/archive/v0.1.0.tar.gz',
+    download_url='https://github.com/jordan-melendez/buqeyemodel/archive/v0.1.1.tar.gz',
     keywords=[
-        'EFT', 'nuclear', 'model', 'gaussian', 'process',
-        'uncertainty', 'quantification'
+        'buqeyemodel', 'buqeye', 'EFT', 'nuclear', 'model', 'gaussian',
+        'process', 'uncertainty', 'quantification'
         ],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
