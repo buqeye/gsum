@@ -3,13 +3,14 @@ from distutils.core import setup
 setup(
     name='buqeyemodel',
     # packages=['buqeyemodel'],
-    version='0.1.4',
+    py_modules=['buqeyemodel'],
+    version='0.1.5',
     description='A statistical model of EFT convergence.',
     author='Jordan Melendez',
     author_email='jmelendez1992@gmail.com',
     license='MIT',
     url='https://github.com/jordan-melendez/buqeyemodel',
-    download_url='https://github.com/jordan-melendez/buqeyemodel/archive/v0.1.4.tar.gz',
+    download_url='https://github.com/jordan-melendez/buqeyemodel/archive/v0.1.5.tar.gz',
     keywords='EFT nuclear model gaussian process uncertainty quantification buqeyemodel buqeye',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
