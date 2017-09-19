@@ -8,7 +8,7 @@ setup(
     author='Jordan Melendez',
     author_email='jmelendez1992@gmail.com',
     url='https://github.com/jordan-melendez/buqeyemodel',
-    # download_url='',
+    download_url='https://github.com/jordan-melendez/buqeyemodel/archive/v0.1.0.tar.gz',
     keywords=[
         'EFT', 'nuclear', 'model', 'gaussian', 'process',
         'uncertainty', 'quantification'
