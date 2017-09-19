@@ -2,6 +2,8 @@ import pymc3 as pm
 import numpy as np
 
 
+__all__ = ['ObservableModel', 'ExpansionParameterModel']
+
 def bn_cov(cov, Lambda_b, n, cov_dim):
     ones = np.ones((cov_dim, cov_dim))
     return pm.math.exp(pm.math.log(cov) - 2 * n * ones * pm.math.log(Lambda_b))

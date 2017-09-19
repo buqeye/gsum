@@ -1,1 +1,3 @@
-from buqeyemodel import *
+from . import buqeyemodel
+
+__all__ = ['buqeyemodel']

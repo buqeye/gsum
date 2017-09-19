@@ -10,10 +10,7 @@ setup(
     license='MIT',
     url='https://github.com/jordan-melendez/buqeyemodel',
     download_url='https://github.com/jordan-melendez/buqeyemodel/archive/v0.1.1.tar.gz',
-    keywords=[
-        'buqeyemodel', 'buqeye', 'EFT', 'nuclear', 'model', 'gaussian',
-        'process', 'uncertainty', 'quantification'
-        ],
+    keywords='EFT nuclear model gaussian process uncertainty quantification buqeyemodel buqeye',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Operating System :: OS Independent',
