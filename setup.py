@@ -14,6 +14,7 @@ setup(
     keywords='EFT nuclear model gaussian process uncertainty quantification buqeyemodel buqeye',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
+        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
