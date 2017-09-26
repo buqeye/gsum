@@ -1,11 +1,6 @@
 # BUQEYE Model
 
-![picture](https://www.dropbox.com/s/3a78gnhhkl6mzjv/BUQEYE2_v5.pdf)
-
-<img src="https://www.dropbox.com/s/3a78gnhhkl6mzjv/BUQEYE2_v5.pdf&dl=1" />
-
-<img src="https://www.dropbox.com/s/3a78gnhhkl6mzjv/BUQEYE2_v5.pdf" />
-sadfd
+<img src="./BUQEYE_fig.pdf" width="30%"/>
 
 The BUQEYE Model package provides two classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
 Specifically, this is a MCMC-based implementation of the statistical model developed in [this paper](https://arxiv.org/abs/1506.01343).
@@ -18,6 +13,18 @@ The latest release of BUQEYE Model can be installed from PyPI using `pip`:
 ```
 pip install buqeyemodel
 ```
+The current development branch can be installed via
+```
+pip install git+https://github.com/jordan-melendez/buqeyemodel@develop
+```
+Additionally, one can clone the repository and install using
+```
+git clone -b develop https://github.com/jordan-melendez/buqeyemodel.git
+cd buqeyemodel
+pip install .
+```
+Change `-b {branch}` to `-b master` etc. if desired.
+This will install the package as is, but if you want to make edits to the code for testing you can exchange the last line with `pip install -e .`, which will allow you to edit the package without reinstalling.
 
 # Dependencies
 
@@ -71,7 +78,7 @@ with cross_section as model:
 This creates the RVs `cross_section_sd` and `cross_section_ls`, which are then combined into an exponentiated quadratic covariance function.
 By feeding the covariance into the `setup_model` method, this completes the initialization of the model by relating the coefficient data to the model RVs.
 Without this `setup_model` step, the model is useless!
-* I really would like to add this `setup_model` step in the teardown code of the `ObservableModel` class (i.e. `__exit__`) so that it happens behind the scenes, but `PyMC3` enters contexts behind the scenes for various reasons, thus calling `__exit__` more times than I would like. Still thinking about this.
+* I really would like to add this `setup_model` step in the cleanup code of the `ObservableModel` class (i.e. `__exit__`) so that it happens automatically behind the scenes, but `PyMC3` enters additional contexts behind the scenes for various reasons, thus calling `__exit__` more times than I would like. Still thinking about if/how I can do this.
 
 
 Now all that is left to do is sample:
