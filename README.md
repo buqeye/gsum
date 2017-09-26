@@ -44,6 +44,7 @@ If provided, this will allow the model to also learn the expansion parameter tha
 They can be defined inside a model context as follows:
 ```python
 import pymc3 as pm
+from buqeyemodel import *
 
 # Import data, etc. below
 # ...
@@ -57,7 +58,7 @@ with pm.Model() as gp_model:
 The arguments must be of the following form:
 * `ExpansionParameterModel`
   - `breakdown_eval`: The breakdown scale that was used to extract the coefficients
-  - `breakdown_dist`: A prior for the breakdown scale. Must be a distribution object, such as `pm.Lognormal.dist(mu=0, sd=10, testval=600.0)`, _not_ a random variable like `pm.Lognormal('breakdown', mu=0, sd=10, testval=600.0)`. Also, a `testval` must be given to begin sampling in a reasonable location. Presumably `breakdown_eval` would be as good as any, or else why did you choose that `breakdown_eval` in the first place?
+  - `breakdown_dist`: A prior for the breakdown scale. Must be a distribution object, such as `pm.Lognormal.dist(mu=0, sd=10, testval=600.0)`, _**not**_ a random variable like `pm.Lognormal('breakdown', mu=0, sd=10, testval=600.0)`. Also, a `testval` must be given to begin sampling in a reasonable location. Presumably `breakdown_eval` would be as good as any, or else why did you choose that `breakdown_eval` in the first place?
   - `name`: The name of the model context created by the classes. All RVs defined in the classes will have names `'name_*'`.
 * `ObservableModel`
   - `coeff_data`: A matrix with rows of coefficients, whose entries contain a coefficient evaluated along the domain
