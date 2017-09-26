@@ -1,25 +1,10 @@
 import pymc3 as pm
 import numpy as np
 import theano.tensor as tt
-import collections
+import warnings
 
 
 __all__ = ['ObservableModel', 'ExpansionParameterModel']
-
-# def bn_cov(cov, Lambda_b, n, cov_dim):
-#     ones = np.ones((cov_dim, cov_dim))
-#     return pm.math.exp(pm.math.log(cov) - 2 * n * ones * pm.math.log(Lambda_b))
-
-
-def update(d, u):
-    """Update a nested dictionary d using u without overwriting subdicts"""
-    for k, v in u.items():
-        if isinstance(v, collections.Mapping):
-            r = update(d.get(k, {}), v)
-            d[k] = r
-        else:
-            d[k] = u[k]
-    return d
 
 
 class ObservableModel(pm.Model):
@@ -27,59 +12,68 @@ class ObservableModel(pm.Model):
 
     Parameters
     ----------
-    data   :
-    inputs :
-    name   :
-    model  :
+    coeff_data          : ndarray
+                          Holds arrays of coefficients: c_i, c_j, ...
+                          which have been extracted for many parameter values
+    X                   : ndarray (2D)
+                          The parameter values for which the coefficients have
+                          been extracted. Rows correspond to data points
+                          and columns to the dimensions. For 1D observations,
+                          this becomes a column vector.
+    index_list          : list
+                          A list containing the powers of the expansion
+                          parameter from which the coefficients were extracted,
+                          i.e., the subscripts of the coefficients.
+                          E.g.: for coefficients [c_i, c_j, c_k], then
+                          index_list = [i, j, k]
+    cov                 : pymc3.cov object
+                          A covariance function object to be used for the
+                          coefficients. Unless using the exact same cov across
+                          multiple observables, this is not the preferred
+                          method of defining a cov. Instead, a cov and its
+                          relevant RVs should be defined in a model context
+                          for each individual observable.
+    noise               : float or pymc3.RV object
+                          The noise to be added to the cov. This is required
+                          for numerical stability, but can also model real
+                          noise in the data. This noise is *not* scaled by the
+                          expansion_parameter!
+    expansion_parameter : pymc3.Model object
+                          An expansion parameter that can be learned _across_
+                          various observables. See ExpansionParameterModel.
+    name                : str
+                          The name of the observable. This name will be
+                          placed before all RV names defined within this model,
+                          i.e. 'name_sd'.
+    model               : pymc3.Model object
+                          The parent model. If defined within a model context,
+                          it will use that one.
 
     """
 
-    # Could use defaults like "dist": pm.LogNormal
-    # ls_default_kwargs = {"name": "ls", "dist": pm.Lognormal}
-    # sd_default_kwargs = {"name": "sd", "dist": pm.Lognormal}
-    # cov_default_kwargs = {
-    #     "cov": pm.gp.cov.ExpQuad,
-    #     "noise": 1e-10,
-    #     "sd": sd_default_kwargs,
-    #     "ls": ls_default_kwargs
-    #     }
-
-    def __init__(self, coeff_data, inputs, index_list,
-                 # cov_kwargs={},
-                 cov=None,
-                 noise=1e-10,
-                 expansion_parameter=None,
+    def __init__(self, coeff_data, X, index_list, cov=None,
+                 noise=1e-10, expansion_parameter=None,
                  name='', model=None, **kwargs):
         # name will be prefix for all variables here
         # if no name specified for model there will be no prefix
         super(ObservableModel, self).__init__(name, model)
 
-        # Overwrite any default parameters
-        # self.cov_kwargs = self.cov_default_kwargs
-        # update(self.cov_kwargs, cov_kwargs)
-
-        # self.cov_kwargs["input_dim"] = self.input_dim
-
         # Store parameters
         self.data = coeff_data
-        self.inputs = inputs
-        self.input_dim = len(inputs[0])
+        self.X = X
+        self.X_dim = len(X[0])
         self.index_list = index_list
         self.noise = noise
         self.expansion_parameter = expansion_parameter
 
-        # The number of coefficient (functions)
+        # The number of coefficients
         self.num_coeffs = len(coeff_data)
 
-        assert len(coeff_data) == len(index_list), \
+        # Ensure that everything looks right (add more tests!)
+        assert self.num_coeffs == len(index_list), \
             "Indices must match number of coefficients"
 
-        # if "custom" in self.cov_kwargs:
-        #     self.noise = self.cov_kwargs['noise']
-        #     cov = self.cov_kwargs["custom"]
-        # else:
-        #     cov = self.setup_covariance(**self.cov_kwargs)
-
+        # Finish setup without entering model context if cov is given
         if cov is not None:
             self.setup_model(cov)
 
@@ -104,9 +98,13 @@ class ObservableModel(pm.Model):
 
     def setup_model(self, cov, noise=None):
         """Once cov is set up, relate it to the coefficients and other RVs.
-        Provides a chance to feed a noise model that may have been
-        created in the ObservableModel context before setup completes.
+        Provides a chance to feed a noise model, which may have been
+        created in the ObservableModel context, before setup completes.
         """
+        if cov is None:
+            raise AttributeError(
+                "No covariance function provided to {}".format(self.name)
+                )
         if noise is not None:
             self.noise = noise
 
@@ -118,12 +116,12 @@ class ObservableModel(pm.Model):
             # Create a cov that handles an uncertain expansion parameter
             scaled_cov = scale**(-2*n) * cov
 
-            # Treat the coefficients as draws from a GP
+            # Treat the observed coefficients as draws from a GP
             # Constrain the model by the data:
             gp = pm.gp.Marginal(cov_func=scaled_cov)
             cnobs = gp.marginal_likelihood(
                 'c{}obs'.format(n),
-                X=self.inputs,
+                X=self.X,
                 y=cn,
                 noise=self.noise
                 )
@@ -133,44 +131,56 @@ class ObservableModel(pm.Model):
 
 
 class ExpansionParameterModel(pm.Model):
-    """
+    """A model for the EFT expansion parameter: Q ~ low_energy_scale / breakdown
+
+    Parameters
+    ----------
+    breakdown_eval: float
+                    The breakdown scale used to extract the observable
+                    coefficients
+    breakdown_dist: pymc3.distributions object
+                    The prior distribution for the breakdown scale
+                    (sometimes denoted \Lambda). Must be a distribution! i.e.
+                    pm.Lognormal.dist(mu=0, sd=10, testval=600.0)
+                    but *not*
+                    pm.Lognormal('breakdown', mu=0, sd=10, testval=600.0).
+                    Allows the prior to be set up without entering the model
+                    context (though that is permitted as well).
+                    *Must* contain a testval kwarg to start sampling in a
+                    region where you believe the *true* value probably is,
+                    otherwise sampling issues can occur!
+                    (breakdown_eval is probably a good place to start.)
+    name          : str
+                    The name of the expansion parameter. This name will be
+                    placed before all RV names defined within this model,
+                    i.e. 'name_breakdown'.
+    model         : pymc3.Model object
+                    The parent model. If defined within a model context,
+                    it will use that one.
     """
 
-    # breakdown_default_kwargs = {"name": "breakdown", "dist": pm.Lognormal}
-
-    def __init__(self, breakdown_eval,
-                 breakdown=None,
-                 # breakdown_kwargs={},
-                 name='',
-                 model=None, **kwargs):
+    def __init__(self, breakdown_eval, breakdown_dist=None,
+                 name='', model=None, **kwargs):
         super(ExpansionParameterModel, self).__init__(name, model)
-
-        # Setup kwargs for breakdown scale random variable
-        # self.breakdown_kwargs = self.breakdown_default_kwargs
-        # Issues can occur if sampling doesn't begin in a reasonable region
-        # self.breakdown_kwargs["testval"] = breakdown_eval
-        # Override defaults
-        # self.breakdown_kwargs.update(breakdown_kwargs)
-
-        # Setup random variable for the breakdown scale
-        # if "custom" in self.breakdown_kwargs:
-        #     self.breakdown = self.breakdown_kwargs["custom"]
-        # else:
-        #     self.breakdown = self.setup_hyperparameter(**self.breakdown_kwargs)
 
         self.breakdown_eval = breakdown_eval
 
-        if breakdown is not None:
-            self.breakdown = breakdown
-            # The scaling factor for coefficients: c_n ~ scale^n
-            self.scale = self.breakdown/self.breakdown_eval
+        if breakdown_dist is not None:
+            self.Var('breakdown', breakdown_dist)
+            self.setup_model(self.breakdown)
 
     def setup_hyperparameter(self, **kwargs):
         temp_kwargs = kwargs
         dist = temp_kwargs.pop("dist")
         return dist(**temp_kwargs)
 
-    def setup_scale(self, breakdown):
+    def setup_model(self, breakdown):
+        # Sampling issues can occur if it does not start in reasonable location
+        if breakdown.distribution.testval is None:
+            raise AttributeError(
+                    "breakdown must be given an appropriate testval. " +
+                    "Possibly around breakdown_eval."
+                    )
         # The scaling factor for coefficients: c_n ~ scale^n
         self.scale = breakdown/self.breakdown_eval
         return self.scale
