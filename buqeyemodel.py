@@ -171,6 +171,10 @@ class ExpansionParameterModel(pm.Model):
         if breakdown_dist is not None:
             self.Var('breakdown', self.breakdown_dist)
 
+    # ------------------------
+    # RVs with special setters
+    # ------------------------
+
     @property
     def breakdown(self):
         return self._breakdown
