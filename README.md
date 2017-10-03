@@ -92,4 +92,4 @@ with gp_model:
 Plots can now be made with `pm.traceplot(trace)`, etc. Again, see `PyMC3` documentation.
 
 Examples of distributions for the priors can be found [here](http://docs.pymc.io/api/distributions.html).
-See [this page](http://docs.pymc.io/notebooks/GP-covariances.html) on kernels and covariance functions.
+See [this page](http://docs.pymc.io/notebooks/GP-MeansAndCovs.html) on kernels and covariance functions.

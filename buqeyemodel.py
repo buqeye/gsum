@@ -1,5 +1,6 @@
 import pymc3 as pm
 import numpy as np
+import theano
 import theano.tensor as tt
 import warnings
 
@@ -128,6 +129,7 @@ class ObservableModel(pm.Model):
 
             # Scale fixed cnobs due to possibly uncertain expansion parameter
             pm.Deterministic("c{}".format(n), scale**n * cnobs)
+            # pm.Deterministic("c{}".format(n), cnobs)
 
 
 class ExpansionParameterModel(pm.Model):
@@ -164,23 +166,43 @@ class ExpansionParameterModel(pm.Model):
         super(ExpansionParameterModel, self).__init__(name, model)
 
         self.breakdown_eval = breakdown_eval
+        self.breakdown_dist = breakdown_dist
 
         if breakdown_dist is not None:
-            self.Var('breakdown', breakdown_dist)
-            self.setup_model(self.breakdown)
+            self.Var('breakdown', self.breakdown_dist)
 
-    def setup_hyperparameter(self, **kwargs):
-        temp_kwargs = kwargs
-        dist = temp_kwargs.pop("dist")
-        return dist(**temp_kwargs)
+    @property
+    def breakdown(self):
+        return self._breakdown
 
-    def setup_model(self, breakdown):
+    @breakdown.setter
+    def breakdown(self, value):
         # Sampling issues can occur if it does not start in reasonable location
-        if breakdown.distribution.testval is None:
-            raise AttributeError(
-                    "breakdown must be given an appropriate testval. " +
-                    "Possibly around breakdown_eval."
-                    )
+        assert value.distribution.testval is not None, \
+            "breakdown must be given an appropriate testval. " + \
+            "Possibly around breakdown_eval."
+        self._breakdown = value
+        self.setup_model()
+
+    @property
+    def numscale(self):
+        return self._numscale
+
+    @numscale.setter
+    def numscale(self, value):
+        self._numscale = value
+        self.setup_model()
+
+    def setup_model(self):
+        """Defines the scaling parameter for the coefficients: c_n ~ scale^n.
+        Automatically called when breakdown or numscale are set."""
+        try:
+            bdown = self.breakdown
+        except AttributeError:
+            bdown = 1
+        try:
+            nscale = self.numscale
+        except AttributeError:
+            nscale = 1
         # The scaling factor for coefficients: c_n ~ scale^n
-        self.scale = breakdown/self.breakdown_eval
-        return self.scale
+        self.scale = bdown/(self.breakdown_eval * nscale)
