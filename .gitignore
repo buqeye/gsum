@@ -16,3 +16,5 @@ MANIFEST
 
 # From compiling the .md file
 README.html
+
+./tests/.ipynb_checkpoints/*
