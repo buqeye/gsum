@@ -10,16 +10,37 @@ import theano
 import theano.tensor as tt
 
 
-class MatNormal(Continuous):
+class MatrixNormal(Continuous):
     R"""
     Matrix-valued normal log-likelihood.
 
-    Distribution for the qxp matrix Y
-    Must take two precision-like matrices (cov, chol, or tau):
-        left (or column) qxq matrix defines variance within columns
-            denoted (lcov, lchol, or ltau)
-        right (or row) pxp matrix defines variance within rows
-            denoted (rcov, rchol, or rtau)
+    ===============  =====================================
+    Support          :math:`x \in \mathbb{R}^{q \times p}`
+    Mean             :math:`\mu`
+    Right Variance   :math:`T_R^{-1}`
+    Left Variance    :math:`T_L^{-1}`
+    ===============  =====================================
+
+    Parameters
+    ----------
+    mu : array
+        Vector of means.
+    rcov : array
+        Right (or row) pxp covariance matrix. Defines variance within rows.
+        Exactly one of rcov or rchol is needed.
+    rchol : array
+        Cholesky decomposition of pxp covariance matrix. Defines variance
+        within rows. Exactly one of rcov or rchol is needed.
+    lcov : array
+        Left (or column) qxq covariance matrix. Defines variance within
+        columns. Exactly one of lcov or lchol is needed.
+    lchol : array
+        Cholesky decomposition of qxq covariance matrix. Defines variance
+        within columns. Exactly one of lcov or lchol is needed.
+
+    Examples
+    --------
+    ?
     """
 
     def __init__(self, mu=0, rcov=None, rchol=None, rtau=None,
@@ -31,7 +52,7 @@ class MatNormal(Continuous):
         assert len(shape) == 2, "only 2d tuple inputs work right now: qxp"
         self.shape = shape
 
-        super(MatNormal, self).__init__(shape=shape, *args, **kwargs)
+        super(MatrixNormal, self).__init__(shape=shape, *args, **kwargs)
 
         self.mu = tt.as_tensor_variable(mu)
 
