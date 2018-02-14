@@ -1,392 +1,414 @@
+from __future__ import division
 import pymc3 as pm
 import numpy as np
 import theano
 import theano.tensor as tt
 import warnings
-from buqeyemodel.pymc3_additions import MatNormal
+from pymc3.math import cartesian
+import scipy.integrate as integrate
+import scipy.stats as st
 
 
-__all__ = ['ObservableModel', 'ExpansionParameterModel']
+__all__ = ['ObservableModel', 'ExpansionParameterModel', 'GPCoeffs', 'Exponential']
 
 
-class ObservableModel(pm.Model):
-    """A statistical model for the convergence pattern of observables in an EFT.
+class Exponential(pm.gp.mean.Mean):
 
-    Parameters
-    ----------
-    coeff_data          : ndarray
-                          Holds arrays of coefficients: c_i, c_j, ...
-                          which have been extracted for many parameter values
-    X                   : ndarray (2D)
-                          The parameter values for which the coefficients have
-                          been extracted. Rows correspond to data points
-                          and columns to the dimensions. For 1D observations,
-                          this becomes a column vector.
-    index_list          : list
-                          A list containing the powers of the expansion
-                          parameter from which the coefficients were extracted,
-                          i.e., the subscripts of the coefficients.
-                          E.g.: for coefficients [c_i, c_j, c_k], then
-                          index_list = [i, j, k]
-    cov                 : pymc3.cov object
-                          A covariance function object to be used for the
-                          coefficients. Unless using the exact same cov across
-                          multiple observables, this is not the preferred
-                          method of defining a cov. Instead, a cov and its
-                          relevant RVs should be defined in a model context
-                          for each individual observable.
-    noise               : float or pymc3.RV object
-                          The noise to be added to the cov. This is required
-                          for numerical stability, but can also model real
-                          noise in the data. This noise is *not* scaled by the
-                          expansion_parameter!
-    expansion_parameter : pymc3.Model object
-                          An expansion parameter that can be learned _across_
-                          various observables. See ExpansionParameterModel.
-    name                : str
-                          The name of the observable. This name will be
-                          placed before all RV names defined within this model,
-                          i.e. 'name_sd'.
-    model               : pymc3.Model object
-                          The parent model. If defined within a model context,
-                          it will use that one.
+    def __init__(self, b=1, active_dim=0):
+        super(Exponential, self).__init__()
+        self.b = b
+        if not isinstance(active_dim, int):
+            raise ValueError('active_dim must be an integer')
+        self.active_dim = active_dim
 
+    def __call__(self, X):
+        p = X[:, self.active_dim]
+        return self.b**p
+
+
+class ObsCoeffs(object):
+    """A base class that examines the convergence pattern of observables
+
+    This simply extracts and sets up the relevant variables to be used
+    in the coefficient models.
     """
 
-    def __init__(self, coeff_data, X, index_list, cov=None,
-                 noise=1e-10, expansion_parameter=None,
-                 X_star=None,
-                 name='', model=None, **kwargs):
-        # name will be prefix for all variables here
-        # if no name specified for model there will be no prefix
-        super(ObservableModel, self).__init__(name, model)
-
-        # Store parameters
-        self.data = coeff_data
-        self.X = X
-        self.X_dim = len(X[0])
-        self.index_list = index_list
-        self.noise = noise
-        self.expansion_parameter = expansion_parameter
-        self.X_star = X_star
-
-        # The number of coefficients
-        self.num_coeffs = len(coeff_data)
-
-        # Ensure that everything looks right (add more tests!)
-        assert self.num_coeffs == len(index_list), \
-            "Indices must match number of coefficients"
-
-        # Finish setup without entering model context if cov is given
-        if cov is not None:
-            self.setup_model(cov)
-
-    def setup_hyperparameter(self, **kwargs):
-        temp_kwargs = kwargs
-        dist = temp_kwargs.pop("dist")
-        return dist(**temp_kwargs)
-
-    def setup_covariance(self, **kwargs):
-        temp_kwargs = kwargs
-        # Convert dicts to hyperparameters, i.e., pymc3 objects
-        for k, v in temp_kwargs.items():
-            if isinstance(v, dict):
-                temp_kwargs[k] = self.setup_hyperparameter(**v)
-        # Save for later: Put noise directly into gp
-        self.noise = temp_kwargs.pop("noise")
-        # Setup covariance function
-        cov_func = temp_kwargs.pop("cov")
-        self.sd = temp_kwargs.pop("sd")
-        cov = self.sd**2 * cov_func(**temp_kwargs)
-        return cov
-
-    def setup_cn(self, name, X, y, cov, noise, scale, order, **kwargs):
-        scaled_cov = scale**(-2*order)*cov
-        gp = pm.gp.Marginal(cov_func=scaled_cov)
-        obs = gp.marginal_likelihood(
-                name=name + str(order) + 'obs',
-                X=X,
-                y=y,
-                noise=noise,
-                **kwargs
-                )
-        scaled_obs = pm.Deterministic(name + str(order), scale**order * obs)
-        return [gp, obs, scaled_obs]
-
-    def setup_model(self, cov, noise=None):
-        """Once cov is set up, relate it to the coefficients and other RVs.
-        Provides a chance to feed a noise model, which may have been
-        created in the ObservableModel context, before setup completes.
-        """
-        if cov is None:
-            raise AttributeError(
-                "No covariance function provided to {}".format(self.name)
-                )
-        if noise is not None:
-            self.noise = noise
-
-        if self.expansion_parameter is None:
-            # Create a multi-observed GP
-            self.gp = pm.gp.Marginal(cov_func=cov)
-            obs = self.gp.marginal_likelihood(
-                    'obs',
-                    X=self.X,
-                    y=self.data,
-                    noise=self.noise,
-                    shape=self.data.shape
-                    )
+    def __init__(self, X, obs, orders, rm_orders=None, ref=1, Q_est=1,
+                 grid=False, **kwargs):
+        self.grid = grid
+        if grid:
+            self.Xs = X
+            self.X = cartesian(*X)
         else:
-            # Expand cov as kronecker product and learn all data at once
-            scale = self.expansion_parameter.scale
-            scales = [scale**(-2*n) for n in self.index_list]
-            # scales_diag = tt.nlinalg.diag(scales) + \
-            #     np.diag(self.noise*np.ones(len(scales)))
-            scales_diag = tt.nlinalg.diag(scales)
-            cov_mat = cov(self.X) + np.diag(self.noise*np.ones(len(self.X)))
-            obs = MatNormal(
-                    'obs', mu=0, rcov=cov_mat, lcov=scales_diag,
-                    observed=self.data,
-                    shape=(len(self.index_list), len(self.X))
-                    )
-
-            # obs = [pm.MvNormal('obs{}'.format(n), mu=0, cov=scale**(-2*n)*cov_mat + np.diag(self.noise*np.ones(len(self.X))),
-            #                    observed=self.data[i])
-            #        for i, n in enumerate(self.index_list)]
-
-            self.gp = []
-            # cn_scales = [scale**n for n in self.index_list]
-            # cn_true = [cn_scales[i] * obs[i] for i in range(len(cn_scales))]
-            # pm.Deterministic('cn', cn_true)
-
-            # scaled_cov = ScaledCov(cov, scale, self.index_list)
-            # X_concat = np.concatenate(tuple(self.X for n in self.index_list))
-            # data_flat = self.data.flatten()
-
-            # self.gp = pm.gp.Marginal(cov_func=scaled_cov)
-            # obs = self.gp.marginal_likelihood(
-            #         'obs',
-            #         X=X_concat,
-            #         y=data_flat,
-            #         noise=self.noise,
-            #         )
-
-            # self.gp = []
-            # for n, cn in zip(self.index_list, self.data):
-            #     # Create a cov that handles an uncertain expansion parameter
-            #     scaled_cov = scale**(-2*n) * cov
-
-            #     # Treat the observed coefficients as draws from a GP
-            #     # Constrain the model by the data:
-            #     gp_cn = pm.gp.Marginal(cov_func=scaled_cov)
-            #     cnobs = gp_cn.marginal_likelihood(
-            #         'c{}obs'.format(n),
-            #         X=self.X,
-            #         y=cn,
-            #         noise=self.noise
-            #         )
-
-            #     self.gp.append(gp_cn)
-
-        # cov_array = np.array([scale**(-2*n)*cov for n in self.index_list])
-
-        # gp = pm.gp.Marginal(cov_func=cov)
-        # cnobs = gp.marginal_likelihood(
-        #         'cnobs',
-        #         X=self.X,
-        #         y=self.data,
-        #         # is_observed=False,
-        #         noise=self.noise,
-        #         shape=self.data.shape
-        #         )
-
-        # self.gp = gp
-
-        # names = theano.tensor.vector("names")
-
-        # ([gp, obs, scaled_obs], _) = theano.scan(
-        #                                 fn=self.setup_cn,
-        #                                 outputs_info=None,
-        #                                 sequences=[y, order],
-        #                                 non_sequences=[name, X, cov, noise]
-        #                                 )
-
-        # # Compile a function
-        # setup_ckvec = theano.function(
-        #                       inputs=[name, X, y, cov, noise, scale, order],
-        #                       outputs=[gp, obs, scaled_obs])
-
-        # name_list = ['c{}'.format(n) for n in self.index_list]
-
-        # X_obs = self.X
-        # if self.X_star is not None:
-        #     X_obs = self.X_star
-        # X_obs_tuple = tuple(X_obs for n in self.index_list)
-        # print(X_obs_tuple)
-        # X_obs = np.concatenate(X_obs_tuple, axis=1)
-        # print(X_obs, X_obs.shape)
-        # pm.Deterministic("cn", cnobs)
-        # gp.conditional('cn', X_obs, givens={'y': self.data[0]})
-        # for i, n in enumerate(self.index_list):
-        #     gp.conditional("c{}".format(n), Xnew=X_obs,
-        #                    given={'y': self.data[i], 'X': self.X, 'noise': self.noise}
-        #                    )
-
-        # self.gp = []
-
-        # for n, cn in zip(self.index_list, self.data):
-        #     # Create a cov that handles an uncertain expansion parameter
-        #     scaled_cov = scale**(-2*n) * cov
-
-        #     # Treat the observed coefficients as draws from a GP
-        #     # Constrain the model by the data:
-        #     gp_cn = pm.gp.Marginal(cov_func=scaled_cov)
-        #     cnobs = gp_cn.marginal_likelihood(
-        #         'c{}obs'.format(n),
-        #         X=self.X,
-        #         y=cn,
-        #         # is_observed=False,
-        #         noise=self.noise
-        #         )
-
-        #     self.gp.append(gp_cn)
-
-        #     # Scale fixed cnobs due to possibly uncertain expansion parameter
-        #     pm.Deterministic("c{}".format(n), scale**n * cnobs)
-        #     pm.Deterministic("c{}".format(n), cnobs)
-
-
-class ExpansionParameterModel(pm.Model):
-    """A model for the EFT expansion parameter: Q ~ low_energy_scale / breakdown
-
-    Parameters
-    ----------
-    breakdown_eval: float
-                    The breakdown scale used to extract the observable
-                    coefficients
-    breakdown_dist: pymc3.distributions object
-                    The prior distribution for the breakdown scale
-                    (sometimes denoted \Lambda). Must be a distribution! i.e.
-                    pm.Lognormal.dist(mu=0, sd=10, testval=600.0)
-                    but *not*
-                    pm.Lognormal('breakdown', mu=0, sd=10, testval=600.0).
-                    Allows the prior to be set up without entering the model
-                    context (though that is permitted as well).
-                    *Must* contain a testval kwarg to start sampling in a
-                    region where you believe the *true* value probably is,
-                    otherwise sampling issues can occur!
-                    (breakdown_eval is probably a good place to start.)
-    name          : str
-                    The name of the expansion parameter. This name will be
-                    placed before all RV names defined within this model,
-                    i.e. 'name_breakdown'.
-    model         : pymc3.Model object
-                    The parent model. If defined within a model context,
-                    it will use that one.
-    """
-
-    def __init__(self, breakdown_eval, breakdown_dist=None,
-                 name='', model=None, **kwargs):
-        super(ExpansionParameterModel, self).__init__(name, model)
-
-        self.breakdown_eval = breakdown_eval
-        self.breakdown_dist = breakdown_dist
-
-        if breakdown_dist is not None:
-            self.Var('breakdown', self.breakdown_dist)
-
-    # ------------------------
-    # RVs with special setters
-    # ------------------------
-
-    @property
-    def breakdown(self):
-        return self._breakdown
-
-    @breakdown.setter
-    def breakdown(self, value):
-        # Sampling issues can occur if it does not start in reasonable location
-        assert value.distribution.testval is not None, \
-            "breakdown must be given an appropriate testval. " + \
-            "Possibly around breakdown_eval."
-        self._breakdown = value
-        self.setup_model()
-
-    @property
-    def numscale(self):
-        return self._numscale
-
-    @numscale.setter
-    def numscale(self, value):
-        self._numscale = value
-        self.setup_model()
-
-    def setup_model(self):
-        """Defines the scaling parameter for the coefficients: c_n ~ scale^n.
-        Automatically called when breakdown or numscale are set."""
-        try:
-            bdown = self.breakdown
-        except AttributeError:
-            bdown = 1
-        try:
-            nscale = self.numscale
-        except AttributeError:
-            nscale = 1
-        # The scaling factor for coefficients: c_n ~ scale^n
-        self.scale = bdown/(self.breakdown_eval * nscale)
-
-
-class ScaledCov(pm.gp.cov.Covariance):
-    """Create a big kronecker product of scale and cov.
-
-    Parameters
-    ----------
-    cov    : gp.cov.Covariance object
-             The covariance that will be scaled
-    scale  : RV
-             A random variable that will scale cov differently
-             in each block of the kronecker product
-    powers : list
-             The powers of scale that will multiply cov in each
-             block of the kronecker product
-    """
-
-    def __init__(self, cov, scale, powers):
-        super(ScaledCov, self).__init__(input_dim=cov.input_dim,
-                                        active_dims=cov.active_dims)
-        self.X = []
-        self.Xs = []
-        self.cov = cov
-        self.powers = powers
-        self.scales = [scale**(-2*n) for n in powers]
-        self.scales_diag = tt.nlinalg.diag(self.scales)
-
-    def diag(self, X):
-        """[scales[0] * cov.diag(X), scales[1] * cov.diag(X), ... ].ravel()"""
-        X_unique = self.unique_domain(X)
-        return tt.outer(self.scales, self.cov.diag(X_unique)).ravel()
-
-    def full(self, X, Xs=None):
-        X_unique = self.unique_domain(X)
-        Xs_unique = None
-        if Xs is not None:
-            Xs_unique = self.unique_domain(Xs)
-        covfull = self.cov(X_unique, Xs_unique)
-        return tt.slinalg.kron(self.scales_diag, covfull)
-        # self.update_cov(X, Xs)
-        # return self.kron_cov
-
-    def update_cov(self, X, Xs=None):
-        # if X != self.X or Xs != self.Xs:
-        if not np.array_equal(X, self.X) or not np.array_equal(Xs, self.Xs):
+            self.Xs = None
             self.X = X
-            self.Xs = Xs
-            X_unique = self.unique_domain(X)
-            Xs_unique = None
-            if Xs is not None:
-                Xs_unique = self.unique_domain(Xs)
-            covfull = self.cov(X_unique, Xs_unique)
-            self.kron_cov = tt.slinalg.kron(self.scales_diag, covfull)
+        self.N = len(self.X)
 
-    def unique_domain(self, X):
-        unique_length = len(X)//len(self.powers)
-        return X[:unique_length]
+        try:
+            self.Q_est_func = Q_est
+            self.Q_est = Q_est(self.X)
+        except TypeError:
+            self.Q_est = Q_est * np.ones(len(self.X))
+            self.Q_est_func = None
+
+        assert len(obs) == len(orders), \
+            "Orders must match the number of coefficients"
+        if rm_orders is None:
+            rm_orders = []
+
+        self.orders = []
+        self.cs = []
+        for i, n in enumerate(orders):
+            if i == 0:
+                cn = obs[i] / (ref * self.Q_est**n)
+            else:
+                cn = (obs[i] - obs[i-1]) / (ref * self.Q_est**n)
+
+            if n not in rm_orders:
+                self.orders.append(n)
+                self.cs.append(cn)
+        self.orders = np.array(self.orders)
+        self.cs = np.array(self.cs)
+        self.k = self.orders[-1]
+        self.obsk = np.array(obs[self.k])
+        self.ref = ref
+
+
+class GPCoeffs(pm.Model, ObsCoeffs):
+    """Treats observables as sums of weighted iid Gaussian processes.
+
+    Parameters for the Gaussian process are conditioned on observable data to
+    permit the extimation of the truncation error.
+
+    Parameters
+    ----------
+    name : str
+        The name of the observable. This name will be
+        placed before all RV names defined within this model,
+        i.e. 'name_sd'.
+    model : pymc3.Model object
+        The parent model. If defined within a model context,
+        it will use that one.
+    """
+
+    def __init__(self, X, obs, orders, rm_orders=None, ref=1, Q_est=1,
+                 grid=False, name='', model=None, build=True,
+                 **param_kwargs):
+        # Can't use super since pm.Model doesn't accept kwargs
+        # super(GPCoeffs, self).__init__(name=name, model=model)
+        pm.Model.__init__(self, name=name, model=model)
+        ObsCoeffs.__init__(
+            self, X=X, obs=obs, orders=orders, rm_orders=rm_orders,
+            ref=ref, Q_est=Q_est, grid=grid)
+        if build:
+            self.def_params(**param_kwargs)
+            self.gp_model()
+
+    def get_RV(self, rv):
+        """Check both self and parent model for rv"""
+        try:
+            var = getattr(self, rv)
+        except AttributeError:
+            var = getattr(self.root, rv)
+        return var
+
+    def def_params(self, mu=0.0, sd=1.0, ls=1.0, sigma=1e-5, q=1.0):
+        # Add a shape key to ls dict for anisotropic models
+        if isinstance(ls, dict) and 'shape' not in ls:
+            ls_size = 0
+            try:
+                ls_size = ls['mu'].shape[0]
+            except (AttributeError, KeyError):
+                pass
+            try:
+                sd_size = ls['sd'].shape[0]
+            except (AttributeError, KeyError):
+                pass
+            else:
+                if sd_size > ls_size:
+                    ls_size = sd_size
+            if ls_size > 1:
+                ls['shape'] = ls_size
+
+        # Convert non-dicts to dicts holding observed value
+        args = [mu, sd, ls, sigma, q]
+        for i, arg in enumerate(args):
+            if not isinstance(arg, dict):
+                args[i] = {'observed': arg}
+        [mu, sd, ls, sigma, q] = args
+
+        # Entering self ensures RVs are in the context of this instance
+        # even if this method is called manually
+        with self:
+            pm.Normal('mu', **mu)
+            pm.Lognormal('sd', **sd)
+            pm.Lognormal('ls', **ls)
+            pm.HalfNormal('sigma', **sigma)
+            q = pm.Lognormal('q', **q)
+            pm.Deterministic('Q', q * self.Q_est)
+        return self
+
+    def gp_model(self):
+        with self:
+            # Get predefined parameters
+            mu = self.get_RV('mu')
+            sd = self.get_RV('sd')
+            ls = self.get_RV('ls')
+            sigma = self.get_RV('sigma')
+            try:
+                q = self.get_RV('q')
+            except AttributeError:  # If q hasn't been defined
+                q = 1.0
+                self.q = q
+
+            # Define Q if it has been overlooked
+            try:
+                pm.Deterministic('Q', q * self.Q_est)
+            except AttributeError:  # If q isn't an RV
+                self.Q = tt.as_tensor_variable(q * self.Q_est)
+            except ValueError:  # If Q is already defined
+                pass
+
+            # Setup mean and covariance functions
+            orders = self.orders
+            mean = pm.gp.mean.Constant(mu) * Exponential(b=q)
+            B = tt.nlinalg.diag(q**(2*orders))
+            coregion = pm.gp.cov.Coregion(1, B=B)
+            covs = [coregion]
+            if self.grid:  # Create cov for each grid entry
+                Xgp = [orders[:, None], *self.Xs]
+                num_Xs = len(self.Xs)
+                for i, X in enumerate(self.Xs):
+                    dim = X.shape[1]
+                    try:
+                        ls_i = ls[i]
+                    except IndexError:  # Smaller length than Xs
+                        print("Anisotropic models must have a distinct",
+                              "length scale for each entry in Xs")
+                        raise
+                    except (TypeError, ValueError):  # Is scalar-like
+                        ls_i = ls
+                    cov = sd**(2.0/num_Xs) * pm.gp.cov.ExpQuad(dim, ls=ls_i)
+                    covs.append(cov)
+                ccov = pm.gp.cov.Kron(covs[1:])
+            else:  # Create one cov
+                Xgp = [orders[:, None], self.X]
+                dim = self.X.shape[1]
+                ccov = sd**2 * pm.gp.cov.ExpQuad(dim, ls=ls)
+                covs.append(ccov)
+
+            # Make Gaussian process and condition on data
+            y = self.cs.ravel()
+            gp = pm.gp.MarginalKron(mean_func=mean, cov_funcs=covs)
+            gp.marginal_likelihood('cs_observed', Xs=Xgp, y=y, sigma=sigma)
+
+        # For user access
+        self.mean = mean
+        self.covs = covs
+        self.ccov = ccov
+        self.gp = gp
+        return self
+
+    def setup_Deltak(self):
+        # Get relevant variables
+        k = self.orders[-1]
+        mu = self.get_RV('mu')
+        sd = self.get_RV('sd')
+        ls = self.get_RV('ls')
+        sigma = self.get_RV('sigma')
+        Q = self.get_RV('Q')
+        Q_est = self.Q_est
+
+        # Set up variance matrix due to Q array
+        rows, cols = tt.mgrid[0:self.N, 0:self.N]
+        Qr, Qc = Q[rows], Q[cols]
+        varQ = (Qr * Qc)**(k+1) / (1 - Qr * Qc)
+
+        # Define variables for the Deltak process
+        Dk_mean = pm.gp.mean.Constant(mu * Q**(k+1) / (1-Q))
+        Dk_cov = varQ * self.ccov
+        Dk_sigma = sigma * Q_est**(k+1) / tt.sqrt(1-Q_est**2)
+
+        with self:  # Ensure Deltak belongs to this model context
+            # In general, Q variance removes any potential Kronecker structure
+            Dk_gp = pm.gp.Marginal(mean_func=Dk_mean, cov_func=Dk_cov)
+            Dk = Dk_gp.marginal_likelihood(
+                'Dk', X=self.X, y=None, noise=Dk_sigma, is_observed=False)
+        return self
+
+
+class InCoeffs(ObsCoeffs):
+    """The observables are treated as sums of weighted Gaussian random variables.
+
+    [description]
+    """
+
+    def __init__(self, X, obs, orders, rm_orders=None, ref=1, Q_est=1,
+                 grid=False):
+        super(InCoeffs, self).__init__(
+            X=X, obs=obs, orders=orders, rm_orders=rm_orders, ref=ref,
+            Q_est=Q_est, grid=grid)
+        self.cksq = np.sum(self.cs**2, axis=0, dtype=float)
+        self.qsq = self.Q_est**(2*self.k + 2) / (1.0 - self.Q_est**2)
+        self.num_c = len(self.cs)
+
+    def _a_n(self, a):
+        return a + self.num_c/2.0
+
+    def _b_n(self, b, data=None):
+        if data is None:
+            data = self.cksq
+        return b + data/2.0
+
+    def var_dist(self, a, b):
+        return st.invgamma(a=self._a_n(a), scale=self._b_n(b))
+
+    def error_dist(self, a, b, rescale=True):
+        qsq = self.qsq
+        a_n, b_n = self._a_n(a), self._b_n(b)
+        loc = 0
+        scale = np.sqrt(b_n * qsq / a_n)
+        if rescale:
+            loc = self.obsk
+            scale *= self.ref
+        return st.t(df=2*a_n, loc=loc, scale=scale)
+
+    def error_pdf(self, Deltak, a, b, rescale=True):
+        Dk = np.atleast_2d(Deltak).T
+        dist = self.error_dist(a, b, rescale=rescale)
+        return dist.pdf(Dk).T
+
+    def error_interval(self, alpha, a, b, rescale=True):
+        """Returns the centered degree of belief interval for Delta_k
+
+        Parameters
+        ----------
+        alpha : float or ndarray
+            The specifies the 100*alpha% interval
+        a : float
+            The hyperparameter of the variance prior `InvGam(a, b)`
+        b : float
+            The hyperparameter of the variance prior `InvGam(a, b)`
+        rescale : bool, optional
+            Whether or not the dimensionless error is scaled relative to the
+            highest order observable obs_k, that is, obs_k + ref * error, the
+            default is True
+
+        Returns
+        -------
+        tuple
+            The lower and upper bounds of the error interval
+        """
+        dist = self.error_dist(a, b, rescale=rescale)
+        low, up = dist.interval(alpha=alpha)
+        # if rescale:
+        #     obsk, ref = self.obsk, self.ref
+        #     low, up = obsk + ref*low, obsk + ref*up
+        return low, up
+
+    def fQ_prior_logpdf(self, fQ, a_fQ, b_fQ, scale=1.0, inverted=False):
+        # if inverted:
+        #     prior = st.invgamma(a=a_fQ, scale=b_fQ)
+        # else:
+        #     # Use rate param for consistency: b=1/scale
+        #     scale = 1.0/b_fQ
+        #     prior = st.gamma(a=a_fQ, scale=scale)
+        # return prior
+        if inverted:
+            logpdf = st.beta.logpdf(1/fQ, a=a_fQ, b=b_fQ, scale=1/scale)
+            logpdf -= 2*np.log(fQ)
+        else:
+            logpdf = st.beta.logpdf(fQ, a=a_fQ, b=b_fQ, scale=scale)
+        return logpdf
+
+    def fQ_ulogpdf(self, fQ, a, b, a_fQ, b_fQ, scale=1.0, inverted=False,
+                   combine=True):
+        """The unnormalized logpdf for the expansion parameter.
+
+        See the docstring for expar_pdf.
+        """
+        # Handle scaling and inverting
+        # x = x/scale
+        # x = np.atleast_2d(x).T
+        Q = fQ / scale
+        if inverted:
+            Q = Q**(-1)
+        # if np.any(Q >= 1):
+        #     raise ValueError('Q must be between 0 and 1')
+        Q = np.atleast_2d(Q).T
+
+        # Set up terms
+        orders, cs, Q_est = self.orders, self.cs, self.Q_est
+        cs_Q = np.array([cn*(Q_est/Q)**n for n, cn in zip(orders, cs)])
+        cksq_Q = np.sum(cs_Q**2, axis=0)
+
+        a_n = self._a_n(a)
+        b_n = self._b_n(b, data=cksq_Q)
+        logp = - a_n * np.log(b_n) - np.sum(orders) * np.log(Q)
+        log_prior = self.fQ_prior_logpdf(fQ, a_fQ, b_fQ, scale, inverted)
+        if combine:
+            logp = np.sum(logp, axis=1)
+            logp += log_prior
+        else:
+            logp += np.atleast_2d(log_prior).T
+            logp = logp.T
+        return logp
+
+    def fQ_pdf(self, fQ, a, b, a_fQ, b_fQ, scale=1.0, inverted=False,
+               combine=True):
+        """The approximately normalized pdf for the expansion parameter.
+
+        The pdf is normalized using the trapezoid rule based on the input
+        points fQ. Hence fine grids that capture the probability mass will
+        be accurately normalized.
+
+        Parameters
+        ----------
+        fQ : ndarray
+            A function f of the expansion parameter Q: f(Q)
+        a : float
+            [description]
+        b : float
+            [description]
+        a_expar : float
+            [description]
+        b_expar : float
+            [description]
+        scale : float, optional
+            [description] the default is 1.0
+        inverted : bool, optional
+            [description] (the default is False, which [default_description])
+        combine : bool, optional
+            Whether the obserables should use a common expansion parameter, the
+            default is True
+
+        Returns
+        -------
+        ndarray
+            The pdf for f(Q)
+        """
+        logp = self.fQ_ulogpdf(fQ, a, b, a_fQ, b_fQ, scale=scale,
+                               inverted=inverted, combine=combine)
+        # Reduce underflow and overflow
+        maxlogp = np.atleast_2d(np.max(logp, axis=-1)).T
+        logp = logp - maxlogp
+        pdf = np.exp(logp)
+
+        # Integrate using trapezoid rule
+        norm = np.atleast_2d(np.trapz(pdf, fQ)).T
+        return np.squeeze(pdf/norm)
+
+    def fQ_interval(self, alpha, fQ, a, b, a_fQ, b_fQ, scale=1.0,
+                    inverted=False, combine=True):
+        pdf = self.fQ_pdf(fQ, a, b, a_fQ, b_fQ, scale=scale,
+                          inverted=inverted, combine=combine)
+        cdf = integrate.cumtrapz(pdf, x=fQ, initial=0)
+
+        # Invert cdf
+        alpha = np.asarray(alpha)
+        if np.any((alpha > 1) | (alpha < 0)):
+            raise ValueError("alpha must be between 0 and 1 inclusive")
+        q1, q2 = (1.0-alpha)/2, (1.0+alpha)/2
+        low = (np.abs(cdf-q1)).argmin(axis=-1)
+        up = (np.abs(cdf-q2)).argmin(axis=-1)
+        return fQ[low], fQ[up]
