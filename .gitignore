@@ -18,3 +18,5 @@ MANIFEST
 README.html
 
 tests/.ipynb_checkpoints/
+
+docs/_build
