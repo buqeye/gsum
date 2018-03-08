@@ -5,7 +5,7 @@
 .. <img src="./BUQEYE_fig.png?raw=true" width="30%"/>
 
 .. image:: https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png
-  :width: 30%
+  :height: 150px
   :align: center
   :alt: BUQEYE logo
 
