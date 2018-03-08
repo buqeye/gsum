@@ -41,7 +41,16 @@ extensions = [
     'sphinx.ext.githubpages',
     'numpydoc',
     'nbsphinx',
-    ]
+]
+
+# Don't auto-generate summary for class members.
+numpydoc_show_class_members = False
+
+# Show the documentation of __init__ and the class docstring
+autoclass_content = 'both'
+
+# Do not show the return type as seperate section
+napoleon_use_rtype = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -79,7 +88,9 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
+
+nbsphinx_execute = 'never'
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -91,27 +102,26 @@ todo_include_todos = False
 # -- Options for HTML output ----------------------------------------------
 
 html_theme_path = guzzle_sphinx_theme.html_theme_path()
-html_theme = 'guzzle_sphinx_theme'
-
-# # Register the theme as an extension to generate a sitemap.xml
+# Register the theme as an extension to generate a sitemap.xml
 extensions.append("guzzle_sphinx_theme")
-
-# # Guzzle theme options (see theme.conf for more information)
-html_theme_options = {
-    # Set the name of the project to appear in the sidebar
-    "project_nav_name": project,
-}
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
 # html_theme = 'alabaster'
+html_theme = 'guzzle_sphinx_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
 # html_theme_options = {}
+
+# Guzzle theme options (see theme.conf for more information)
+html_theme_options = {
+    # Set the name of the project to appear in the sidebar
+    "project_nav_name": project,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -144,6 +154,15 @@ htmlhelp_basename = 'buqeyemodeldoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
+# For colors
+mypreamble = '''
+\\pagenumbering{arabic}
+\\definecolor{TitleColor}{rgb}{1,0,0}
+\\definecolor{InnerLinkColor}{rgb}{1,0,0}
+\\usepackage{xcolor}
+\\color{black}
+'''
+
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
@@ -155,7 +174,7 @@ latex_elements = {
 
     # Additional stuff for the LaTeX preamble.
     #
-    # 'preamble': '',
+    'preamble': mypreamble,
 
     # Latex figure (float) alignment
     #

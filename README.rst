@@ -4,35 +4,60 @@
 
 .. <img src="./BUQEYE_fig.png?raw=true" width="30%"/>
 
+.. image:: ../BUQEYE_fig.png
+  :width: 30%
+  :align: center
+
 The BUQEYE Model package provides two classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
-Specifically, this is a MCMC-based implementation of the statistical model developed in [this paper](https://arxiv.org/abs/1506.01343).
-The heavy lifting is done by the `PyMC3` package, which can be downloaded [here](https://github.com/pymc-devs/pymc3).
-Some working knowledge of `PyMC3` is recommended before reading the usage information below.
+Specifically, this is a MCMC-based implementation of the statistical model developed in `this paper <https://arxiv.org/abs/1506.01343>`_.
 
-.. Installation
-.. ============
+.. The heavy lifting is done by the ``PyMC3`` package, which can be downloaded `here <https://github.com/pymc-devs/pymc3>`_.
+.. Some working knowledge of ``PyMC3`` is recommended before reading the usage information below.
 
-.. The latest release of BUQEYE Model can be installed from PyPI using `pip`:
-.. ```
-.. pip install buqeyemodel
-.. ```
-.. The current development branch can be installed via
-.. ```
-.. pip install git+https://github.com/jordan-melendez/buqeyemodel@develop
-.. ```
-.. Additionally, one can clone the repository and install using
-.. ```
-.. git clone -b develop https://github.com/jordan-melendez/buqeyemodel.git
-.. cd buqeyemodel
-.. pip install .
-.. ```
-.. Change `-b {branch}` to `-b master` etc. if desired.
-.. This will install the package as is, but if you want to make edits to the code for testing you can exchange the last line with `pip install -e .`, which will allow you to edit the package without reinstalling.
+Installation
+============
 
-.. Dependencies
-.. ============
+The latest release of BUQEYE Model can be installed from PyPI using ``pip``:
 
-.. BUQEYE Model has only been tested with python 3.5, and currently relies only on `PyMC3>=3.1rc3`.
+.. code-block:: console
+
+  $ pip install buqeyemodel
+
+The current development branch can be installed via
+
+.. code-block:: console
+
+  $ pip install git+https://github.com/jordan-melendez/buqeyemodel@develop
+
+Additionally, one can clone the repository and install using
+
+.. code-block:: console
+
+  $ git clone -b develop https://github.com/jordan-melendez/buqeyemodel.git
+  $ cd buqeyemodel
+  $ pip install .
+
+Change ``-b {branch}`` to ``-b master`` etc. if desired.
+This will install the package as is, but if you want to make edits to the code for testing you can exchange the last line with ``pip install -e .``, which will allow you to edit the package without reinstalling.
+
+Dependencies
+============
+
+BUQEYE Model has only been tested with python 3.5. Additionally, some functionality relies on the ``StatsModels`` package.
+
+Citing buqeyemodel
+==================
+
+
+Contact
+=======
+
+To report an issue please use the `issue tracker <https://github.com/jordan-melendez/buqeyemodel/issues>`_.
+
+License
+=======
+
+`MIT License <https://github.com/jordan-melendez/buqeyemodel/blob/master/LICENSE.txt>`_.
 
 
 .. # Usage

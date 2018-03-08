@@ -13,7 +13,7 @@ from statsmodels.sandbox.distributions.mv_normal import MVT
 from functools import reduce
 
 
-__all__ = ['GPCoeffs', 'InCoeffs', 'MvBLM', 'GeoProcess']
+__all__ = ['GPCoeffs', 'InCoeffs', 'MvBLM', 'GeoProcess', 'GeoSeries']
 
 
 class CoeffBase(object):
@@ -501,6 +501,25 @@ class MvBLM(object):
 
 
 class GeoProcess(MvBLM):
+    R"""A geometric series with iid random processes as coefficients.
+
+    Implements the following model
+
+    .. math::
+
+        X_k = X_{\mathrm{ref}} \sum_{n=0}^k c_n Q^n
+
+    where the :math:`c_n` are Gaussian processes with parameters using
+    conjugate priors
+
+    .. math::
+
+        c_n | \beta, \sigma^{2} & \sim N(H \beta, \sigma^2 R) \\
+        \beta, \sigma^2 & \sim NIG(\mu, V, a, b)
+
+    Conditioning on partial sums :math:`X_{0}`, :math:`\dots,` :math:`X_k`, allow
+    one to estimate the full summation and obtain posteriors for the parameters.
+    """
 
     # @property
     # def orders(self):
@@ -740,6 +759,26 @@ class GeoProcess(MvBLM):
 
 
 class GeoSeries(object):
+    R"""A geometric series with iid random variables as coefficients.
+
+    Implements the following model
+
+    .. math::
+
+        X_k = X_{\mathrm{ref}} \sum_{n=0}^k c_n Q^n
+
+    where the :math:`c_n` are iid Gaussians and :math:`\sigma^2` has a
+    conjugate prior
+
+    .. math::
+
+        c_n | \sigma^2 & \sim N(0, \sigma^2) \\
+        \sigma^2 & \sim IG(a, b)
+
+    Conditioning on partial sums :math:`X_0`, :math:`\dots,` :math:`X_k`, allow
+    one to estimate the full summation and obtain posteriors for the
+    parameters.
+    """
 
     def __init__(self, shape=None, scale=None):
         if shape is None:
