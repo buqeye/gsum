@@ -4,10 +4,13 @@
 
 .. <img src="./BUQEYE_fig.png?raw=true" width="30%"/>
 
-.. image:: https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png
-  :height: 150px
-  :align: center
-  :alt: BUQEYE logo
+.. raw:: html
+  <img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%"/>
+
+.. .. image : : https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png
+..   :height: 150px
+..   :align: center
+..   :alt: BUQEYE logo
 
 The BUQEYE Model package provides two classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
 Specifically, this is a MCMC-based implementation of the statistical model developed in `this paper <https://arxiv.org/abs/1506.01343>`_.
