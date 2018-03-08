@@ -1,0 +1,5 @@
+/* In the Guzzle Sphinx theme, some elements of MathJax are green and some black */
+/* This needs to match .mo and .mi (which also highlight code) for MathJax to render consistently */
+/* I don't know if changing this makes something else ugly */
+.mn { color: #009999 }
+

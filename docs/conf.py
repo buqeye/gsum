@@ -43,6 +43,10 @@ extensions = [
     'nbsphinx',
 ]
 
+# .mi { color: #000000 } /* Literal.Number.Integer */
+# .mo {color: #000000;} /* Literal.Number.Oct */
+# .mn { color: #009999 } /* I don't know, something to make TeX nums look ok */
+
 # Don't auto-generate summary for class members.
 numpydoc_show_class_members = False
 
@@ -212,4 +216,6 @@ texinfo_documents = [
 ]
 
 
-
+# For custom css
+def setup(app):
+    app.add_stylesheet('css/custom.css')  # may also be an URL
