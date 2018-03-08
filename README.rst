@@ -5,7 +5,9 @@
 .. <img src="./BUQEYE_fig.png?raw=true" width="30%"/>
 
 .. raw:: html
-  <img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%"/>
+
+   <p style="text-align:center;"><img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo"/></p>
+
 
 .. .. image : : https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png
 ..   :height: 150px
