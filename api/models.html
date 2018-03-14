@@ -121,164 +121,33 @@
   <div class="section" id="module-buqeyemodel.models">
 <span id="models"></span><h1>Models<a class="headerlink" href="#module-buqeyemodel.models" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
-<dt id="buqeyemodel.models.GPCoeffs">
-<em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">GPCoeffs</code><span class="sig-paren">(</span><em>X</em>, <em>obs</em>, <em>orders</em>, <em>rm_orders=None</em>, <em>ref=1</em>, <em>Q_est=1</em>, <em>grid=False</em>, <em>name=''</em>, <em>model=None</em>, <em>build=True</em>, <em>**param_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#GPCoeffs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.GPCoeffs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Treats observables as sums of weighted iid Gaussian processes.</p>
-<p>Parameters for the Gaussian process are conditioned on observable data to
-permit the extimation of the truncation error.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>name</strong> : str</p>
-<blockquote>
-<div><p>The name of the observable. This name will be
-placed before all RV names defined within this model,
-i.e. ‘name_sd’.</p>
-</div></blockquote>
-<p><strong>model</strong> : pymc3.Model object</p>
-<blockquote class="last">
-<div><p>The parent model. If defined within a model context,
-it will use that one.</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
+<dt id="buqeyemodel.models.SGP">
+<em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">SGP</code><span class="sig-paren">(</span><em>dim=None</em>, <em>basis=None</em>, <em>means=None</em>, <em>cov=None</em>, <em>shape=None</em>, <em>scale=None</em>, <em>corr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP" title="Permalink to this definition">¶</a></dt>
+<dd><p>A semiparametric Gaussian process class</p>
+<p>Treats an <span class="math">\(N\times 1\)</span> vector <span class="math">\(Y\)</span> as a Gaussian process
+with a parameterized mean</p>
+<div class="math">
+\[Y(x) | \beta, \sigma^2, \psi \sim N[m(x), \sigma^2 R(x,x; \psi)]\]</div>
+<p>The mean at any input point is given by</p>
+<div class="math">
+\[m(x) = h(x)^T \beta\]</div>
+<p>where <span class="math">\(h\)</span> is a given basis function from
+<span class="math">\(\mathbb{R}^d \to \mathbb{R}^q\)</span> and <span class="math">\(\beta\)</span> is a
+<span class="math">\(q\times 1\)</span> vector of random variables.
+The variance is split into a marginal part <span class="math">\(sigma^2\)</span> and a
+correlation function <span class="math">\(R\)</span> that may further depend on parameters
+<span class="math">\(\psi\)</span>, e.g., length scales.
+A normal-inverse-gamma prior is placed on <span class="math">\(\beta\)</span> and
+<span class="math">\(\sigma^2\)</span></p>
+<div class="math">
+\[\beta, \sigma^2 \sim NIG(\mu, V, a, b)\]</div>
+<p>The means and covariance of the normal prior placed on <span class="math">\(\beta\)</span> are
+<span class="math">\(\mu\)</span> and <span class="math">\(\sigma^2 V\)</span>, while the shape and scale parameter of
+the inverse gamma prior placed on <span class="math">\(\sigma^2\)</span> are <span class="math">\(a\)</span> and
+<span class="math">\(b\)</span>.</p>
 <dl class="method">
-<dt id="buqeyemodel.models.GPCoeffs.get_RV">
-<code class="descname">get_RV</code><span class="sig-paren">(</span><em>rv</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#GPCoeffs.get_RV"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.GPCoeffs.get_RV" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check both self and parent model for rv</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="buqeyemodel.models.InCoeffs">
-<em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">InCoeffs</code><span class="sig-paren">(</span><em>X</em>, <em>obs</em>, <em>orders</em>, <em>rm_orders=None</em>, <em>ref=1</em>, <em>Q_est=1</em>, <em>grid=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#InCoeffs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.InCoeffs" title="Permalink to this definition">¶</a></dt>
-<dd><p>The observables are treated as sums of weighted Gaussian random variables.</p>
-<p>[description]</p>
-<dl class="method">
-<dt id="buqeyemodel.models.InCoeffs.error_interval">
-<code class="descname">error_interval</code><span class="sig-paren">(</span><em>alpha</em>, <em>a</em>, <em>b</em>, <em>rescale=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#InCoeffs.error_interval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.InCoeffs.error_interval" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the centered degree of belief interval for Delta_k</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>alpha</strong> : float or ndarray</p>
-<blockquote>
-<div><p>The specifies the 100*alpha% interval</p>
-</div></blockquote>
-<p><strong>a</strong> : float</p>
-<blockquote>
-<div><p>The hyperparameter of the variance prior <cite>InvGam(a, b)</cite></p>
-</div></blockquote>
-<p><strong>b</strong> : float</p>
-<blockquote>
-<div><p>The hyperparameter of the variance prior <cite>InvGam(a, b)</cite></p>
-</div></blockquote>
-<p><strong>rescale</strong> : bool, optional</p>
-<blockquote>
-<div><p>Whether or not the dimensionless error is scaled relative to the
-highest order observable obs_k, that is, obs_k + ref * error, the
-default is True</p>
-</div></blockquote>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">tuple</p>
-<blockquote class="last">
-<div><p>The lower and upper bounds of the error interval</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="buqeyemodel.models.InCoeffs.fQ_pdf">
-<code class="descname">fQ_pdf</code><span class="sig-paren">(</span><em>fQ</em>, <em>a</em>, <em>b</em>, <em>a_fQ</em>, <em>b_fQ</em>, <em>scale=1.0</em>, <em>inverted=False</em>, <em>combine=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#InCoeffs.fQ_pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.InCoeffs.fQ_pdf" title="Permalink to this definition">¶</a></dt>
-<dd><p>The approximately normalized pdf for the expansion parameter.</p>
-<p>The pdf is normalized using the trapezoid rule based on the input
-points fQ. Hence fine grids that capture the probability mass will
-be accurately normalized.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>fQ</strong> : ndarray</p>
-<blockquote>
-<div><p>A function f of the expansion parameter Q: f(Q)</p>
-</div></blockquote>
-<p><strong>a</strong> : float</p>
-<blockquote>
-<div><p>[description]</p>
-</div></blockquote>
-<p><strong>b</strong> : float</p>
-<blockquote>
-<div><p>[description]</p>
-</div></blockquote>
-<p><strong>a_expar</strong> : float</p>
-<blockquote>
-<div><p>[description]</p>
-</div></blockquote>
-<p><strong>b_expar</strong> : float</p>
-<blockquote>
-<div><p>[description]</p>
-</div></blockquote>
-<p><strong>scale</strong> : float, optional</p>
-<blockquote>
-<div><p>[description] the default is 1.0</p>
-</div></blockquote>
-<p><strong>inverted</strong> : bool, optional</p>
-<blockquote>
-<div><p>[description] (the default is False, which [default_description])</p>
-</div></blockquote>
-<p><strong>combine</strong> : bool, optional</p>
-<blockquote>
-<div><p>Whether the obserables should use a common expansion parameter, the
-default is True</p>
-</div></blockquote>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">ndarray</p>
-<blockquote class="last">
-<div><p>The pdf for f(Q)</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="buqeyemodel.models.InCoeffs.fQ_ulogpdf">
-<code class="descname">fQ_ulogpdf</code><span class="sig-paren">(</span><em>fQ</em>, <em>a</em>, <em>b</em>, <em>a_fQ</em>, <em>b_fQ</em>, <em>scale=1.0</em>, <em>inverted=False</em>, <em>combine=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#InCoeffs.fQ_ulogpdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.InCoeffs.fQ_ulogpdf" title="Permalink to this definition">¶</a></dt>
-<dd><p>The unnormalized logpdf for the expansion parameter.</p>
-<p>See the docstring for expar_pdf.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="buqeyemodel.models.MvBLM">
-<em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">MvBLM</code><span class="sig-paren">(</span><em>dim=None</em>, <em>basis=None</em>, <em>means=None</em>, <em>cov=None</em>, <em>shape=None</em>, <em>scale=None</em>, <em>corr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#MvBLM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.MvBLM" title="Permalink to this definition">¶</a></dt>
-<dd><p>A multivariate Bayesian linear model class</p>
-<p>Implements a Bayesian linear model for an Nx1 vector Y:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>Y ~ N(Heta, \sigma^2 R)
-</pre></div>
-</div>
-<p>with an Nxq matrix H, qx1 vector eta, scalar sigma^2, and NxN
-correlation matrix R. A normal-inverse-gamma prior is placed on eta and
-sigma^2:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>eta, \sigma^2 ~ NIG(means, cov, shape, scale)
-</pre></div>
-</div>
-<p>The matrix H is generated by a basis function.</p>
-<dl class="method">
-<dt id="buqeyemodel.models.MvBLM.corr_post">
-<code class="descname">corr_post</code><span class="sig-paren">(</span><em>logprior=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#MvBLM.corr_post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.MvBLM.corr_post" title="Permalink to this definition">¶</a></dt>
+<dt id="buqeyemodel.models.SGP.corr_post">
+<code class="descname">corr_post</code><span class="sig-paren">(</span><em>logprior=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.corr_post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.corr_post" title="Permalink to this definition">¶</a></dt>
 <dd><p>Evaluates the posterior for the correlation parameters in corr_kwargs</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -298,50 +167,408 @@ array broadcasting rules apply</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.MvBLM.predictive">
-<code class="descname">predictive</code><span class="sig-paren">(</span><em>X</em>, <em>corr=False</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#MvBLM.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.MvBLM.predictive" title="Permalink to this definition">¶</a></dt>
+<dt id="buqeyemodel.models.SGP.predictive">
+<code class="descname">predictive</code><span class="sig-paren">(</span><em>Xnew</em>, <em>corr=False</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.predictive" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a posterior predictive distribution object</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="class">
-<dt id="buqeyemodel.models.GeoProcess">
-<em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">GeoProcess</code><span class="sig-paren">(</span><em>dim=None</em>, <em>basis=None</em>, <em>means=None</em>, <em>cov=None</em>, <em>shape=None</em>, <em>scale=None</em>, <em>corr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#GeoProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.GeoProcess" title="Permalink to this definition">¶</a></dt>
-<dd><p>A geometric series with iid random processes as coefficients.</p>
+<dt id="buqeyemodel.models.PowerProcess">
+<em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">PowerProcess</code><span class="sig-paren">(</span><em>dim=None</em>, <em>basis=None</em>, <em>means=None</em>, <em>cov=None</em>, <em>shape=None</em>, <em>scale=None</em>, <em>corr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess" title="Permalink to this definition">¶</a></dt>
+<dd><p>A power series with iid random processes as coefficients.</p>
 <p>Implements the following model</p>
 <div class="math">
-\[X_k = X_{\mathrm{ref}} \sum_{n=0}^k c_n Q^n\]</div>
+\[S_k(x) = S_{\mathrm{ref}}(x) \sum_{n=0}^k c_n(x) r(x)^n\]</div>
 <p>where the <span class="math">\(c_n\)</span> are Gaussian processes with parameters using
 conjugate priors</p>
 <div class="math">
-\[\begin{split}c_n | \beta, \sigma^{2} &amp; \sim N(H \beta, \sigma^2 R) \\
+\[\begin{split}c_n(x) | \beta, \sigma^2, \psi &amp; \sim N(m(x), \sigma^2 R(x,x;\psi)) \\
 \beta, \sigma^2 &amp; \sim NIG(\mu, V, a, b)\end{split}\]</div>
-<p>Conditioning on partial sums <span class="math">\(X_{0}\)</span>, <span class="math">\(\dots,\)</span> <span class="math">\(X_k\)</span>, allow
-one to estimate the full summation and obtain posteriors for the parameters.</p>
+<p>Conditioning on partial sums <span class="math">\(S_{0}\)</span>, <span class="math">\(\dots,\)</span> <span class="math">\(S_k\)</span>,
+allow one to estimate the full summation and obtain posteriors for the
+parameters.</p>
 <dl class="method">
-<dt id="buqeyemodel.models.GeoProcess.predictive">
-<code class="descname">predictive</code><span class="sig-paren">(</span><em>X</em>, <em>corr=False</em>, <em>max_order=None</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#GeoProcess.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.GeoProcess.predictive" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a posterior predictive distribution object</p>
+<dt id="buqeyemodel.models.PowerProcess.condition">
+<code class="descname">condition</code><span class="sig-paren">(</span><em>Xnew</em>, <em>index</em>, <em>dob=None</em>, <em>rescale=True</em>, <em>ignore_rm=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.condition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conditions on observed data and returns interpolant and error bands.</p>
+<p>Extracts the mean and degree of belief intervals from the corresponding
+conditional object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Xnew</strong> : 2D array</p>
+<blockquote>
+<div><p>The new input points at which to predict the values of the
+coefficients or partial sums.</p>
+</div></blockquote>
+<p><strong>order</strong> : int</p>
+<blockquote>
+<div><p>The order of the partial sum to interpolate.</p>
+</div></blockquote>
+<p><strong>dob</strong> : scalar or 1D array, optional</p>
+<blockquote>
+<div><p>The degree of belief intervals to compute, between 0 and 1.</p>
+</div></blockquote>
+<p><strong>rescale</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether or not to rescale the coefficient back to a partial sum.
+If rescaled, conditionals for all previous orders must be computed
+to predict the value of the partial sum. Defaults to <code class="docutils literal"><span class="pre">True</span></code></p>
+</div></blockquote>
+<p><strong>ratio_kwargs</strong> : dict, optional</p>
+<blockquote>
+<div><p>Additional keyword arguments passed to the ratio function. Defaults
+to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>Additional keyword arguments passed to the correlation function.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">1D array or tuple</p>
+<blockquote class="last">
+<div><p>If <code class="docutils literal"><span class="pre">dob</span> <span class="pre">is</span> <span class="pre">None</span></code>, then only the 1D array of predictions is
+returned. Otherwise, the predictions along with a
+<span class="math">\(2 \times N\)</span> (or <span class="math">\(len(dob) \times 2 \times N\)</span>) of
+degree of belief intervals is returned.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.PowerProcess.conditional">
+<code class="descname">conditional</code><span class="sig-paren">(</span><em>Xnew</em>, <em>index</em>, <em>corr=False</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.conditional"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.conditional" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a conditional distribution object anchored to observed points.</p>
+<p>The conditional distribution of the coefficients, or partial sums, is
+marginalized over the means and variance parameter.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Xnew</strong> : 2D array</p>
+<blockquote>
+<div><p>The new input points at which to predict the values of the
+coefficients or partial sums.</p>
+</div></blockquote>
+<p><strong>order</strong> : int</p>
+<blockquote>
+<div><p>The order of the partial sum to interpolate.</p>
+</div></blockquote>
+<p><strong>corr</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether or not the conditional distribution is correlated in the
+input space. If <code class="docutils literal"><span class="pre">corr</span> <span class="pre">=</span> <span class="pre">False</span></code>, then a <code class="docutils literal"><span class="pre">scipy.stats.t</span></code>
+object is returned, otherwise a
+<code class="docutils literal"><span class="pre">statsmodels.sandbox.distributions.mv_normal.MVT</span></code> object is
+returned. For visualizing the mean and marginal variance, an
+uncorrelated conditional often suffices. Defaults to <code class="docutils literal"><span class="pre">False</span></code>.</p>
+</div></blockquote>
+<p><strong>rescale</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether or not to rescale the coefficient back to a partial sum.
+If rescaled, conditionals for all previous orders must be computed
+to predict the value of the partial sum. Defaults to <code class="docutils literal"><span class="pre">True</span></code>.</p>
+</div></blockquote>
+<p><strong>ratio_kwargs</strong> : dict, optional</p>
+<blockquote>
+<div><p>Additional keyword arguments passed to the ratio function. Defaults
+to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote class="last">
+<div><p>Additional keyword arguments passed to the correlation function.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.PowerProcess.observe">
+<code class="descname">observe</code><span class="sig-paren">(</span><em>X</em>, <em>partials</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em>, <em>leading_kwargs=None</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.observe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Observe the partial sums of the series and update parameters.</p>
+<p>The partial sums are observed at the input locations <code class="docutils literal"><span class="pre">X</span></code>.
+Using the given <code class="docutils literal"><span class="pre">ratio</span></code> and <code class="docutils literal"><span class="pre">ref</span></code>, the coefficients of the series
+are extracted and are used to create posterior distributions for the
+mean and variance parameters. One can then interpolate partial sums or
+predict the value of the full summation at new points. Additional
+functionality, including evidence calculations and posteriors for the
+ratio and correlation functions are possible.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : <span class="math">\(N \times d\)</span> array</p>
+<blockquote>
+<div><p>The :math`N` input locations where the partial sums are observed.
+Columns correspond to the dimensionality of the input space. If 1D,
+<code class="docutils literal"><span class="pre">X</span></code> must be an <span class="math">\(N \times 1\)</span> column vector.</p>
+</div></blockquote>
+<p><strong>partials</strong> : <span class="math">\(n \times N\)</span> array</p>
+<blockquote>
+<div><p>The <span class="math">\(n\)</span> lowest known partial sums, each with <span class="math">\(N\)</span> points
+observed along each curve.</p>
+</div></blockquote>
+<p><strong>ratio</strong> : callable, scalar, or length <span class="math">\(N\)</span> 1D array</p>
+<blockquote>
+<div><p>The value of the ratio that scales each order in the power
+series with increasing powers. If callable, it must accept <code class="docutils literal"><span class="pre">X</span></code>
+as its first argument and can optionally accept <a href="#id1"><span class="problematic" id="id2">**</span></a>ratio_kwargs.</p>
+</div></blockquote>
+<p><strong>ref</strong> : callable, scalar, or length <span class="math">\(N\)</span> 1D array</p>
+<blockquote>
+<div><p>The overall scale of the power series. If callable, it must
+accept <code class="docutils literal"><span class="pre">X</span></code> as its first argument. The default value is 1.</p>
+</div></blockquote>
+<p><strong>orders</strong> : 1D array</p>
+<blockquote>
+<div><p>The orders of the given partial sums. If <code class="docutils literal"><span class="pre">None</span></code>, it is assumed
+that all orders from 0 to math:<cite>n</cite> are given: <code class="docutils literal"><span class="pre">[0,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">n]</span></code>.</p>
+</div></blockquote>
+<p><strong>rm_orders</strong> : 1D array</p>
+<blockquote>
+<div><p>The orders of partial sums, if any, to ignore during conditioning.
+This could be useful if it is known that some coefficients will
+not behave as Gaussian processes.</p>
+</div></blockquote>
+<p><strong>ratio_kwargs</strong> : dict</p>
+<blockquote>
+<div><p>Additional keyword arguments passed to the ratio function. Defaults
+to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote class="last">
+<div><p>Additional keyword arguments passed to the correlation function.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.PowerProcess.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>Xnew</em>, <em>dob=None</em>, <em>max_order=None</em>, <em>rescale=True</em>, <em>ignore_rm=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predicts the power series value and provides error bands.</p>
+<p>Gets the mean value of the predictive distribution and computes
+the degree of belief interval.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Xnew</strong> : 2D array</p>
+<blockquote>
+<div><p>The new input points at which to predict the values of the
+coefficients or partial sums.</p>
+</div></blockquote>
+<p><strong>dob</strong> : scalar or 1D array, optional</p>
+<blockquote>
+<div><p>The degree of belief intervals to compute, between 0 and 1.</p>
+</div></blockquote>
+<p><strong>max_order</strong> : int, optional</p>
+<blockquote>
+<div><p>The order at which to truncate the power series.
+Defaults to <code class="docutils literal"><span class="pre">None</span></code>, which corresponds to an infinite sum.</p>
+</div></blockquote>
+<p><strong>rescale</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether or not to rescale the coefficient back to a partial sum.
+If rescaled, conditionals for all previous orders must be computed
+to predict the value of the partial sum. Defaults to <code class="docutils literal"><span class="pre">True</span></code>.</p>
+</div></blockquote>
+<p><strong>ratio_kwargs</strong> : dict, optional</p>
+<blockquote>
+<div><p>Additional keyword arguments passed to the ratio function. Defaults
+to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>Additional keyword arguments passed to the correlation function.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">1D array or tuple</p>
+<blockquote class="last">
+<div><p>If <code class="docutils literal"><span class="pre">dob</span> <span class="pre">is</span> <span class="pre">None</span></code>, then only the 1D array of predictions is
+returned. Otherwise, the predictions along with a
+<span class="math">\(2 \times N\)</span> (or <span class="math">\(len(dob) \times 2 \times N\)</span>) of
+degree of belief intervals is returned.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.PowerProcess.predictive">
+<code class="descname">predictive</code><span class="sig-paren">(</span><em>Xnew</em>, <em>corr=False</em>, <em>max_order=None</em>, <em>rescale=True</em>, <em>ignore_rm=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.predictive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a posterior predictive distribution object.</p>
+<p>Predicts the value of the power series up to <code class="docutils literal"><span class="pre">max_order</span></code> at
+the input locations <code class="docutils literal"><span class="pre">X</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : 2D array</p>
+<blockquote>
+<div><p>The new input points at which to predict the values of the
+coefficients or partial sums.</p>
+</div></blockquote>
+<p><strong>corr</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether or not the distribution is correlated in the
+input space. If <code class="docutils literal"><span class="pre">corr</span> <span class="pre">=</span> <span class="pre">False</span></code>, then a <code class="docutils literal"><span class="pre">scipy.stats.t</span></code>
+object is returned, otherwise a
+<code class="docutils literal"><span class="pre">statsmodels.sandbox.distributions.mv_normal.MVT</span></code> object is
+returned. For visualizing the mean and marginal variance, an
+uncorrelated conditional often suffices. Defaults to <code class="docutils literal"><span class="pre">False</span></code>.</p>
+</div></blockquote>
+<p><strong>max_order</strong> : int, optional</p>
+<blockquote>
+<div><p>The order at which to truncate the power series.
+Defaults to <code class="docutils literal"><span class="pre">None</span></code>, which corresponds to an infinite sum.</p>
+</div></blockquote>
+<p><strong>rescale</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether or not to rescale the coefficient back to a partial sum.
+If rescaled, conditionals for all previous orders must be computed
+to predict the value of the partial sum. Defaults to <code class="docutils literal"><span class="pre">True</span></code>.</p>
+</div></blockquote>
+<p><strong>ratio_kwargs</strong> : dict, optional</p>
+<blockquote>
+<div><p>Additional keyword arguments passed to the ratio function. Defaults
+to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote class="last">
+<div><p>Additional keyword arguments passed to the correlation function.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="class">
-<dt id="buqeyemodel.models.GeoSeries">
-<em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">GeoSeries</code><span class="sig-paren">(</span><em>shape=None</em>, <em>scale=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#GeoSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.GeoSeries" title="Permalink to this definition">¶</a></dt>
-<dd><p>A geometric series with iid random variables as coefficients.</p>
+<dt id="buqeyemodel.models.PowerSeries">
+<em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">PowerSeries</code><span class="sig-paren">(</span><em>shape=None</em>, <em>scale=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries" title="Permalink to this definition">¶</a></dt>
+<dd><p>A power series with iid random variables as coefficients.</p>
 <p>Implements the following model</p>
 <div class="math">
-\[X_k = X_{\mathrm{ref}} \sum_{n=0}^k c_n Q^n\]</div>
+\[S_k = S_{\mathrm{ref}} \sum_{n=0}^k c_n r^n\]</div>
 <p>where the <span class="math">\(c_n\)</span> are iid Gaussians and <span class="math">\(\sigma^2\)</span> has a
 conjugate prior</p>
 <div class="math">
 \[\begin{split}c_n | \sigma^2 &amp; \sim N(0, \sigma^2) \\
 \sigma^2 &amp; \sim IG(a, b)\end{split}\]</div>
-<p>Conditioning on partial sums <span class="math">\(X_0\)</span>, <span class="math">\(\dots,\)</span> <span class="math">\(X_k\)</span>, allow
+<p>Conditioning on partial sums <span class="math">\(S_0\)</span>, <span class="math">\(\dots,\)</span> <span class="math">\(S_k\)</span>, allow
 one to estimate the full summation and obtain posteriors for the
 parameters.</p>
+<dl class="method">
+<dt id="buqeyemodel.models.PowerSeries.observe">
+<code class="descname">observe</code><span class="sig-paren">(</span><em>partials</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em>, <em>rm_orders=None</em>, <em>X=None</em>, <em>combine=False</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries.observe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Observe the partial sums of the series and update parameters.</p>
+<p>The partial sums are observed and converted to coefficients
+using the given <code class="docutils literal"><span class="pre">ratio</span></code> and <code class="docutils literal"><span class="pre">ref</span></code>. Posterior distributions for the
+mean and variance parameters can then be calculated.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>partials</strong> : <span class="math">\(n     imes N\)</span> array</p>
+<blockquote>
+<div><p>The <span class="math">\(n\)</span> lowest known partial sums, each with <span class="math">\(N\)</span> points
+observed along each curve.</p>
+</div></blockquote>
+<p><strong>ratio</strong> : callable, scalar, or length <span class="math">\(N\)</span> 1D array</p>
+<blockquote>
+<div><p>The value of the ratio that scales each order in the power
+series with increasing powers. If callable, it must accept <code class="docutils literal"><span class="pre">X</span></code>
+as its first argument and can optionally accept <a href="#id3"><span class="problematic" id="id4">**</span></a>ratio_kwargs.</p>
+</div></blockquote>
+<p><strong>ref</strong> : callable, scalar, or length <span class="math">\(N\)</span> 1D array</p>
+<blockquote>
+<div><p>The overall scale of the power series. If callable, it must
+accept <code class="docutils literal"><span class="pre">X</span></code> as its first argument. The default value is 1.</p>
+</div></blockquote>
+<p><strong>orders</strong> : 1D array</p>
+<blockquote>
+<div><p>The orders of the given partial sums. If <code class="docutils literal"><span class="pre">None</span></code>, it is assumed
+that all orders from 0 to math:<cite>n</cite> are given: <code class="docutils literal"><span class="pre">[0,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">n]</span></code>.</p>
+</div></blockquote>
+<p><strong>rm_orders</strong> : 1D array</p>
+<blockquote>
+<div><p>The orders of partial sums, if any, to ignore during conditioning.
+This could be useful if it is known that some coefficients will
+not behave as Gaussian processes.</p>
+</div></blockquote>
+<p><strong>X</strong> : <span class="math">\(N    imes d\)</span> array, optional</p>
+<blockquote>
+<div><p>The :math`N` input locations where the partial sums are observed.
+Columns correspond to the dimensionality of the input space. If 1D,
+<code class="docutils literal"><span class="pre">X</span></code> must be an <span class="math">\(N   imes 1\)</span> column vector.</p>
+</div></blockquote>
+<p><strong>combine</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether to combine observations for computing posteriors.</p>
+</div></blockquote>
+<p><strong>**ratio_kwargs</strong> : optional</p>
+<blockquote class="last">
+<div><p>Additional keyword arguments passed to the ratio function. Defaults
+to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.PowerSeries.scale">
+<code class="descname">scale</code><span class="sig-paren">(</span><em>combine=False</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries.scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries.scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>The scale parameter <span class="math">\(b\)</span> of the inverse gamma distribution.</p>
+<p>[description]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>**ratio_kwargs</strong> : {[type]}</p>
+<blockquote>
+<div><p>[description]</p>
+</div></blockquote>
+<p><strong>combine</strong> : {bool}, optional</p>
+<blockquote>
+<div><p>[description] (the default is False, which [default_description])</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">[type]</p>
+<blockquote class="last">
+<div><p>[description]</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.PowerSeries.shape">
+<code class="descname">shape</code><span class="sig-paren">(</span><em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries.shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries.shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The shape parameter <span class="math">\(a\)</span> of the inverse gamma distribution.</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
