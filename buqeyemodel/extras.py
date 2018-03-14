@@ -5,21 +5,10 @@ import theano.tensor as tt
 import numpy as np
 
 
-__all__ = ['Exponential']
-
-
-class Exponential(pm.gp.mean.Mean):
-
-    def __init__(self, b=1, active_dim=0):
-        super(Exponential, self).__init__()
-        self.b = b
-        if not isinstance(active_dim, int):
-            raise ValueError('active_dim must be an integer')
-        self.active_dim = active_dim
-
-    def __call__(self, X):
-        p = X[:, self.active_dim]
-        return self.b**p
+__all__ = [
+    'toy_data', 'coefficients', 'partials', 'stabilize', 'predictions',
+    'gaussian'
+]
 
 
 def toy_data(orders, mu=0, sd=1, Q=0.5, ref=1, ls=None, noise=1e-6, X=None, size=None):
@@ -45,8 +34,8 @@ def toy_data(orders, mu=0, sd=1, Q=0.5, ref=1, ls=None, noise=1e-6, X=None, size
     return obs
 
 
-def coefficients(partials, ratio, X=None, ref=1, orders=None, rm_orders=None, **ratio_kwargs):
-    """Returns the coefficients and orders of the geometric series partial sums
+def coefficients(partials, ratio, X=None, ref=1, orders=None, **ratio_kwargs):
+    """Returns the coefficients of a power series
 
     Parameters
     ----------
@@ -70,8 +59,8 @@ def coefficients(partials, ratio, X=None, ref=1, orders=None, rm_orders=None, **
 
     if orders is None:
         orders = np.asarray(list(range(len(partials))))
-    if rm_orders is None:
-        rm_orders = []
+    # if rm_orders is None:
+    #     rm_orders = []
 
     if len(orders) != len(partials):
         raise ValueError('partials and orders must have the same length')
@@ -85,13 +74,45 @@ def coefficients(partials, ratio, X=None, ref=1, orders=None, rm_orders=None, **
     coeffs = coeffs / (ref * ratio_vals**ordervec)
 
     # Remove unwanted orders
-    keepers = np.logical_not(np.isin(orders, rm_orders))
-    coeffs = coeffs[keepers]
-    orders = orders[keepers]
-    return coeffs, orders
+    # keepers = np.logical_not(np.isin(orders, rm_orders))
+    # coeffs = coeffs[keepers]
+    # orders = orders[keepers]
+    return coeffs
 
 
 def partials(coeffs, ratio, X=None, ref=1, orders=None, **ratio_kwargs):
+    """Returns the partial sums of a power series given the coefficients
+
+    The ``k``th partial sum is given by
+
+    .. math::
+
+        S_k = S_{\mathrm{ref}} \sum_{n=0}^k c_n r^n
+
+    Parameters
+    ----------
+    coeffs : (n, N) array
+        The n lowest order coefficients in a power series
+    ratio : callable, scalar, or (N,) array
+        The ratio variable that is raised to the nth power in the nth term of
+        the sum
+    X : (N, d) array, optional
+        Input points passed to the ratio callable
+    ref : (N,) array, optional
+        The overall multiplicative scale of the series, default is 1
+    orders : (n,) array, optional
+        The orders corresponding to the given coefficients. All ungiven
+        orders are assumed to have coefficients equal to zero. The default
+        assumes that the n lowest order coefficients are given:
+        ``[0, 1, ..., n-1]``.
+    **ratio_kwargs : optional
+        Keywords passed to the ratio callable
+
+    Returns
+    -------
+    (n, N) array
+        The partial sums
+    """
     if callable(ratio):
         ratio_vals = ratio(X, **ratio_kwargs)
     else:
@@ -112,6 +133,21 @@ def stabilize(M):
 
 
 def predictions(dist, dob=None):
+    """Return the mean and set of degree of belief intervals for a distribution
+
+    Parameters
+    ----------
+    dist : distribution object
+    dob : scalar or 1D array
+
+    Returns
+    -------
+    array or tuple
+        If dob is None, just the mean is returned, else a tuple of the mean and
+        degree of belief intervals is returned. The interval array is shaped
+        (len(dob), 2, len(mean)) and is then squeezed to remove all axes of
+        length 1.
+    """
     mean = dist.mean()
     if dob is not None:
         dob = np.atleast_2d(dob).T
@@ -123,6 +159,14 @@ def predictions(dist, dob=None):
     return mean
 
 
-def gaussian(X, Xp=None, ls=1, v=None):
+def gaussian(X, Xp=None, ls=1):
+    """A gaussian correlation function
+
+    Parameters
+    ----------
+    X : (N, d) array
+    Xp : (M, d) array, optional
+    ls : scalar
+    """
     cov = pm.gp.cov.ExpQuad(input_dim=X.shape[-1], ls=ls)
     return cov(X, Xp).eval()

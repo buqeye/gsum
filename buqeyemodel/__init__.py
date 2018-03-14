@@ -1,11 +1,10 @@
-from .models import GPCoeffs
-from .models import InCoeffs
-from .models import MvBLM
-from .models import GeoSeries
-from .models import GeoProcess
+from .models import SGP
+from .models import PowerSeries
+from .models import PowerProcess
 
-from .extras import Exponential
+from .extras import toy_data
+from .extras import coefficients
 from .extras import partials
 from .extras import predictions
+from .extras import stabilize
 from .extras import gaussian
-from .extras import coefficients

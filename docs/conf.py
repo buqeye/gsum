@@ -43,10 +43,6 @@ extensions = [
     'nbsphinx',
 ]
 
-# .mi { color: #000000 } /* Literal.Number.Integer */
-# .mo {color: #000000;} /* Literal.Number.Oct */
-# .mn { color: #009999 } /* I don't know, something to make TeX nums look ok */
-
 # Don't auto-generate summary for class members.
 numpydoc_show_class_members = False
 
@@ -158,15 +154,6 @@ htmlhelp_basename = 'buqeyemodeldoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
-# For colors
-mypreamble = '''
-\\pagenumbering{arabic}
-\\definecolor{TitleColor}{rgb}{1,0,0}
-\\definecolor{InnerLinkColor}{rgb}{1,0,0}
-\\usepackage{xcolor}
-\\color{black}
-'''
-
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
@@ -178,7 +165,7 @@ latex_elements = {
 
     # Additional stuff for the LaTeX preamble.
     #
-    'preamble': mypreamble,
+    # 'preamble': '',
 
     # Latex figure (float) alignment
     #
