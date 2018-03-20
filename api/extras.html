@@ -34,7 +34,6 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="Models" href="models.html" />
   
    
 
@@ -49,11 +48,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="models.html" title="Models"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">buqeyemodel 0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../api.html" accesskey="U">API Reference</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">buqeyemodel 0.1 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="container-wrapper">
@@ -71,14 +66,10 @@
   <div class="sidebar-toc">
     
     
-      <ul class="current">
+      <ul>
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Extras</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
 </ul>
 
     
@@ -106,148 +97,19 @@
             <ol class="breadcrumb">
               <li><a href="../index.html">Docs</a></li>
               
-                <li><a href="../api.html">API Reference</a></li>
-              
               <li>Extras</li>
             </ol>
           </div>
           
           <div class="document clearer body">
             
-  <div class="section" id="module-buqeyemodel.extras">
-<span id="extras"></span><h1>Extras<a class="headerlink" href="#module-buqeyemodel.extras" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="buqeyemodel.extras.coefficients">
-<code class="descclassname">buqeyemodel.extras.</code><code class="descname">coefficients</code><span class="sig-paren">(</span><em>partials</em>, <em>ratio</em>, <em>X=None</em>, <em>ref=1</em>, <em>orders=None</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/extras.html#coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.extras.coefficients" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the coefficients of a power series</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>partials</strong> : 2d array</p>
-<p><strong>ratio</strong> : 1d array, scalar, or callable</p>
-<p><strong>X</strong> : 2d array (optional)</p>
-<p><strong>ref</strong> : 1d array or scalar (optional)</p>
-<p><strong>orders</strong> : 1d array (optional)</p>
-<p><strong>rm_orders</strong> : 1d array (optional)</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">tuple</p>
-<p>An (n, N) array of the extracted coefficients and a (n,) array of their</p>
-<p class="last">corresponding orders</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="buqeyemodel.extras.partials">
-<code class="descclassname">buqeyemodel.extras.</code><code class="descname">partials</code><span class="sig-paren">(</span><em>coeffs</em>, <em>ratio</em>, <em>X=None</em>, <em>ref=1</em>, <em>orders=None</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/extras.html#partials"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.extras.partials" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the partial sums of a power series given the coefficients</p>
-<p>The <a href="#id1"><span class="problematic" id="id2">``</span></a>k``th partial sum is given by</p>
-<div class="math">
-\[S_k = S_{\mathrm{ref}} \sum_{n=0}^k c_n r^n\]</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>coeffs</strong> : (n, N) array</p>
-<blockquote>
-<div><p>The n lowest order coefficients in a power series</p>
-</div></blockquote>
-<p><strong>ratio</strong> : callable, scalar, or (N,) array</p>
-<blockquote>
-<div><p>The ratio variable that is raised to the nth power in the nth term of
-the sum</p>
-</div></blockquote>
-<p><strong>X</strong> : (N, d) array, optional</p>
-<blockquote>
-<div><p>Input points passed to the ratio callable</p>
-</div></blockquote>
-<p><strong>ref</strong> : (N,) array, optional</p>
-<blockquote>
-<div><p>The overall multiplicative scale of the series, default is 1</p>
-</div></blockquote>
-<p><strong>orders</strong> : (n,) array, optional</p>
-<blockquote>
-<div><p>The orders corresponding to the given coefficients. All ungiven
-orders are assumed to have coefficients equal to zero. The default
-assumes that the n lowest order coefficients are given:
-<code class="docutils literal"><span class="pre">[0,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">n-1]</span></code>.</p>
-</div></blockquote>
-<p><strong>**ratio_kwargs</strong> : optional</p>
-<blockquote>
-<div><p>Keywords passed to the ratio callable</p>
-</div></blockquote>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(n, N) array</p>
-<blockquote class="last">
-<div><p>The partial sums</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="buqeyemodel.extras.predictions">
-<code class="descclassname">buqeyemodel.extras.</code><code class="descname">predictions</code><span class="sig-paren">(</span><em>dist</em>, <em>dob=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/extras.html#predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.extras.predictions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the mean and set of degree of belief intervals for a distribution</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>dist</strong> : distribution object</p>
-<p><strong>dob</strong> : scalar or 1D array</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">array or tuple</p>
-<blockquote class="last">
-<div><p>If dob is None, just the mean is returned, else a tuple of the mean and
-degree of belief intervals is returned. The interval array is shaped
-(len(dob), 2, len(mean)) and is then squeezed to remove all axes of
-length 1.</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="buqeyemodel.extras.gaussian">
-<code class="descclassname">buqeyemodel.extras.</code><code class="descname">gaussian</code><span class="sig-paren">(</span><em>X</em>, <em>Xp=None</em>, <em>ls=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/extras.html#gaussian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.extras.gaussian" title="Permalink to this definition">¶</a></dt>
-<dd><p>A gaussian correlation function</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : (N, d) array</p>
-<p><strong>Xp</strong> : (M, d) array, optional</p>
-<p class="last"><strong>ls</strong> : scalar</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
+  <div class="section" id="extras">
+<h1>Extras<a class="headerlink" href="#extras" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
           </div>
             
-  <div class="footer-relations">
-    
-      <div class="pull-left">
-        <a class="btn btn-default" href="models.html" title="previous chapter (use the left arrow)">Models</a>
-      </div>
-    
-    </div>
-    <div class="clearer"></div>
-  
         </div>
         <div class="clearfix"></div>
     </div>
@@ -260,11 +122,7 @@ length 1.</p>
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="models.html" title="Models"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">buqeyemodel 0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../api.html" >API Reference</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">buqeyemodel 0.1 documentation</a> &#187;</li> 
       </ul>
     </div>
 <script type="text/javascript">

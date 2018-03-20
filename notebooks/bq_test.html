@@ -34,7 +34,7 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="API Reference" href="../api.html" />
+    <link rel="next" title="Bayesian truncation errors in chiral effective field theory: A Recap" href="truncation_recap.html" />
     <link rel="prev" title="Examples" href="../examples.html" />
   
    
@@ -51,7 +51,7 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="../api.html" title="API Reference"
+          <a href="truncation_recap.html" title="Bayesian truncation errors in chiral effective field theory: A Recap"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="../examples.html" title="Examples"
@@ -79,6 +79,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../examples.html">Examples</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">BUQEYE Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="truncation_recap.html">Bayesian truncation errors in chiral effective field theory: A Recap</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
@@ -304,16 +305,16 @@ div.nboutput div.output_area.stderr {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">pickle</span>
-<span class="kn">import</span> <span class="nn">pymc3</span> <span class="k">as</span> <span class="nn">pm</span>
-<span class="kn">from</span> <span class="nn">pymc3.math</span> <span class="k">import</span> <span class="n">cartesian</span>
-<span class="kn">import</span> <span class="nn">scipy</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="kn">import</span> <span class="nn">pymc3</span> <span class="kn">as</span> <span class="nn">pm</span>
+<span class="kn">from</span> <span class="nn">pymc3.math</span> <span class="kn">import</span> <span class="n">cartesian</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="kn">as</span> <span class="nn">sp</span>
 <span class="kn">import</span> <span class="nn">theano</span>
-<span class="kn">import</span> <span class="nn">theano.tensor</span> <span class="k">as</span> <span class="nn">tt</span>
-<span class="kn">import</span> <span class="nn">buqeyemodel</span> <span class="k">as</span> <span class="nn">bq</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">theano.tensor</span> <span class="kn">as</span> <span class="nn">tt</span>
+<span class="kn">import</span> <span class="nn">buqeyemodel</span> <span class="kn">as</span> <span class="nn">bq</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="o">%</span><span class="k">matplotlib</span> inline
 </pre></div>
@@ -323,7 +324,7 @@ div.nboutput div.output_area.stderr {
 <h1>BUQEYE Model<a class="headerlink" href="#BUQEYE-Model" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="Setup">
 <h2>Setup<a class="headerlink" href="#Setup" title="Permalink to this headline">¶</a></h2>
-<p>First define the <code class="docutils literal"><span class="pre">ratio</span></code> function that will be used as the expansion
+<p>First define the <code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio</span></code> function that will be used as the expansion
 parameter</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
@@ -361,7 +362,7 @@ parameter</p>
     <span class="k">return</span> <span class="n">p_rel</span>
 
 
-<span class="k">def</span> <span class="nf">Q_approx</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">Lambda_b</span><span class="p">,</span> <span class="n">interaction</span><span class="p">,</span> <span class="n">single_expansion</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">Q_approx</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">Lambda_b</span><span class="p">,</span> <span class="n">interaction</span><span class="p">,</span> <span class="n">single_expansion</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">single_expansion</span><span class="p">:</span>
         <span class="n">m_pi</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">else</span><span class="p">:</span>
@@ -407,8 +408,8 @@ orders</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
-<span></span><span class="n">energy_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">351</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
-<span class="n">theta_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span></span><span class="n">energy_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">351</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span>
+<span class="n">theta_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span>
 <span class="n">Xall</span> <span class="o">=</span> <span class="n">cartesian</span><span class="p">(</span><span class="n">energy_all</span><span class="p">,</span> <span class="n">theta_all</span><span class="p">)</span>
 <span class="n">refs</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;5&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
 <span class="n">ref</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">LinearNDInterpolator</span><span class="p">(</span><span class="n">Xall</span><span class="p">,</span> <span class="n">refs</span><span class="p">)</span>
@@ -418,16 +419,16 @@ orders</p>
 </div>
 <div class="section" id="Usage">
 <h2>Usage<a class="headerlink" href="#Usage" title="Permalink to this headline">¶</a></h2>
-<p>Now that we have imported the data and defined both a <code class="docutils literal"><span class="pre">ratio</span></code> and
-<code class="docutils literal"><span class="pre">ref</span></code> function, we are ready to build the model and condition on data.</p>
+<p>Now that we have imported the data and defined both a <code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio</span></code> and
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">ref</span></code> function, we are ready to build the model and condition on data.</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
-<span></span><span class="n">energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">96</span><span class="p">])[:,</span> <span class="kc">None</span><span class="p">]</span>
-<span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">181</span><span class="p">,</span> <span class="mi">35</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span></span><span class="n">energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">96</span><span class="p">])[:,</span> <span class="bp">None</span><span class="p">]</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">181</span><span class="p">,</span> <span class="mi">35</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span>
 <span class="n">X</span> <span class="o">=</span> <span class="n">cartesian</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
 <span class="n">df_reduced</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">X</span><span class="p">))]</span>
 <span class="n">partials</span> <span class="o">=</span> <span class="n">df_reduced</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">:</span><span class="s1">&#39;5&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">T</span>
@@ -454,7 +455,7 @@ orders</p>
 </pre></div>
 </div>
 </div>
-<p>The <code class="docutils literal"><span class="pre">observable</span></code> object has been initialized with standard
+<p>The <code class="docutils literal highlight highlight-default"><span></span><span class="n">observable</span></code> object has been initialized with standard
 hyperparameters and has observed the partial sums that have been fed to
 it. Now we’d like to either predict the series value at unseen orders or
 interpolate some of the data that has been given to it already.</p>
@@ -464,8 +465,8 @@ interpolate some of the data that has been given to it already.</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
-<span></span><span class="n">energy_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">96</span><span class="p">])[:,</span> <span class="kc">None</span><span class="p">]</span>
-<span class="n">theta_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">181</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span></span><span class="n">energy_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">96</span><span class="p">])[:,</span> <span class="bp">None</span><span class="p">]</span>
+<span class="n">theta_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">181</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span>
 <span class="n">Xnew</span> <span class="o">=</span> <span class="n">cartesian</span><span class="p">(</span><span class="n">energy_new</span><span class="p">,</span> <span class="n">theta_new</span><span class="p">)</span>
 <span class="n">df_new</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">))]</span>
 <span class="n">partials_new</span> <span class="o">=</span> <span class="n">df_new</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">:</span><span class="s1">&#39;5&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">T</span>
@@ -473,7 +474,7 @@ interpolate some of the data that has been given to it already.</p>
 </pre></div>
 </div>
 </div>
-<p>The following code uses the <code class="docutils literal"><span class="pre">predict</span></code> method to compute a posterior
+<p>The following code uses the <code class="docutils literal highlight highlight-default"><span></span><span class="n">predict</span></code> method to compute a posterior
 for <span class="math">\(\Delta_k\)</span> and optionally rescale it by <span class="math">\(X_\text{ref}\)</span>
 and reshift by <span class="math">\(X_k\)</span>.</p>
 <div class="nbinput container">
@@ -485,14 +486,14 @@ and reshift by <span class="math">\(X_k\)</span>.</p>
 <span></span><span class="n">Xpred</span> <span class="o">=</span> <span class="n">Xnew</span>
 <span class="n">th</span> <span class="o">=</span> <span class="n">theta_new</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
 
-<span class="n">pred</span><span class="p">,</span> <span class="n">interval</span> <span class="o">=</span> <span class="n">observable</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xpred</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="p">[</span><span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">])</span>
+<span class="n">pred</span><span class="p">,</span> <span class="n">interval</span> <span class="o">=</span> <span class="n">observable</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xpred</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="p">[</span><span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">])</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 
 <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">th</span><span class="p">,</span> <span class="n">pred</span><span class="p">)</span>
 <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">th</span><span class="p">,</span> <span class="n">interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
 <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">th</span><span class="p">,</span> <span class="n">interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
 
-<span class="n">pred</span><span class="p">,</span> <span class="n">interval</span> <span class="o">=</span> <span class="n">observable</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xpred</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="p">[</span><span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">])</span>
+<span class="n">pred</span><span class="p">,</span> <span class="n">interval</span> <span class="o">=</span> <span class="n">observable</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xpred</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="p">[</span><span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">])</span>
 <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">th</span><span class="p">,</span> <span class="n">pred</span><span class="p">)</span>
 <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">th</span><span class="p">,</span> <span class="n">interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
 <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">th</span><span class="p">,</span> <span class="n">interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
@@ -517,7 +518,7 @@ and reshift by <span class="math">\(X_k\)</span>.</p>
 <img alt="../_images/notebooks_bq_test_14_1.png" src="../_images/notebooks_bq_test_14_1.png" />
 </div>
 </div>
-<p><code class="docutils literal"><span class="pre">conditional</span></code> works differently than <code class="docutils literal"><span class="pre">predict</span></code>. It interpolates the
+<p><code class="docutils literal highlight highlight-default"><span></span><span class="n">conditional</span></code> works differently than <code class="docutils literal highlight highlight-default"><span></span><span class="n">predict</span></code>. It interpolates the
 unseen values of a given order using knowledge of the underlying
 Gaussian process from the observed points. It too can be rescaled and
 reshifted.</p>
@@ -543,7 +544,7 @@ reshifted.</p>
 <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 
 <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">theta_new</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">theta_new</span><span class="p">)),</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">rescale</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">]):</span>
+<span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">rescale</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="bp">False</span><span class="p">,</span> <span class="bp">True</span><span class="p">]):</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">order</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">orders</span><span class="p">[:</span><span class="n">max_index</span><span class="p">]):</span>
         <span class="n">cond</span><span class="p">,</span> <span class="n">cond_int</span> <span class="o">=</span> <span class="n">observable</span><span class="o">.</span><span class="n">condition</span><span class="p">(</span><span class="n">Xnew</span><span class="o">=</span><span class="n">Xnew</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="n">rescale</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="p">[</span><span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">])</span>
         <span class="k">if</span> <span class="n">rescale</span><span class="p">:</span>
@@ -592,7 +593,7 @@ reshifted.</p>
       </div>
     
       <div class="pull-right">
-        <a class="btn btn-default" href="../api.html" title="next chapter (use the right arrow)">API Reference</a>
+        <a class="btn btn-default" href="truncation_recap.html" title="next chapter (use the right arrow)">Bayesian truncation errors in chiral effective field theory: A Recap</a>
       </div>
     </div>
     <div class="clearer"></div>
@@ -610,7 +611,7 @@ reshifted.</p>
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="../api.html" title="API Reference"
+          <a href="truncation_recap.html" title="Bayesian truncation errors in chiral effective field theory: A Recap"
              >next</a> |</li>
         <li class="right" >
           <a href="../examples.html" title="Examples"

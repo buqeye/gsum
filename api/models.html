@@ -34,7 +34,7 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Extras" href="extras.html" />
+    <link rel="next" title="Helpers" href="helpers.html" />
     <link rel="prev" title="API Reference" href="../api.html" />
   
    
@@ -51,7 +51,7 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="extras.html" title="Extras"
+          <a href="helpers.html" title="Helpers"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="../api.html" title="API Reference"
@@ -80,7 +80,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="extras.html">Extras</a></li>
+<li class="toctree-l2"><a class="reference internal" href="helpers.html">Helpers</a></li>
 </ul>
 </li>
 </ul>
@@ -124,17 +124,16 @@
 <dt id="buqeyemodel.models.SGP">
 <em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">SGP</code><span class="sig-paren">(</span><em>dim=None</em>, <em>basis=None</em>, <em>means=None</em>, <em>cov=None</em>, <em>shape=None</em>, <em>scale=None</em>, <em>corr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP" title="Permalink to this definition">¶</a></dt>
 <dd><p>A semiparametric Gaussian process class</p>
-<p>Treats an <span class="math">\(N\times 1\)</span> vector <span class="math">\(Y\)</span> as a Gaussian process
-with a parameterized mean</p>
+<p>Treats a function <span class="math">\(y\)</span> as a Gaussian process</p>
 <div class="math">
-\[Y(x) | \beta, \sigma^2, \psi \sim N[m(x), \sigma^2 R(x,x; \psi)]\]</div>
-<p>The mean at any input point is given by</p>
+\[y(x) | \beta, \sigma^2, \psi \sim N[m(x), \sigma^2 R(x,x; \psi)]\]</div>
+<p>with a parameterized mean function <span class="math">\(m\)</span> and correlation function
+<span class="math">\(R\)</span>. The mean at any input point is given by</p>
 <div class="math">
 \[m(x) = h(x)^T \beta\]</div>
-<p>where <span class="math">\(h\)</span> is a given basis function from
-<span class="math">\(\mathbb{R}^d \to \mathbb{R}^q\)</span> and <span class="math">\(\beta\)</span> is a
-<span class="math">\(q\times 1\)</span> vector of random variables.
-The variance is split into a marginal part <span class="math">\(sigma^2\)</span> and a
+<p>where <span class="math">\(h: \mathbb{R}^d \to \mathbb{R}^q\)</span> is a given basis function
+and <span class="math">\(\beta\)</span> is a <span class="math">\(q\times 1\)</span> vector of random variables.
+The variance is split into a marginal part <span class="math">\(\sigma^2\)</span> and a
 correlation function <span class="math">\(R\)</span> that may further depend on parameters
 <span class="math">\(\psi\)</span>, e.g., length scales.
 A normal-inverse-gamma prior is placed on <span class="math">\(\beta\)</span> and
@@ -145,6 +144,124 @@ A normal-inverse-gamma prior is placed on <span class="math">\(\beta\)</span> an
 <span class="math">\(\mu\)</span> and <span class="math">\(\sigma^2 V\)</span>, while the shape and scale parameter of
 the inverse gamma prior placed on <span class="math">\(\sigma^2\)</span> are <span class="math">\(a\)</span> and
 <span class="math">\(b\)</span>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>dim</strong> : scalar, optional</p>
+<blockquote>
+<div><p>The dimension of the <code class="docutils literal highlight highlight-default"><span></span><span class="n">means</span></code> vector and the <code class="docutils literal highlight highlight-default"><span></span><span class="n">cov</span></code> matrix, which
+determines how many mean variables are undetermined in the linear
+model. Must be greater than 0. By default, <code class="docutils literal highlight highlight-default"><span></span><span class="n">dim</span></code> is inferred by
+the columns of the <code class="docutils literal highlight highlight-default"><span></span><span class="n">basis</span></code> callable.</p>
+</div></blockquote>
+<p><strong>basis</strong> : callable, optional</p>
+<blockquote>
+<div><p>The basis function for the mean vector.</p>
+</div></blockquote>
+<p><strong>means</strong> : (dim,) array, optional</p>
+<p><strong>cov</strong> : (dim,dim) array, optional</p>
+<p><strong>shape</strong> : scalar, optional</p>
+<p><strong>scale</strong> : scalar, optional</p>
+<p class="last"><strong>corr</strong> : callable, optional</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="buqeyemodel.models.SGP.condition">
+<code class="descname">condition</code><span class="sig-paren">(</span><em>index</em>, <em>Xnew</em>, <em>dob=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.condition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conditions on observed data and returns interpolant and error bands.</p>
+<p>Extracts the mean and degree of belief intervals from the corresponding
+conditional object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>index</strong> : int</p>
+<blockquote>
+<div><p>The index of the observed <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> to condition upon. Despite only
+one process being interpolated at a time, the hyperparameters
+are still updated by all curves at once.</p>
+</div></blockquote>
+<p><strong>Xnew</strong> : (M, d) array</p>
+<blockquote>
+<div><p>The <span class="math">\(M\)</span> new input points at which to predict the value of the
+process.</p>
+</div></blockquote>
+<p><strong>dob</strong> : scalar or 1d array, optional</p>
+<blockquote>
+<div><p>The degree of belief intervals to compute, between 0 and 1.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>Optional keyword arguments for the correlation function. If none
+are provided, defaults from the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> method are used
+instead.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">array or tuple</p>
+<blockquote class="last">
+<div><p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">dob</span> <span class="ow">is</span> <span class="kc">None</span></code>, then only the 1D array of predictions is
+returned. Otherwise, the predictions along with a
+<span class="math">\(2 \times N\)</span> (or <span class="math">\(len(dob) \times 2 \times N\)</span>) of
+degree of belief intervals is returned.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.SGP.conditional">
+<code class="descname">conditional</code><span class="sig-paren">(</span><em>index</em>, <em>Xnew</em>, <em>corr=False</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.conditional"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.conditional" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a conditional distribution object anchored to observed points.</p>
+<p>The conditional Gaussian process given the observed <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span><span class="p">[</span><span class="n">index</span><span class="p">]</span></code> is
+marginalized over <span class="math">\(\beta\)</span> and <span class="math">\(\sigma^2\)</span>. The resulting
+distribution is a multivariate student <span class="math">\(t\)</span> distribution.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>index</strong> : int</p>
+<blockquote>
+<div><p>The index of the observed <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> to condition upon. Despite only
+one process being interpolated at a time, the hyperparameters
+are still updated by all curves at once.</p>
+</div></blockquote>
+<p><strong>Xnew</strong> : (M, d) array</p>
+<blockquote>
+<div><p>The <span class="math">\(M\)</span> new input points at which to predict the value of the
+process.</p>
+</div></blockquote>
+<p><strong>corr</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether or not the distribution object is correlated. For
+visualizing the mean and marginal variance, an uncorrelated
+conditional often suffices. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">False</span></code>.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>Optional keyword arguments for the correlation function. If none
+are provided, defaults from the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> method are used
+instead.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">distribution object</p>
+<blockquote class="last">
+<div><p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">corr</span> <span class="ow">is</span> <span class="kc">False</span></code> then a <code class="docutils literal highlight highlight-default"><span></span><span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">t</span></code> distribution is
+returned, else a
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">statsmodels</span><span class="o">.</span><span class="n">sandbox</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">mv_normal</span><span class="o">.</span><span class="n">MVT</span></code> is returned</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="method">
 <dt id="buqeyemodel.models.SGP.corr_post">
 <code class="descname">corr_post</code><span class="sig-paren">(</span><em>logprior=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.corr_post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.corr_post" title="Permalink to this definition">¶</a></dt>
@@ -167,9 +284,412 @@ array broadcasting rules apply</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="buqeyemodel.models.SGP.cov">
+<code class="descname">cov</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>The covariance <span class="math">\(V\)</span> of the normal distribution on <span class="math">\(\beta\)</span></p>
+<p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> is given or <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> has been used,
+then the posterior value is returned, else, the prior value is
+returned. The prior value can also be accessed with the <code class="docutils literal highlight highlight-default"><span></span><span class="n">cov_0</span></code>
+attribute.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>y</strong> : (n, N) array, optional</p>
+<blockquote>
+<div><p>The data on which to condition. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which uses
+the data supplied by <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.
+If observe has not been called, this returns the prior.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>The keyword arguments passed to the correlation function. Defaults
+to the valued supplied to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(dim,) array</p>
+<blockquote class="last">
+<div><p>The covariance of <span class="math">\(\beta\)</span>. If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span></code> and
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">corr_kwargs</span></code> are omitted or the same as those passed to
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>, a cached value is returned, else it is recomputed.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.SGP.evidence">
+<code class="descname">evidence</code><span class="sig-paren">(</span><em>log=True</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.evidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.evidence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the evidence, or marginal likelihood, of the observed data</p>
+<p>Specifically, the evidence integrates out <span class="math">\(\beta\)</span> and
+<span class="math">\(\sigma^2\)</span> such that</p>
+<div class="math">
+\[pr(y | \psi) = \frac{\Gamma(a)}{\Gamma(a_0)} \frac{b_0^{a_0}}{b^a}
+    \sqrt{\frac{|V|}{|V_0|}} [(2\pi)^N |R|]^{-n/2}\]</div>
+<p>where subscript 0’s denote prior values. If the priors on <span class="math">\(a_0\)</span>
+or <span class="math">\(V_0\)</span> are uninformative, then the evidence is undefined, but
+in this case the evidence is approximated by</p>
+<div class="math">
+\[pr(y | \psi) = \frac{\Gamma(a) \sqrt{|V|}}{b^a}
+    [(2\pi)^N |R|]^{-n/2}\]</div>
+<p>This is appropriate for model comparison since the factor due to priors
+is only a constant and hence cancels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>log</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether to return the log of the evidence, which can be useful
+for numerical reasons.</p>
+</div></blockquote>
+<p><strong>y</strong> : (n, N) array, optional</p>
+<blockquote>
+<div><p>Data for which to compute the evidence. Defaults to the data
+passed to the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> method.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>Keyword arguments passed to the correlation function. Defaults
+to those passed to the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> method.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">scalar</p>
+<blockquote class="last">
+<div><p>The (log) evidence</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.SGP.inv_cov">
+<code class="descname">inv_cov</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.inv_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.inv_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>The inverse covariance <span class="math">\(V^{-1}\)</span> of the normal distribution on
+<span class="math">\(\beta\)</span></p>
+<p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> is given or <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> has been used,
+then the posterior value is returned, else, the prior value is
+returned. The prior value can also be accessed with the <code class="docutils literal highlight highlight-default"><span></span><span class="n">inv_cov_0</span></code>
+attribute.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>y</strong> : (n, N) array, optional</p>
+<blockquote>
+<div><p>The data on which to condition. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which uses
+the data supplied by <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.
+If observe has not been called, this returns the prior.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>The keyword arguments passed to the correlation function. Defaults
+to the valued supplied to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(dim,) array</p>
+<blockquote class="last">
+<div><p>The inverse covariance of <span class="math">\(\beta\)</span>. If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span></code> and
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">corr_kwargs</span></code> are omitted or the same as those passed to
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>, a cached value is returned, else it is recomputed.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.SGP.means">
+<code class="descname">means</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.means"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.means" title="Permalink to this definition">¶</a></dt>
+<dd><p>The mean parameters <span class="math">\(\mu\)</span> of the normal distribution on <span class="math">\(\beta\)</span></p>
+<p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> is given or <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> has been used,
+then the posterior value is returned, else, the prior value is
+returned. The prior value can also be accessed with the <code class="docutils literal highlight highlight-default"><span></span><span class="n">means_0</span></code>
+attribute.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>y</strong> : (n, N) array, optional</p>
+<blockquote>
+<div><p>The data on which to condition. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which uses
+the data supplied by <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.
+If observe has not been called, this returns the prior.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>The keyword arguments passed to the correlation function. Defaults
+to the valued supplied to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(dim,) array</p>
+<blockquote class="last">
+<div><p>The means of <span class="math">\(\beta\)</span>. If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span></code> and <code class="docutils literal highlight highlight-default"><span></span><span class="n">corr_kwargs</span></code>
+are omitted or the same as those passed to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>, a cached
+value is returned, else it is recomputed.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.SGP.observe">
+<code class="descname">observe</code><span class="sig-paren">(</span><em>X</em>, <em>y</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.observe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Observe GP outputs and update parameters.</p>
+<p>Conditions on <span class="math">\(n\)</span> iid processes at <span class="math">\(N\)</span> locations
+<span class="math">\(X\)</span>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : (N,d) array</p>
+<blockquote>
+<div><p>The input locations where the GPs are observed. <span class="math">\(N\)</span> is the
+number of points observed along each process, and <span class="math">\(d\)</span> is the
+dimensionality of each input point. If the process is a 1d curve,
+then <code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code> must be an <code class="docutils literal highlight highlight-default"><span></span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></code> shaped vector.</p>
+</div></blockquote>
+<p><strong>y</strong> : (n, N) array</p>
+<blockquote>
+<div><p>The <span class="math">\(N\)</span> observed values of each of the <span class="math">\(n\)</span> iid
+processes. If only one process has been observed, this must have
+shape <code class="docutils literal highlight highlight-default"><span></span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span></code>.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote class="last">
+<div><p>The keyword arguments passed to the correlation function. These
+values will be saved and used as defaults for all other methods.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.SGP.posterior">
+<code class="descname">posterior</code><span class="sig-paren">(</span><em>name</em>, <em>logprior=None</em>, <em>log=False</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.posterior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.posterior" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the posterior pdf for arbitrary correlation variables</p>
+<p>Uses Bayes’ Theorem to compute</p>
+<div class="math">
+\[pr(\ell | y, ...) \propto pr(y | \ell, ...) pr(\ell)\]</div>
+<p>for any correlation parameter <span class="math">\(\ell\)</span>. The evidence given
+<span class="math">\(\ell\)</span> and the other correlation parameters (…) is then
+used to compute the posterior.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>name</strong> : str</p>
+<blockquote>
+<div><p>The name of the variable passed to the correlation function
+for which to calculate the poster</p>
+</div></blockquote>
+<p><strong>logprior</strong> : callable, optional</p>
+<blockquote>
+<div><p>The log prior to place on <code class="docutils literal highlight highlight-default"><span></span><span class="n">name</span></code>. Must accept <code class="docutils literal highlight highlight-default"><span></span><span class="o">**</span><span class="n">corr_kwargs</span></code>
+as arguments. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which sets <code class="docutils literal highlight highlight-default"><span></span><span class="n">logprior</span></code> to zero</p>
+</div></blockquote>
+<p><strong>log</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether to return the log posterior. If <code class="docutils literal highlight highlight-default"><span></span><span class="kc">False</span></code>, then the pdf
+will be approximately normalized using the trapezoid rule. Defaults
+to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">False</span></code></p>
+</div></blockquote>
+<p><strong>**corr_kwargs :</strong></p>
+<blockquote>
+<div><p>Keyword arguments passed to the correlation function. One of the
+arguments must match <code class="docutils literal highlight highlight-default"><span></span><span class="n">name</span></code> and must be an array. Nothing will
+be inferred from the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> call here.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">array</p>
+<blockquote class="last">
+<div><p>The (log) posterior pdf for the <code class="docutils literal highlight highlight-default"><span></span><span class="n">name</span></code> variable.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="buqeyemodel.models.SGP.predictive">
-<code class="descname">predictive</code><span class="sig-paren">(</span><em>Xnew</em>, <em>corr=False</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.predictive" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a posterior predictive distribution object</p>
+<code class="descname">predictive</code><span class="sig-paren">(</span><em>Xnew</em>, <em>corr=False</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.predictive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a posterior predictive distribution object.</p>
+<p>Predicts new curves given the observed curves <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Xnew</strong> : (M, d) array</p>
+<blockquote>
+<div><p>The <span class="math">\(M\)</span> new input points at which to predict the value of the
+process.</p>
+</div></blockquote>
+<p><strong>corr</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether or not the distribution object is correlated. For
+visualizing the mean and marginal variance, an uncorrelated
+conditional often suffices. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">False</span></code>.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>Optional keyword arguments for the correlation function. If none
+are provided, defaults from the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> method are used
+instead.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">distribution object</p>
+<blockquote class="last">
+<div><p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">corr</span> <span class="ow">is</span> <span class="kc">False</span></code> then a <code class="docutils literal highlight highlight-default"><span></span><span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">t</span></code> distribution is
+returned, else a
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">statsmodels</span><span class="o">.</span><span class="n">sandbox</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">mv_normal</span><span class="o">.</span><span class="n">MVT</span></code> is returned</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.SGP.scale">
+<code class="descname">scale</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>The scale parameter <span class="math">\(b\)</span> of the inverse gamma distribution</p>
+<p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> is given or <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> has been used,
+then the posterior value is returned, else, the prior value is
+returned. The prior value can also be accessed with the <code class="docutils literal highlight highlight-default"><span></span><span class="n">scale_0</span></code>
+attribute.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>y</strong> : (n, N) array, optional</p>
+<blockquote>
+<div><p>The data on which to condition. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which uses
+the data supplied by <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.
+If observe has not been called, this returns the prior.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>The keyword arguments passed to the correlation function. Defaults
+to the valued supplied to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">scalar</p>
+<blockquote class="last">
+<div><p>The scale parameter. If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span></code> and <code class="docutils literal highlight highlight-default"><span></span><span class="n">corr_kwargs</span></code> are
+omitted or the same as those passed to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>, a cached
+value is returned, else it is recomputed.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.SGP.shape">
+<code class="descname">shape</code><span class="sig-paren">(</span><em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The shape parameter <span class="math">\(a\)</span> of the inverse gamma distribution</p>
+<p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> is given or <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> has been used, then the posterior
+value is returned, else, the prior value is returned. The prior
+value can also be accessed with the <code class="docutils literal highlight highlight-default"><span></span><span class="n">shape_0</span></code> attribute.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>y</strong> : (n, N) array, optional</p>
+<blockquote>
+<div><p>The data on which to condition. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which uses
+the data supplied by <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> and returns a cached value.
+If observe has not been called, this returns the prior.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">scalar</p>
+<blockquote class="last">
+<div><p>The shape parameter</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.SGP.student_params">
+<code class="descname">student_params</code><span class="sig-paren">(</span><em>X=None</em>, <em>H=None</em>, <em>R=None</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.student_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.student_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the parameters of the student <span class="math">\(t\)</span> distribution.</p>
+<p>Given a function</p>
+<div class="math">
+\[y | \beta, \sigma^2, \psi \sim N[H\beta, \sigma^2 R]\]</div>
+<p>with a normal inverse gamma prior on <span class="math">\(\beta, \sigma^2\)</span>,</p>
+<div class="math">
+\[\beta, \sigma^2 \sim NIG(\mu, V, a, b)\]</div>
+<p>the integrated process is given by</p>
+<div class="math">
+\[y | \psi \sim MVT\left[2a, H\mu, \frac{b}{a} (R + HVH^T)\right]\]</div>
+<p>If data has been observed, then posterior values for <span class="math">\(\mu,V,a,b\)</span>
+are used.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : (N, d) array, optional</p>
+<blockquote>
+<div><p>The input points at which to compute the basis <code class="docutils literal highlight highlight-default"><span></span><span class="n">H</span></code> and <code class="docutils literal highlight highlight-default"><span></span><span class="n">R</span></code>.
+If <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, then the defaults from the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> method are
+used.</p>
+</div></blockquote>
+<p><strong>H</strong> : (N, q) array, optional</p>
+<blockquote>
+<div><p>The basis function evaluated at <span class="math">\(N\)</span> points. If None, then
+the basis function is computed at <code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code>.</p>
+</div></blockquote>
+<p><strong>R</strong> : (N, N) array, optional</p>
+<blockquote>
+<div><p>The correlation matrix. If None, then the correlation function is
+computed using <code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code> and <a href="#id1"><span class="problematic" id="id2">**</span></a>corr_kwargs.</p>
+</div></blockquote>
+<p><strong>y</strong> : (n, N) array, optional</p>
+<blockquote>
+<div><p>Observed GP values used to compute the updated normal-inverse-gamma
+hyperparameters. If <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, then the data passed to the
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> method are used. If <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> has not been called,
+prior values are used.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>Optional keyword arguments for the correlation function. If none
+are provided, defaults from the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> method are used
+instead.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">tuple</p>
+<blockquote class="last">
+<div><p>The degrees of freedom, mean, and sigma matrix of a multivariate
+<span class="math">\(t\)</span> distribution.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -191,7 +711,7 @@ allow one to estimate the full summation and obtain posteriors for the
 parameters.</p>
 <dl class="method">
 <dt id="buqeyemodel.models.PowerProcess.condition">
-<code class="descname">condition</code><span class="sig-paren">(</span><em>Xnew</em>, <em>index</em>, <em>dob=None</em>, <em>rescale=True</em>, <em>ignore_rm=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.condition" title="Permalink to this definition">¶</a></dt>
+<code class="descname">condition</code><span class="sig-paren">(</span><em>Xnew</em>, <em>index</em>, <em>dob=None</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.condition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Conditions on observed data and returns interpolant and error bands.</p>
 <p>Extracts the mean and degree of belief intervals from the corresponding
 conditional object.</p>
@@ -204,9 +724,9 @@ conditional object.</p>
 <div><p>The new input points at which to predict the values of the
 coefficients or partial sums.</p>
 </div></blockquote>
-<p><strong>order</strong> : int</p>
+<p><strong>index</strong> : int</p>
 <blockquote>
-<div><p>The order of the partial sum to interpolate.</p>
+<div><p>The index of the partial sum to interpolate.</p>
 </div></blockquote>
 <p><strong>dob</strong> : scalar or 1D array, optional</p>
 <blockquote>
@@ -215,23 +735,23 @@ coefficients or partial sums.</p>
 <p><strong>rescale</strong> : bool, optional</p>
 <blockquote>
 <div><p>Whether or not to rescale the coefficient back to a partial sum.
-If rescaled, conditionals for all previous orders must be computed
-to predict the value of the partial sum. Defaults to <code class="docutils literal"><span class="pre">True</span></code></p>
+Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">True</span></code></p>
 </div></blockquote>
 <p><strong>ratio_kwargs</strong> : dict, optional</p>
 <blockquote>
 <div><p>Additional keyword arguments passed to the ratio function. Defaults
-to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which uses the values passed to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
 </div></blockquote>
 <p><strong>**corr_kwargs</strong> : optional</p>
 <blockquote>
-<div><p>Additional keyword arguments passed to the correlation function.</p>
+<div><p>Additional keyword arguments passed to the correlation function.
+Defaults to the keywords passed to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
 </div></blockquote>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">1D array or tuple</p>
 <blockquote class="last">
-<div><p>If <code class="docutils literal"><span class="pre">dob</span> <span class="pre">is</span> <span class="pre">None</span></code>, then only the 1D array of predictions is
+<div><p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">dob</span> <span class="ow">is</span> <span class="kc">None</span></code>, then only the 1D array of predictions is
 returned. Otherwise, the predictions along with a
 <span class="math">\(2 \times N\)</span> (or <span class="math">\(len(dob) \times 2 \times N\)</span>) of
 degree of belief intervals is returned.</p>
@@ -252,38 +772,95 @@ marginalized over the means and variance parameter.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Xnew</strong> : 2D array</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Xnew</strong> : (M,d) array</p>
 <blockquote>
 <div><p>The new input points at which to predict the values of the
 coefficients or partial sums.</p>
 </div></blockquote>
-<p><strong>order</strong> : int</p>
+<p><strong>index</strong> : int</p>
 <blockquote>
-<div><p>The order of the partial sum to interpolate.</p>
+<div><p>The index of the partial sum to interpolate.</p>
 </div></blockquote>
 <p><strong>corr</strong> : bool, optional</p>
 <blockquote>
 <div><p>Whether or not the conditional distribution is correlated in the
-input space. If <code class="docutils literal"><span class="pre">corr</span> <span class="pre">=</span> <span class="pre">False</span></code>, then a <code class="docutils literal"><span class="pre">scipy.stats.t</span></code>
-object is returned, otherwise a
-<code class="docutils literal"><span class="pre">statsmodels.sandbox.distributions.mv_normal.MVT</span></code> object is
-returned. For visualizing the mean and marginal variance, an
-uncorrelated conditional often suffices. Defaults to <code class="docutils literal"><span class="pre">False</span></code>.</p>
+input space. For visualizing the mean and marginal variance, an
+uncorrelated conditional often suffices. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">False</span></code>.</p>
 </div></blockquote>
 <p><strong>rescale</strong> : bool, optional</p>
 <blockquote>
 <div><p>Whether or not to rescale the coefficient back to a partial sum.
-If rescaled, conditionals for all previous orders must be computed
-to predict the value of the partial sum. Defaults to <code class="docutils literal"><span class="pre">True</span></code>.</p>
+Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">True</span></code>.</p>
 </div></blockquote>
 <p><strong>ratio_kwargs</strong> : dict, optional</p>
 <blockquote>
 <div><p>Additional keyword arguments passed to the ratio function. Defaults
-to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which uses the values passed to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
 </div></blockquote>
 <p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>Additional keyword arguments passed to the correlation function.
+Defaults to the keywords passed to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">distribution object</p>
 <blockquote class="last">
-<div><p>Additional keyword arguments passed to the correlation function.</p>
+<div><p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">corr</span> <span class="ow">is</span> <span class="kc">False</span></code> then a <code class="docutils literal highlight highlight-default"><span></span><span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">t</span></code> distribution is
+returned, else a
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">statsmodels</span><span class="o">.</span><span class="n">sandbox</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">mv_normal</span><span class="o">.</span><span class="n">MVT</span></code> is returned</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.PowerProcess.evidence">
+<code class="descname">evidence</code><span class="sig-paren">(</span><em>log=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.evidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.evidence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the evidence, or marginal likelihood, of the partial sums</p>
+<p>Specifically, the evidence integrates out <span class="math">\(\beta\)</span> and
+<span class="math">\(\sigma^2\)</span> such that</p>
+<div class="math">
+\[\begin{split}pr({S_i} | \psi, r, S_{\mathrm{ref}})
+&amp; = \frac{pr(y | \psi)}{\prod_i |S_{\mathrm{ref}} r^i|} \\
+&amp; = \frac{1}{\prod_n |S_{\mathrm{ref}} r^n|}
+    \frac{\Gamma(a)}{\Gamma(a_0)} \frac{b_0^{a_0}}{b^a}
+    \sqrt{\frac{|V|}{|V_0|}} [(2\pi)^N |R|]^{-n/2}\end{split}\]</div>
+<p>where subscript 0’s denote prior values. If the priors on <span class="math">\(a_0\)</span>
+or <span class="math">\(V_0\)</span> are uninformative, then the evidence is undefined, but
+in this case the evidence is approximated by</p>
+<div class="math">
+\[pr({S_i} | \psi, r, S_{\mathrm{ref}})
+= \frac{1}{\prod_i |S_{\mathrm{ref}} r^i|}
+  \frac{\Gamma(a) \sqrt{|V|}}{b^a} [(2\pi)^N |R|]^{-n/2}\]</div>
+<p>This is appropriate for model comparison since the factor due to priors
+is only a constant and hence cancels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>log</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether to return the log of the evidence, which can be useful
+for numerical reasons.</p>
+</div></blockquote>
+<p><strong>ratio_kwargs</strong> : dict, optional</p>
+<blockquote>
+<div><p>Additional keyword arguments passed to the ratio function. Defaults
+to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which uses the values passed to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>Keyword arguments passed to the correlation function. Defaults
+to those passed to the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> method.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">scalar</p>
+<blockquote class="last">
+<div><p>The (log) evidence</p>
 </div></blockquote>
 </td>
 </tr>
@@ -295,8 +872,8 @@ to <code class="docutils literal"><span class="pre">None</span></code>.</p>
 <dt id="buqeyemodel.models.PowerProcess.observe">
 <code class="descname">observe</code><span class="sig-paren">(</span><em>X</em>, <em>partials</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em>, <em>leading_kwargs=None</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.observe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Observe the partial sums of the series and update parameters.</p>
-<p>The partial sums are observed at the input locations <code class="docutils literal"><span class="pre">X</span></code>.
-Using the given <code class="docutils literal"><span class="pre">ratio</span></code> and <code class="docutils literal"><span class="pre">ref</span></code>, the coefficients of the series
+<p>The partial sums are observed at the input locations <code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code>.
+Using the given <code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio</span></code> and <code class="docutils literal highlight highlight-default"><span></span><span class="n">ref</span></code>, the coefficients of the series
 are extracted and are used to create posterior distributions for the
 mean and variance parameters. One can then interpolate partial sums or
 predict the value of the full summation at new points. Additional
@@ -306,47 +883,106 @@ ratio and correlation functions are possible.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : <span class="math">\(N \times d\)</span> array</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : (N,d) array</p>
 <blockquote>
 <div><p>The :math`N` input locations where the partial sums are observed.
 Columns correspond to the dimensionality of the input space. If 1D,
-<code class="docutils literal"><span class="pre">X</span></code> must be an <span class="math">\(N \times 1\)</span> column vector.</p>
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code> must be an <span class="math">\(N \times 1\)</span> column vector.</p>
 </div></blockquote>
-<p><strong>partials</strong> : <span class="math">\(n \times N\)</span> array</p>
+<p><strong>partials</strong> : (n,N) array</p>
 <blockquote>
 <div><p>The <span class="math">\(n\)</span> lowest known partial sums, each with <span class="math">\(N\)</span> points
 observed along each curve.</p>
 </div></blockquote>
-<p><strong>ratio</strong> : callable, scalar, or length <span class="math">\(N\)</span> 1D array</p>
+<p><strong>ratio</strong> : callable, scalar, or (N,) array</p>
 <blockquote>
 <div><p>The value of the ratio that scales each order in the power
-series with increasing powers. If callable, it must accept <code class="docutils literal"><span class="pre">X</span></code>
-as its first argument and can optionally accept <a href="#id1"><span class="problematic" id="id2">**</span></a>ratio_kwargs.</p>
+series with increasing powers. If callable, it must accept <code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code>
+as its first argument and can optionally accept <a href="#id3"><span class="problematic" id="id4">**</span></a>ratio_kwargs.</p>
 </div></blockquote>
-<p><strong>ref</strong> : callable, scalar, or length <span class="math">\(N\)</span> 1D array</p>
+<p><strong>ref</strong> : callable, scalar, or length (N,) array</p>
 <blockquote>
 <div><p>The overall scale of the power series. If callable, it must
-accept <code class="docutils literal"><span class="pre">X</span></code> as its first argument. The default value is 1.</p>
+accept <code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code> as its first argument. The default value is 1.</p>
 </div></blockquote>
-<p><strong>orders</strong> : 1D array</p>
+<p><strong>orders</strong> : (n,) array</p>
 <blockquote>
-<div><p>The orders of the given partial sums. If <code class="docutils literal"><span class="pre">None</span></code>, it is assumed
-that all orders from 0 to math:<cite>n</cite> are given: <code class="docutils literal"><span class="pre">[0,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">n]</span></code>.</p>
+<div><p>The orders of the given partial sums. If <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, it is assumed
+that all orders from 0 to math:<cite>n</cite> are given: <code class="docutils literal highlight highlight-default"><span></span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span></code>.</p>
 </div></blockquote>
-<p><strong>rm_orders</strong> : 1D array</p>
+<p><strong>leading_kwargs</strong> : dict</p>
 <blockquote>
-<div><p>The orders of partial sums, if any, to ignore during conditioning.
-This could be useful if it is known that some coefficients will
-not behave as Gaussian processes.</p>
+<div><p>Keyword arguments passed to an <code class="docutils literal highlight highlight-default"><span></span><span class="n">SGP</span></code> initializer for the leading
+order coefficient. This allows the leading order to be treated
+differently than the other orders of the series. <code class="docutils literal highlight highlight-default"><span></span><span class="n">corr_kwargs</span></code>
+can also be in this dict and will be passed to the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>
+method of the leading order <code class="docutils literal highlight highlight-default"><span></span><span class="n">SGP</span></code>. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, in which
+case the leading order is an iid coefficient like the others.</p>
 </div></blockquote>
 <p><strong>ratio_kwargs</strong> : dict</p>
 <blockquote>
 <div><p>Additional keyword arguments passed to the ratio function. Defaults
-to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>.</p>
 </div></blockquote>
 <p><strong>**corr_kwargs</strong> : optional</p>
 <blockquote class="last">
-<div><p>Additional keyword arguments passed to the correlation function.</p>
+<div><p>Additional keyword arguments passed to the correlation function.
+These values will be saved and used as defaults for all other
+methods.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="buqeyemodel.models.PowerProcess.posterior">
+<code class="descname">posterior</code><span class="sig-paren">(</span><em>name</em>, <em>logprior=None</em>, <em>log=False</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.posterior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.posterior" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the posterior pdf for arbitrary correlation or ratio variables</p>
+<p>Uses Bayes’ Theorem to compute</p>
+<div class="math">
+\[pr(x | y, ...) \propto pr(y | x, ...) pr(x)\]</div>
+<p>for any correlation or ratio parameter <span class="math">\(x\)</span>. The evidence given
+<span class="math">\(x\)</span> and the other correlation and ratio parameters (…) is then
+used to compute the posterior.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>name</strong> : str</p>
+<blockquote>
+<div><p>The name of the variable passed to the correlation or ratio
+function for which to calculate the posterior. First checks
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">corr_kwargs</span></code> and if it is not found, then checks
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio_kwargs</span></code>.</p>
+</div></blockquote>
+<p><strong>logprior</strong> : callable, optional</p>
+<blockquote>
+<div><p>The log prior to place on <code class="docutils literal highlight highlight-default"><span></span><span class="n">name</span></code>. Must accept <code class="docutils literal highlight highlight-default"><span></span><span class="o">**</span><span class="n">corr_kwargs</span></code>
+as arguments. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which sets <code class="docutils literal highlight highlight-default"><span></span><span class="n">logprior</span></code> to zero</p>
+</div></blockquote>
+<p><strong>log</strong> : bool, optional</p>
+<blockquote>
+<div><p>Whether to return the log posterior. If <code class="docutils literal highlight highlight-default"><span></span><span class="kc">False</span></code>, then the pdf
+will be approximately normalized using the trapezoid rule. Defaults
+to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">False</span></code></p>
+</div></blockquote>
+<p><strong>ratio_kwargs</strong> : dict, optional</p>
+<blockquote>
+<div><p>Additional keyword arguments passed to the ratio function.</p>
+</div></blockquote>
+<p><strong>**corr_kwargs :</strong></p>
+<blockquote>
+<div><p>Keyword arguments passed to the correlation function. One of the
+arguments must match <code class="docutils literal highlight highlight-default"><span></span><span class="n">name</span></code> and must be an array. Nothing will
+be inferred from the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> call here.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">array</p>
+<blockquote class="last">
+<div><p>The (log) posterior pdf for the <code class="docutils literal highlight highlight-default"><span></span><span class="n">name</span></code> variable.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -356,7 +992,7 @@ to <code class="docutils literal"><span class="pre">None</span></code>.</p>
 
 <dl class="method">
 <dt id="buqeyemodel.models.PowerProcess.predict">
-<code class="descname">predict</code><span class="sig-paren">(</span><em>Xnew</em>, <em>dob=None</em>, <em>max_order=None</em>, <em>rescale=True</em>, <em>ignore_rm=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.predict" title="Permalink to this definition">¶</a></dt>
+<code class="descname">predict</code><span class="sig-paren">(</span><em>Xnew</em>, <em>dob=None</em>, <em>max_order=None</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Predicts the power series value and provides error bands.</p>
 <p>Gets the mean value of the predictive distribution and computes
 the degree of belief interval.</p>
@@ -376,18 +1012,17 @@ coefficients or partial sums.</p>
 <p><strong>max_order</strong> : int, optional</p>
 <blockquote>
 <div><p>The order at which to truncate the power series.
-Defaults to <code class="docutils literal"><span class="pre">None</span></code>, which corresponds to an infinite sum.</p>
+Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which corresponds to an infinite sum.</p>
 </div></blockquote>
 <p><strong>rescale</strong> : bool, optional</p>
 <blockquote>
-<div><p>Whether or not to rescale the coefficient back to a partial sum.
-If rescaled, conditionals for all previous orders must be computed
-to predict the value of the partial sum. Defaults to <code class="docutils literal"><span class="pre">True</span></code>.</p>
+<div><p>Whether or not to rescale the truncated orders back to error bands
+on a partial sum. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">True</span></code>.</p>
 </div></blockquote>
 <p><strong>ratio_kwargs</strong> : dict, optional</p>
 <blockquote>
 <div><p>Additional keyword arguments passed to the ratio function. Defaults
-to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which uses the values passed to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
 </div></blockquote>
 <p><strong>**corr_kwargs</strong> : optional</p>
 <blockquote>
@@ -397,7 +1032,7 @@ to <code class="docutils literal"><span class="pre">None</span></code>.</p>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">1D array or tuple</p>
 <blockquote class="last">
-<div><p>If <code class="docutils literal"><span class="pre">dob</span> <span class="pre">is</span> <span class="pre">None</span></code>, then only the 1D array of predictions is
+<div><p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">dob</span> <span class="ow">is</span> <span class="kc">None</span></code>, then only the 1D array of predictions is
 returned. Otherwise, the predictions along with a
 <span class="math">\(2 \times N\)</span> (or <span class="math">\(len(dob) \times 2 \times N\)</span>) of
 degree of belief intervals is returned.</p>
@@ -410,10 +1045,10 @@ degree of belief intervals is returned.</p>
 
 <dl class="method">
 <dt id="buqeyemodel.models.PowerProcess.predictive">
-<code class="descname">predictive</code><span class="sig-paren">(</span><em>Xnew</em>, <em>corr=False</em>, <em>max_order=None</em>, <em>rescale=True</em>, <em>ignore_rm=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.predictive" title="Permalink to this definition">¶</a></dt>
+<code class="descname">predictive</code><span class="sig-paren">(</span><em>Xnew</em>, <em>corr=False</em>, <em>max_order=None</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.predictive" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a posterior predictive distribution object.</p>
-<p>Predicts the value of the power series up to <code class="docutils literal"><span class="pre">max_order</span></code> at
-the input locations <code class="docutils literal"><span class="pre">X</span></code>.</p>
+<p>Predicts the value of the power series up to <code class="docutils literal highlight highlight-default"><span></span><span class="n">max_order</span></code> at
+the input locations <code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -426,31 +1061,36 @@ coefficients or partial sums.</p>
 <p><strong>corr</strong> : bool, optional</p>
 <blockquote>
 <div><p>Whether or not the distribution is correlated in the
-input space. If <code class="docutils literal"><span class="pre">corr</span> <span class="pre">=</span> <span class="pre">False</span></code>, then a <code class="docutils literal"><span class="pre">scipy.stats.t</span></code>
-object is returned, otherwise a
-<code class="docutils literal"><span class="pre">statsmodels.sandbox.distributions.mv_normal.MVT</span></code> object is
-returned. For visualizing the mean and marginal variance, an
-uncorrelated conditional often suffices. Defaults to <code class="docutils literal"><span class="pre">False</span></code>.</p>
+input space. For visualizing the mean and marginal variance, an
+uncorrelated conditional often suffices. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">False</span></code>.</p>
 </div></blockquote>
 <p><strong>max_order</strong> : int, optional</p>
 <blockquote>
 <div><p>The order at which to truncate the power series.
-Defaults to <code class="docutils literal"><span class="pre">None</span></code>, which corresponds to an infinite sum.</p>
+Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which corresponds to an infinite sum.</p>
 </div></blockquote>
 <p><strong>rescale</strong> : bool, optional</p>
 <blockquote>
-<div><p>Whether or not to rescale the coefficient back to a partial sum.
-If rescaled, conditionals for all previous orders must be computed
-to predict the value of the partial sum. Defaults to <code class="docutils literal"><span class="pre">True</span></code>.</p>
+<div><p>Whether or not to rescale the truncated orders back to error bands
+on a partial sum. Defaults to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">True</span></code>.</p>
 </div></blockquote>
 <p><strong>ratio_kwargs</strong> : dict, optional</p>
 <blockquote>
 <div><p>Additional keyword arguments passed to the ratio function. Defaults
-to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, which uses the values passed to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
 </div></blockquote>
 <p><strong>**corr_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>Additional keyword arguments passed to the correlation function.
+Defaults to the keywords passed to <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code>.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">distribution object</p>
 <blockquote class="last">
-<div><p>Additional keyword arguments passed to the correlation function.</p>
+<div><p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">corr</span> <span class="ow">is</span> <span class="kc">False</span></code> then a <code class="docutils literal highlight highlight-default"><span></span><span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">t</span></code> distribution is
+returned, else a
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">statsmodels</span><span class="o">.</span><span class="n">sandbox</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">mv_normal</span><span class="o">.</span><span class="n">MVT</span></code> is returned</p>
 </div></blockquote>
 </td>
 </tr>
@@ -477,56 +1117,52 @@ one to estimate the full summation and obtain posteriors for the
 parameters.</p>
 <dl class="method">
 <dt id="buqeyemodel.models.PowerSeries.observe">
-<code class="descname">observe</code><span class="sig-paren">(</span><em>partials</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em>, <em>rm_orders=None</em>, <em>X=None</em>, <em>combine=False</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries.observe" title="Permalink to this definition">¶</a></dt>
+<code class="descname">observe</code><span class="sig-paren">(</span><em>partials</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em>, <em>rm_orders=None</em>, <em>X=None</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries.observe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Observe the partial sums of the series and update parameters.</p>
 <p>The partial sums are observed and converted to coefficients
-using the given <code class="docutils literal"><span class="pre">ratio</span></code> and <code class="docutils literal"><span class="pre">ref</span></code>. Posterior distributions for the
+using the given <code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio</span></code> and <code class="docutils literal highlight highlight-default"><span></span><span class="n">ref</span></code>. Posterior distributions for the
 mean and variance parameters can then be calculated.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>partials</strong> : <span class="math">\(n     imes N\)</span> array</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>partials</strong> : (n,N) array</p>
 <blockquote>
 <div><p>The <span class="math">\(n\)</span> lowest known partial sums, each with <span class="math">\(N\)</span> points
-observed along each curve.</p>
+observed along each partial sum.</p>
 </div></blockquote>
-<p><strong>ratio</strong> : callable, scalar, or length <span class="math">\(N\)</span> 1D array</p>
+<p><strong>ratio</strong> : callable, scalar, or length (N,) 1D array</p>
 <blockquote>
 <div><p>The value of the ratio that scales each order in the power
-series with increasing powers. If callable, it must accept <code class="docutils literal"><span class="pre">X</span></code>
-as its first argument and can optionally accept <a href="#id3"><span class="problematic" id="id4">**</span></a>ratio_kwargs.</p>
+series with increasing powers. If callable, it must accept <code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code>
+as its first argument and can optionally accept <code class="docutils literal highlight highlight-default"><span></span><span class="o">**</span><span class="n">ratio_kwargs</span></code>.</p>
 </div></blockquote>
-<p><strong>ref</strong> : callable, scalar, or length <span class="math">\(N\)</span> 1D array</p>
+<p><strong>ref</strong> : callable, scalar, or length (N,) 1D array</p>
 <blockquote>
 <div><p>The overall scale of the power series. If callable, it must
-accept <code class="docutils literal"><span class="pre">X</span></code> as its first argument. The default value is 1.</p>
+accept <code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code> as its first argument. The default value is 1.</p>
 </div></blockquote>
-<p><strong>orders</strong> : 1D array</p>
+<p><strong>orders</strong> : (n,) array</p>
 <blockquote>
-<div><p>The orders of the given partial sums. If <code class="docutils literal"><span class="pre">None</span></code>, it is assumed
-that all orders from 0 to math:<cite>n</cite> are given: <code class="docutils literal"><span class="pre">[0,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">n]</span></code>.</p>
+<div><p>The orders of the given partial sums. If <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>, it is assumed
+that all orders from 0 to math:<cite>n</cite> are given: <code class="docutils literal highlight highlight-default"><span></span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span></code>.</p>
 </div></blockquote>
 <p><strong>rm_orders</strong> : 1D array</p>
 <blockquote>
 <div><p>The orders of partial sums, if any, to ignore during conditioning.
 This could be useful if it is known that some coefficients will
-not behave as Gaussian processes.</p>
+not behave as iid Gaussian.</p>
 </div></blockquote>
-<p><strong>X</strong> : <span class="math">\(N    imes d\)</span> array, optional</p>
+<p><strong>X</strong> : (N,d) array, optional</p>
 <blockquote>
 <div><p>The :math`N` input locations where the partial sums are observed.
 Columns correspond to the dimensionality of the input space. If 1D,
-<code class="docutils literal"><span class="pre">X</span></code> must be an <span class="math">\(N   imes 1\)</span> column vector.</p>
-</div></blockquote>
-<p><strong>combine</strong> : bool, optional</p>
-<blockquote>
-<div><p>Whether to combine observations for computing posteriors.</p>
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code> must be an <span class="math">\(N \times 1\)</span> column vector.</p>
 </div></blockquote>
 <p><strong>**ratio_kwargs</strong> : optional</p>
 <blockquote class="last">
 <div><p>Additional keyword arguments passed to the ratio function. Defaults
-to <code class="docutils literal"><span class="pre">None</span></code>.</p>
+to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">None</span></code>.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -536,7 +1172,7 @@ to <code class="docutils literal"><span class="pre">None</span></code>.</p>
 
 <dl class="method">
 <dt id="buqeyemodel.models.PowerSeries.scale">
-<code class="descname">scale</code><span class="sig-paren">(</span><em>combine=False</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries.scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries.scale" title="Permalink to this definition">¶</a></dt>
+<code class="descname">scale</code><span class="sig-paren">(</span><em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries.scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries.scale" title="Permalink to this definition">¶</a></dt>
 <dd><p>The scale parameter <span class="math">\(b\)</span> of the inverse gamma distribution.</p>
 <p>[description]</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -583,7 +1219,7 @@ to <code class="docutils literal"><span class="pre">None</span></code>.</p>
       </div>
     
       <div class="pull-right">
-        <a class="btn btn-default" href="extras.html" title="next chapter (use the right arrow)">Extras</a>
+        <a class="btn btn-default" href="helpers.html" title="next chapter (use the right arrow)">Helpers</a>
       </div>
     </div>
     <div class="clearer"></div>
@@ -601,7 +1237,7 @@ to <code class="docutils literal"><span class="pre">None</span></code>.</p>
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="extras.html" title="Extras"
+          <a href="helpers.html" title="Helpers"
              >next</a> |</li>
         <li class="right" >
           <a href="../api.html" title="API Reference"
