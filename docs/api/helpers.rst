@@ -2,7 +2,7 @@
 Helpers
 ********
 
-.. currentmodule:: buqeyemodel.helpers
+.. currentmodule:: gsum.helpers
 
-.. automodule:: buqeyemodel.helpers
+.. automodule:: gsum.helpers
    :members:
