@@ -4,6 +4,8 @@
 
 .. <img src="./BUQEYE_fig.png?raw=true" width="30%"/>
 
+.. image:: ./docs/logos/gsum.png
+
 .. raw:: html
 
    <p style="text-align:center;"><img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo"/></p>
@@ -14,8 +16,8 @@
 ..   :align: center
 ..   :alt: BUQEYE logo
 
-The BUQEYE Model package provides two classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
-Specifically, this is a MCMC-based implementation of the statistical model developed in `this paper <https://arxiv.org/abs/1506.01343>`_.
+The gsum package provides two classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
+Specifically, this is a conjugacy-based implementation of the statistical model developed in `this paper <https://arxiv.org/abs/1506.01343>`_.
 
 .. The heavy lifting is done by the ``PyMC3`` package, which can be downloaded `here <https://github.com/pymc-devs/pymc3>`_.
 .. Some working knowledge of ``PyMC3`` is recommended before reading the usage information below.
@@ -23,24 +25,24 @@ Specifically, this is a MCMC-based implementation of the statistical model devel
 Installation
 ============
 
-The latest release of BUQEYE Model can be installed from PyPI using ``pip``:
+The latest release of gsum can be installed from PyPI using ``pip``:
 
 .. code-block:: console
 
-  $ pip install buqeyemodel
+  $ pip install gsum
 
-The current development branch can be installed via
+The current working branch can be installed via
 
 .. code-block:: console
 
-  $ pip install git+https://github.com/jordan-melendez/buqeyemodel@develop
+  $ pip install git+https://github.com/jordan-melendez/gsum
 
 Additionally, one can clone the repository and install using
 
 .. code-block:: console
 
-  $ git clone -b develop https://github.com/jordan-melendez/buqeyemodel.git
-  $ cd buqeyemodel
+  $ git clone -b develop https://github.com/jordan-melendez/gsum.git
+  $ cd gsum
   $ pip install .
 
 Change ``-b {branch}`` to ``-b master`` etc. if desired.
@@ -49,7 +51,8 @@ This will install the package as is, but if you want to make edits to the code f
 Dependencies
 ============
 
-BUQEYE Model has only been tested with python 3.5. Additionally, some functionality relies on the ``StatsModels`` package.
+gsum has only been tested with python 3.5.
+.. Additionally, some functionality relies on the ``StatsModels`` package.
 
 Citing buqeyemodel
 ==================
@@ -58,12 +61,12 @@ Citing buqeyemodel
 Contact
 =======
 
-To report an issue please use the `issue tracker <https://github.com/jordan-melendez/buqeyemodel/issues>`_.
+To report an issue please use the `issue tracker <https://github.com/jordan-melendez/gsum/issues>`_.
 
 License
 =======
 
-`MIT License <https://github.com/jordan-melendez/buqeyemodel/blob/master/LICENSE.txt>`_.
+`MIT License <https://github.com/jordan-melendez/gsum/blob/master/LICENSE.txt>`_.
 
 
 .. # Usage

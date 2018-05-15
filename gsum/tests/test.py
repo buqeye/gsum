@@ -2,8 +2,8 @@ import numpy as np
 import scipy as sp
 from scipy.stats import multivariate_normal
 import unittest
-from buqeyemodel import *
-from buqeyemodel.helpers import *
+from gsum import *
+from gsum.helpers import *
 from pymc3.gp.cov import ExpQuad
 
 
