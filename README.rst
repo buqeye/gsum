@@ -4,7 +4,11 @@
 
 .. <img src="./BUQEYE_fig.png?raw=true" width="30%"/>
 
-.. image:: ./docs/logos/gsum.png
+.. .. image : : ./docs/logos/gsum.png
+
+.. raw : : html
+
+   <p style="text-align:center;"><img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo"/></p>
 
 .. raw:: html
 
