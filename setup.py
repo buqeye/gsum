@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='buqeyemodel',
     packages=['buqeyemodel'],
-    # py_modules=['buqeyemodel', 'pymc3_additions'],
+    # py_modules=[''],
     version='0.1',
     description='A statistical model of EFT convergence.',
     author='Jordan Melendez',
