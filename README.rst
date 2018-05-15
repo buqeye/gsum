@@ -6,9 +6,9 @@
 
 .. .. image : : ./docs/logos/gsum.png
 
-.. raw : : html
+.. raw:: html
 
-   <p style="text-align:center;"><img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo"/></p>
+   <p style="text-align:center;"><img src="https://cdn.rawgit.com/jordan-melendez/gsum/c85d832b/docs/logos/gsum.png" width="30%" alt="gsum logo"/></p>
 
 .. raw:: html
 
