@@ -2,9 +2,13 @@ from .models import SGP
 from .models import PowerSeries
 from .models import PowerProcess
 
-from .extras import toy_data
-from .extras import coefficients
-from .extras import partials
-from .extras import predictions
-from .extras import stabilize
-from .extras import gaussian
+from .helpers import cartesian
+from .helpers import toy_data
+from .helpers import generate_coefficients
+from .helpers import coefficients
+from .helpers import partials
+from .helpers import predictions
+from .helpers import stabilize
+from .helpers import gaussian
+from .helpers import HPD
+from .helpers import HPD_pdf
