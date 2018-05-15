@@ -41,6 +41,11 @@ extensions = [
     'sphinx.ext.githubpages',
     'numpydoc',
     'nbsphinx',
+    'sphinxcontrib.inlinesyntaxhighlight',
+    'matplotlib.sphinxext.only_directives',
+    'matplotlib.sphinxext.plot_directive',
+    'IPython.sphinxext.ipython_directive',
+    'IPython.sphinxext.ipython_console_highlighting',
 ]
 
 # Don't auto-generate summary for class members.
@@ -90,10 +95,13 @@ language = None
 # This patterns also effect to html_static_path and html_extra_path
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
-nbsphinx_execute = 'never'
+# nbsphinx_execute = 'never'
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+
+# Ensure python highlighting
+highlight_language = 'default'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False

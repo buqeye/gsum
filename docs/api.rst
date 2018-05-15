@@ -8,4 +8,4 @@ API Reference
    :maxdepth: 2
 
    api/models
-   api/extras
+   api/helpers
