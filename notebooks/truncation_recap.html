@@ -14,7 +14,7 @@
   <link rel="stylesheet" type="text/css" href="../_static/css/bootstrap-theme.min.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-    <title>Bayesian truncation errors in chiral effective field theory: A Recap &#8212; buqeyemodel 0.1 documentation</title>
+    <title>Bayesian truncation errors in chiral effective field theory: A Recap &#8212; gsum 0.1 documentation</title>
     <link rel="stylesheet" href="../_static/guzzle.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
@@ -48,15 +48,12 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="../api.html" title="API Reference"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="bq_test.html" title="BUQEYE Model"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">buqeyemodel 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">gsum 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../examples.html" accesskey="U">Examples</a> &#187;</li> 
       </ul>
     </div>
@@ -67,7 +64,7 @@
       </div>
   <div id="left-column">
     <div class="sphinxsidebar"><a href="
-    ../index.html" class="text-logo">buqeyemodel</a>
+    ../index.html" class="text-logo">gsum</a>
 <div class="sidebar-block">
   <div class="sidebar-wrapper">
     <h2>Table Of Contents</h2>
@@ -103,6 +100,7 @@
 <li><a class="reference internal" href="#Model-Checking">Model Checking</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#Conclusion">Conclusion</a></li>
 </ul>
 </li>
 </ul>
@@ -312,14 +310,13 @@ div.nboutput div.output_area.stderr {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">scipy</span> <span class="kn">as</span> <span class="nn">sp</span>
-<span class="kn">import</span> <span class="nn">buqeyemodel</span> <span class="kn">as</span> <span class="nn">bq</span>
+<span></span><span class="kn">import</span> <span class="nn">buqeyemodel</span> <span class="kn">as</span> <span class="nn">bq</span>
 <span class="kn">import</span> <span class="nn">matplotlib</span> <span class="kn">as</span> <span class="nn">mpl</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">HTML</span><span class="p">,</span> <span class="n">display</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="kn">as</span> <span class="nn">sp</span>
 <span class="o">%</span><span class="k">matplotlib</span> inline
 </pre></div>
 </div>
@@ -329,10 +326,11 @@ div.nboutput div.output_area.stderr {
 <p>Here we reproduce, using the improved truncation error model based on
 conjugate priors, some of the results in the following papers</p>
 <ul class="simple">
-<li>Furnstahl et al., Quantifying Truncation Errors in Effective Field
-Theory</li>
-<li>Melendez et al., Bayesian truncation errors in chiral effective field
-theory: Nucleon-nucleon observables</li>
+<li><a class="reference external" href="https://arxiv.org/abs/1506.01343">Furnstahl et al.</a>, Quantifying
+Truncation Errors in Effective Field Theory</li>
+<li><a class="reference external" href="https://arxiv.org/abs/1704.03308">Melendez et al.</a>, Bayesian
+truncation errors in chiral effective field theory: Nucleon-nucleon
+observables</li>
 </ul>
 <p>In these papers, the convergence pattern of nucleon-nucleon scattering
 observables, including the total and differential cross sections and a
@@ -385,9 +383,23 @@ reproduce some of those tests with this package. Since setting
 <span class="math">\(a = b = 0\)</span> is equivalent to prior set <span class="math">\(C\)</span> with
 <span class="math">\(\bar c_&lt; = 1/\bar c_&gt; = 0\)</span>, the results should be identical in
 this case.</p>
+<p>The basic steps for using this uncorrelated model are</p>
+<ul class="simple">
+<li>Define a <code class="docutils literal highlight highlight-default"><span></span><span class="n">PowerSeries</span></code> model object with hyperparameters <span class="math">\(a\)</span>
+and <span class="math">\(b\)</span></li>
+<li>Use the <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> method to input the partial sums <code class="docutils literal highlight highlight-default"><span></span><span class="n">partials</span></code> of
+the observable, with the expansion parameter <code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio</span></code>, and reference
+scale <code class="docutils literal highlight highlight-default"><span></span><span class="n">ref</span></code> used to extract the coefficients of the series</li>
+<li>Call another method, such as <code class="docutils literal highlight highlight-default"><span></span><span class="n">predictive</span></code> or <code class="docutils literal highlight highlight-default"><span></span><span class="n">predict</span></code> to get
+posteriors or degree of belief intervals for the truncation error.
+Below we use <code class="docutils literal highlight highlight-default"><span></span><span class="n">predictive</span></code>, which returns a frozen scipy <span class="math">\(t\)</span>
+distribution object for the truncation error. Then one can use
+standard methods (see the scipy.stats documentation) to compute its
+pdf, credible intervals, etc.</li>
+</ul>
 <div class="nbinput container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [2]:
+<span></span>In [15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -498,7 +510,7 @@ distribution that best reproduce the “Set C” prior with
 extensively used prior set of Melendez et al.</p>
 <div class="nbinput container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [3]:
+<span></span>In [16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -547,7 +559,7 @@ than a constant as before. Thus we will first define the <code class="docutils l
 function that will be used as the expansion parameter.</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [4]:
+<span></span>In [17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -599,10 +611,14 @@ function that will be used as the expansion parameter.</p>
 </pre></div>
 </div>
 </div>
-<p>Now import the relevant data for each observable</p>
+<p>Now import the relevant data for each observable using the wonderful
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">pandas</span></code> package. Here we use Epelbaum, Krebs, and Meißner’s
+<span class="math">\(R=0.9\)</span> fm potential up to N<span class="math">\(^4\)</span>LO as the order-by-order
+predictions, and the Nigmegan partial wave analysis as experimental
+data.</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [5]:
+<span></span>In [18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -654,7 +670,7 @@ observables. Here we set up interpolators that could be used with any
 energy or <span class="math">\(\theta\)</span> value.</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [6]:
+<span></span>In [19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -683,7 +699,7 @@ tests. The residual is defined as</p>
 get the imported data</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [7]:
+<span></span>In [20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -701,7 +717,7 @@ get the imported data</p>
 <p>Now set up the hyperparameters that will be used for the model</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [8]:
+<span></span>In [21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -713,10 +729,16 @@ get the imported data</p>
 </pre></div>
 </div>
 </div>
-<p>Let’s start by reproducing the Fig. 7 from Melendez et al.</p>
+<p>Let’s start by reproducing the Fig. 7 from Melendez et al. Instead of
+using <code class="docutils literal highlight highlight-default"><span></span><span class="n">predictive</span></code> as before, here we will use <code class="docutils literal highlight highlight-default"><span></span><span class="n">predict</span></code>, which
+directly provides the mean and set of credible intervals for the
+truncation error. Since <code class="docutils literal highlight highlight-default"><span></span><span class="n">rescale</span></code> is set to <code class="docutils literal highlight highlight-default"><span></span><span class="kc">True</span></code>, the posterior
+corresponds to <span class="math">\(X_k + X_{\mathrm{ref}} \Delta_k\)</span>, rather than
+simply <span class="math">\(\Delta_k\)</span>. This makes placing error bands on existing data
+very easy.</p>
 <div class="nbinput container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [9]:
+<span></span>In [22]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -772,9 +794,8 @@ get the imported data</p>
 </div>
 </div>
 <p>Compare the above figure with Fig. 7 from Melendez et al.</p>
-<div class="figure" id="id1">
-<img alt="total cross section residual" src="../_images/subres_C_t-t-t-t_vs_energy-1-351-1_kvnn_61_lam12.0_reg_0_3_0_blatt_ig-0-1_Lambdab-600_lm-1.0_Xref-0dsigma_p-0.68-0.95_prior-C_h-10_cbl-0.25_cbu-10.0_sg-0_orders-NLO-N2LO-N3LO-N4LO.pdf" />
-<p class="caption"><span class="caption-text">total cross section residual</span></p>
+<div class="figure">
+<img alt="" src="../_images/subres_C_t-t-t-t_vs_energy-1-351-1_kvnn_61_lam12.0_reg_0_3_0_blatt_ig-0-1_Lambdab-600_lm-1.0_Xref-0dsigma_p-0.68-0.95_prior-C_h-10_cbl-0.25_cbu-10.0_sg-0_orders-NLO-N2LO-N3LO-N4LO.pdf" />
 </div>
 </div>
 <div class="section" id="Differential-Cross-Section">
@@ -782,7 +803,7 @@ get the imported data</p>
 <p>Now set up differential cross section data</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [10]:
+<span></span>In [23]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -792,18 +813,13 @@ get the imported data</p>
 <span class="n">X_diff</span> <span class="o">=</span> <span class="n">bq</span><span class="o">.</span><span class="n">cartesian</span><span class="p">(</span><span class="n">diff_energy</span><span class="p">,</span> <span class="n">diff_theta</span><span class="p">)</span>
 <span class="n">diff_df_reduced</span> <span class="o">=</span> <span class="n">diff_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">X_diff</span><span class="p">))]</span>
 <span class="n">diff_partials</span> <span class="o">=</span> <span class="n">diff_df_reduced</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">:</span><span class="s1">&#39;5&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">T</span>
-
-<span class="c1"># Corresponding orders</span>
-<span class="n">orders</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
-<span class="c1"># Ignore these orders in prediction</span>
-<span class="n">rm_orders</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
 <p>Below we repeat the analysis for the differential cross section</p>
 <div class="nbinput container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [11]:
+<span></span>In [24]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -852,9 +868,8 @@ get the imported data</p>
 </div>
 </div>
 <p>Compare the above figure with Fig. 8 from Melendez et al.:</p>
-<div class="figure" id="id2">
-<img alt="differential cross section" src="../_images/subres_C_0-0-0-0_vs_theta-1-180-1_energy-96_kvnn_61_lam12.0_reg_0_3_0_blatt_ig-0-1_Lambdab-600_lm-1.0_Xref-0dsigma_p-0.68-0.95_prior-C_h-10_cbl-0.25_cbu-10.0_sg-0_orders-NLO-N2LO-N3LO-N4LO.pdf" />
-<p class="caption"><span class="caption-text">differential cross section</span></p>
+<div class="figure">
+<img alt="" src="../_images/subres_C_0-0-0-0_vs_theta-1-180-1_energy-96_kvnn_61_lam12.0_reg_0_3_0_blatt_ig-0-1_Lambdab-600_lm-1.0_Xref-0dsigma_p-0.68-0.95_prior-C_h-10_cbl-0.25_cbu-10.0_sg-0_orders-NLO-N2LO-N3LO-N4LO.pdf" />
 </div>
 </div>
 <div class="section" id="Model-Checking">
@@ -863,12 +878,15 @@ get the imported data</p>
 consistency plots and <span class="math">\(\Lambda_b\)</span> posteriors. Consistency plots
 check whether a <span class="math">\(100\alpha\%\)</span> degree of belief interval contains
 true value of the truncation error approximately <span class="math">\(100\alpha\%\)</span> of
-the time. The data should lie close to the diagonal in the plot below.
-The 68% and 95% gray uncertainty bands allow for deviations from the
-diagonal due to the finite set of data.</p>
+the time. Validation data can be checked in this manner using the
+<code class="docutils literal highlight highlight-default"><span></span><span class="n">credible_diagnostic</span></code> method, which computes the average number of
+points contained in a given credible interval. The data should lie close
+to the diagonal in the plot below. The 68% and 95% gray uncertainty
+bands allow for deviations from the diagonal due to the finite set of
+data.</p>
 <div class="nbinput container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [12]:
+<span></span>In [28]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -878,8 +896,9 @@ diagonal due to the finite set of data.</p>
     <span class="n">partials</span><span class="o">=</span><span class="n">total_partials_consistency</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">energy_consistency</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">],</span>
     <span class="n">ref</span><span class="o">=</span><span class="n">total_ref</span><span class="p">(</span><span class="n">energy_consistency</span><span class="p">),</span> <span class="n">ratio</span><span class="o">=</span><span class="n">ratio</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="n">orders</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">)</span>
 <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">energy_consistency</span><span class="p">)</span>
-<span class="n">success_rate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">band_dobs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.001</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 <span class="n">dobs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">beta</span> <span class="o">=</span> <span class="bp">False</span>
 
 <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
 <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
@@ -890,12 +909,6 @@ diagonal due to the finite set of data.</p>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Success Rate, $N={}$&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">N</span><span class="p">))</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Total Cross Section Consistency Plot&#39;</span><span class="p">)</span>
 <span class="n">consistency_markers</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;o&#39;</span><span class="p">]</span>
-
-<span class="c1"># Plot binomial (or, beta) HPDs</span>
-<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">]:</span>
-    <span class="n">hpds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">bq</span><span class="o">.</span><span class="n">HPD</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">N</span><span class="o">*</span><span class="n">s</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">-</span><span class="n">N</span><span class="o">*</span><span class="n">s</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">success_rate</span><span class="p">])</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">fill_betweenx</span><span class="p">(</span><span class="n">success_rate</span><span class="p">,</span> <span class="n">hpds</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">hpds</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
-
 
 <span class="c1"># Plot data</span>
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
@@ -910,9 +923,20 @@ diagonal due to the finite set of data.</p>
     <span class="n">data</span> <span class="o">=</span> <span class="n">total_partials_consistency</span><span class="p">[</span><span class="n">max_index</span><span class="p">]</span>
 
     <span class="c1"># Must use leading order approximation if comparing to next order</span>
-    <span class="n">D_CI</span> <span class="o">=</span> <span class="n">total_consistency</span><span class="o">.</span><span class="n">credible_diagnostic</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">dobs</span><span class="o">=</span><span class="n">dobs</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">orders</span><span class="p">[</span><span class="n">max_index</span><span class="p">],</span> <span class="n">rescale</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">D_CI</span><span class="p">,</span> <span class="n">bands</span> <span class="o">=</span> <span class="n">total_consistency</span><span class="o">.</span><span class="n">credible_diagnostic</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">dobs</span><span class="o">=</span><span class="n">dobs</span><span class="p">,</span> <span class="n">band_intervals</span><span class="o">=</span><span class="p">[</span><span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">],</span>
+        <span class="n">band_dobs</span><span class="o">=</span><span class="n">band_dobs</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="n">beta</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">orders</span><span class="p">[</span><span class="n">max_index</span><span class="p">],</span> <span class="n">rescale</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="c1"># Plot each line</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">dobs</span><span class="p">,</span> <span class="n">D_CI</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="n">consistency_markers</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
             <span class="n">markeredgecolor</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">markeredgewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;N{}LO&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">max_index</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="c1"># Make gray error bands</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">beta</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">band_dobs</span><span class="p">,</span> <span class="n">bands</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">bands</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">band_dobs</span><span class="p">,</span> <span class="n">bands</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">bands</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">fill_betweenx</span><span class="p">(</span><span class="n">band_dobs</span><span class="p">,</span> <span class="n">bands</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">bands</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">fill_betweenx</span><span class="p">(</span><span class="n">band_dobs</span><span class="p">,</span> <span class="n">bands</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">bands</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 </pre></div>
 </div>
@@ -925,16 +949,25 @@ diagonal due to the finite set of data.</p>
 </div>
 </div>
 <p>Again, compare this with Fig. 12 of Melendez et al.:</p>
-<div class="figure" id="id3">
-<img alt="consistency" src="../_images/cons_sig_vs_perc-10-91-10_kvnn_61_lam12.0_reg_0_3_0_blatt_ig-0-1_Lambdab-600_lm-1.0_Xref-0dsigma_prior-C_h-1_cbl-0.25_cbu-10.0_sg-0_sep-NLO-N2LO-N3LO_theta-vals-0_energy-range-20-341-20.pdf" />
-<p class="caption"><span class="caption-text">consistency</span></p>
+<div class="figure">
+<img alt="" src="../_images/cons_sig_vs_perc-10-91-10_kvnn_61_lam12.0_reg_0_3_0_blatt_ig-0-1_Lambdab-600_lm-1.0_Xref-0dsigma_prior-C_h-1_cbl-0.25_cbu-10.0_sg-0_sep-NLO-N2LO-N3LO_theta-vals-0_energy-range-20-341-20.pdf" />
 </div>
-<p>The <span class="math">\(\Lambda_b\)</span> posteriors were computed with uninformative Set C
+<p>Each curve shows a slight discrepancy (only a few points) with Fig. 12,
+but that is expected since the priors are not identical between the
+figures. Now let’s move on to pr(<span class="math">\(\Lambda_b | c\)</span>). The
+<span class="math">\(\Lambda_b\)</span> posteriors were computed with uninformative Set C
 prior, which corresponds exactly to <span class="math">\(a = b = 0\)</span> for the inverse
-gamma prior.</p>
+gamma prior. Thus, the figures generated below should correspond exactly
+with those in the paper. Here, the <code class="docutils literal highlight highlight-default"><span></span><span class="n">posterior</span></code> method is used to
+compute an approximately normalized posterior for the <code class="docutils literal highlight highlight-default"><span></span><span class="n">Lambda_b</span></code>
+parameter of the <code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio</span></code> function. Any generic keyword parameter can
+be used instead of <code class="docutils literal highlight highlight-default"><span></span><span class="n">Lambda_b</span></code> so long as it is found in the <code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio</span></code>
+function. Since the posteriors can be quite skewed, a highest
+probability density interval is calculated using the <code class="docutils literal highlight highlight-default"><span></span><span class="n">HPD_pdf</span></code>
+function, rather than a simple symmetric credible interval.</p>
 <div class="nbinput container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [13]:
+<span></span>In [26]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -946,7 +979,7 @@ gamma prior.</p>
 
 <span class="k">def</span> <span class="nf">Lb_logprior</span><span class="p">(</span><span class="n">Lambda_b</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Melendez et al., Eq. (31)&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="mi">300</span> <span class="o">&lt;</span> <span class="n">Lambda_b</span><span class="p">,</span> <span class="n">Lambda_b</span> <span class="o">&lt;</span> <span class="mi">1500</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">Lambda_b</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="mi">300</span> <span class="o">&lt;=</span> <span class="n">Lambda_b</span><span class="p">,</span> <span class="n">Lambda_b</span> <span class="o">&lt;=</span> <span class="mi">1500</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">Lambda_b</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
 
 <span class="c1"># Observables</span>
 <span class="n">tot_cross</span> <span class="o">=</span> <span class="n">total_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">energies</span><span class="p">,</span> <span class="n">idx</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">:</span><span class="s1">&#39;5&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">T</span>
@@ -968,7 +1001,7 @@ gamma prior.</p>
 <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Total Cross Section&#39;</span><span class="p">,</span> <span class="s1">&#39;Differential Cross Section&#39;</span><span class="p">,</span> <span class="s1">&#39;Spin Observables&#39;</span><span class="p">]</span>
 
 <span class="c1"># Begin loop for plotting</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">obs_j</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">observable_list</span><span class="p">):</span>
     <span class="n">xlb</span> <span class="o">=</span> <span class="n">X_Lb_list</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
     <span class="n">ref_x</span> <span class="o">=</span> <span class="n">xlb</span>
@@ -1013,11 +1046,18 @@ gamma prior.</p>
 </div>
 </div>
 <p>Compare the above figure with Fig. 22 of Melendez et al.:</p>
-<div class="figure" id="id4">
-<img alt="Lambdab" src="../_images/vio_Lambdab_pdf_sigma-dsdO-spins_vs_energy-vals-96-143-200-300_theta-vals-60-120_kvnn_46_lam12.0_reg_0_3_0_blatt_ig-0-1_Xref-0dsigma_prior-C_cbl-0.001_cbu-1000.0_sg-0_Lpr-u_Lbl-300.0_Lbu-1500.0_ords-N3LO-N4LO_cat-Observable_hue-Order.pdf" />
-<p class="caption"><span class="caption-text">Lambdab</span></p>
+<div class="figure">
+<img alt="" src="../_images/vio_Lambdab_pdf_sigma-dsdO-spins_vs_energy-vals-96-143-200-300_theta-vals-60-120_kvnn_46_lam12.0_reg_0_3_0_blatt_ig-0-1_Xref-0dsigma_prior-C_cbl-0.001_cbu-1000.0_sg-0_Lpr-u_Lbl-300.0_Lbu-1500.0_ords-N3LO-N4LO_cat-Observable_hue-Order.pdf" />
 </div>
 </div>
+</div>
+<div class="section" id="Conclusion">
+<h2>Conclusion<a class="headerlink" href="#Conclusion" title="Permalink to this headline">¶</a></h2>
+<p>We have regenerated important figures from Furnstahl et al. and Melendez
+et al. This code is significantly more condensed, efficient, and
+reusable than the original. We believe that the ease with which results
+can be obtained with this package can greatly expand its domain of
+applicability.</p>
 </div>
 </div>
 
@@ -1046,15 +1086,12 @@ gamma prior.</p>
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="../api.html" title="API Reference"
              >next</a> |</li>
         <li class="right" >
           <a href="bq_test.html" title="BUQEYE Model"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">buqeyemodel 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">gsum 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../examples.html" >Examples</a> &#187;</li> 
       </ul>
     </div>

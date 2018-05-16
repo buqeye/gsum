@@ -14,7 +14,7 @@
   <link rel="stylesheet" type="text/css" href="_static/css/bootstrap-theme.min.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-    <title>Welcome to buqeyemodel’s documentation! &#8212; buqeyemodel 0.1 documentation</title>
+    <title>Welcome to gsum’s documentation! &#8212; gsum 0.1 documentation</title>
     <link rel="stylesheet" href="_static/guzzle.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
@@ -52,7 +52,7 @@
         <li class="right" >
           <a href="intro.html" title="Introduction"
              accesskey="N">next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">buqeyemodel 0.1 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="#">gsum 0.1 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="container-wrapper">
@@ -62,7 +62,7 @@
       </div>
   <div id="left-column">
     <div class="sphinxsidebar"><a href="
-    #" class="text-logo">buqeyemodel</a>
+    #" class="text-logo">gsum</a>
 <div class="sidebar-block">
   <div class="sidebar-wrapper">
     <h2>Table Of Contents</h2>
@@ -84,10 +84,10 @@
     <h2>Contents</h2>
     <div class="sidebar-localtoc">
       <ul>
-<li><a class="reference internal" href="#">Welcome to buqeyemodel’s documentation!</a></li>
+<li><a class="reference internal" href="#">Welcome to gsum’s documentation!</a></li>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#dependencies">Dependencies</a></li>
-<li><a class="reference internal" href="#citing-buqeyemodel">Citing buqeyemodel</a></li>
+<li><a class="reference internal" href="#citing-gsum">Citing gsum</a></li>
 <li><a class="reference internal" href="#contact">Contact</a></li>
 <li><a class="reference internal" href="#license">License</a></li>
 <li><a class="reference internal" href="#contents">Contents</a></li>
@@ -119,30 +119,33 @@
             <ol class="breadcrumb">
               <li><a href="#">Docs</a></li>
               
-              <li>Welcome to buqeyemodel’s documentation!</li>
+              <li>Welcome to gsum’s documentation!</li>
             </ol>
           </div>
           
           <div class="document clearer body">
             
-  <div class="section" id="welcome-to-buqeyemodel-s-documentation">
-<h1>Welcome to buqeyemodel’s documentation!<a class="headerlink" href="#welcome-to-buqeyemodel-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p style="text-align:center;"><img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo"/></p><p>The BUQEYE Model package provides two classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
-Specifically, this is a MCMC-based implementation of the statistical model developed in <a class="reference external" href="https://arxiv.org/abs/1506.01343">this paper</a>.</p>
+  <div class="section" id="welcome-to-gsum-s-documentation">
+<h1>Welcome to gsum’s documentation!<a class="headerlink" href="#welcome-to-gsum-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p style="text-align:center;">
+     <img src="https://cdn.rawgit.com/jordan-melendez/gsum/c85d832b/docs/logos/gsum.png" width="30%" alt="gsum logo"/>
+     <img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo"/>
+</p><p>The gsum package provides two classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
+Specifically, this is a conjugacy-based implementation of the statistical model developed in <a class="reference external" href="https://arxiv.org/abs/1506.01343">this paper</a>.</p>
 </div>
 <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>The latest release of BUQEYE Model can be installed from PyPI using <code class="docutils literal highlight highlight-default"><span></span><span class="n">pip</span></code>:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> pip install buqeyemodel
+<p>The latest release of gsum can be installed from PyPI using <code class="docutils literal highlight highlight-default"><span></span><span class="n">pip</span></code>:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> pip install gsum
 </pre></div>
 </div>
-<p>The current development branch can be installed via</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> pip install git+https://github.com/jordan-melendez/buqeyemodel@develop
+<p>The current working branch can be installed via</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> pip install git+https://github.com/jordan-melendez/gsum
 </pre></div>
 </div>
 <p>Additionally, one can clone the repository and install using</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> git clone -b develop https://github.com/jordan-melendez/buqeyemodel.git
-<span class="gp">$</span> <span class="nb">cd</span> buqeyemodel
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> git clone -b develop https://github.com/jordan-melendez/gsum.git
+<span class="gp">$</span> <span class="nb">cd</span> gsum
 <span class="gp">$</span> pip install .
 </pre></div>
 </div>
@@ -151,18 +154,19 @@ This will install the package as is, but if you want to make edits to the code f
 </div>
 <div class="section" id="dependencies">
 <h1>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h1>
-<p>BUQEYE Model has only been tested with python 3.5. Additionally, some functionality relies on the <code class="docutils literal highlight highlight-default"><span></span><span class="n">StatsModels</span></code> package.</p>
+<p>gsum has only been tested with python 3.5.
+.. Additionally, some functionality relies on the <code class="docutils literal highlight highlight-default"><span></span><span class="n">StatsModels</span></code> package.</p>
 </div>
-<div class="section" id="citing-buqeyemodel">
-<h1>Citing buqeyemodel<a class="headerlink" href="#citing-buqeyemodel" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="citing-gsum">
+<h1>Citing gsum<a class="headerlink" href="#citing-gsum" title="Permalink to this headline">¶</a></h1>
 </div>
 <div class="section" id="contact">
 <h1>Contact<a class="headerlink" href="#contact" title="Permalink to this headline">¶</a></h1>
-<p>To report an issue please use the <a class="reference external" href="https://github.com/jordan-melendez/buqeyemodel/issues">issue tracker</a>.</p>
+<p>To report an issue please use the <a class="reference external" href="https://github.com/jordan-melendez/gsum/issues">issue tracker</a>.</p>
 </div>
 <div class="section" id="license">
 <h1>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h1>
-<p><a class="reference external" href="https://github.com/jordan-melendez/buqeyemodel/blob/master/LICENSE.txt">MIT License</a>.</p>
+<p><a class="reference external" href="https://github.com/jordan-melendez/gsum/blob/master/LICENSE.txt">MIT License</a>.</p>
 </div>
 <div class="section" id="contents">
 <h1>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h1>
@@ -220,7 +224,7 @@ This will install the package as is, but if you want to make edits to the code f
         <li class="right" >
           <a href="intro.html" title="Introduction"
              >next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">buqeyemodel 0.1 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="#">gsum 0.1 documentation</a> &#187;</li> 
       </ul>
     </div>
 <script type="text/javascript">

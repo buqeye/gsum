@@ -14,7 +14,7 @@
   <link rel="stylesheet" type="text/css" href="../_static/css/bootstrap-theme.min.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-    <title>Models &#8212; buqeyemodel 0.1 documentation</title>
+    <title>Models &#8212; gsum 0.1 documentation</title>
     <link rel="stylesheet" href="../_static/guzzle.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
@@ -56,7 +56,7 @@
         <li class="right" >
           <a href="../api.html" title="API Reference"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">buqeyemodel 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">gsum 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../api.html" accesskey="U">API Reference</a> &#187;</li> 
       </ul>
     </div>
@@ -67,7 +67,7 @@
       </div>
   <div id="left-column">
     <div class="sphinxsidebar"><a href="
-    ../index.html" class="text-logo">buqeyemodel</a>
+    ../index.html" class="text-logo">gsum</a>
 <div class="sidebar-block">
   <div class="sidebar-wrapper">
     <h2>Table Of Contents</h2>
@@ -118,11 +118,11 @@
           
           <div class="document clearer body">
             
-  <div class="section" id="module-buqeyemodel.models">
-<span id="models"></span><h1>Models<a class="headerlink" href="#module-buqeyemodel.models" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-gsum.models">
+<span id="models"></span><h1>Models<a class="headerlink" href="#module-gsum.models" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
-<dt id="buqeyemodel.models.SGP">
-<em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">SGP</code><span class="sig-paren">(</span><em>dim=None</em>, <em>basis=None</em>, <em>means=None</em>, <em>cov=None</em>, <em>shape=None</em>, <em>scale=None</em>, <em>corr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP">
+<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">SGP</code><span class="sig-paren">(</span><em>dim=None</em>, <em>basis=None</em>, <em>means=None</em>, <em>cov=None</em>, <em>shape=None</em>, <em>scale=None</em>, <em>corr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP" title="Permalink to this definition">¶</a></dt>
 <dd><p>A semiparametric Gaussian process class</p>
 <p>Treats a function <span class="math">\(y\)</span> as a Gaussian process</p>
 <div class="math">
@@ -169,8 +169,8 @@ the columns of the <code class="docutils literal highlight highlight-default"><s
 </tbody>
 </table>
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.condition">
-<code class="descname">condition</code><span class="sig-paren">(</span><em>index</em>, <em>Xnew</em>, <em>dob=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.condition" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.condition">
+<code class="descname">condition</code><span class="sig-paren">(</span><em>index</em>, <em>Xnew</em>, <em>dob=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.condition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Conditions on observed data and returns interpolant and error bands.</p>
 <p>Extracts the mean and degree of belief intervals from the corresponding
 conditional object.</p>
@@ -215,8 +215,8 @@ degree of belief intervals is returned.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.conditional">
-<code class="descname">conditional</code><span class="sig-paren">(</span><em>index</em>, <em>Xnew</em>, <em>corr=False</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.conditional"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.conditional" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.conditional">
+<code class="descname">conditional</code><span class="sig-paren">(</span><em>index</em>, <em>Xnew</em>, <em>corr=False</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.conditional"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.conditional" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a conditional distribution object anchored to observed points.</p>
 <p>The conditional Gaussian process given the observed <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span><span class="p">[</span><span class="n">index</span><span class="p">]</span></code> is
 marginalized over <span class="math">\(\beta\)</span> and <span class="math">\(\sigma^2\)</span>. The resulting
@@ -263,29 +263,8 @@ returned, else a
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.corr_post">
-<code class="descname">corr_post</code><span class="sig-paren">(</span><em>logprior=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.corr_post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.corr_post" title="Permalink to this definition">¶</a></dt>
-<dd><p>Evaluates the posterior for the correlation parameters in corr_kwargs</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>logprior</strong> : callable</p>
-<p><strong>corr_kwargs</strong> : dict</p>
-<blockquote class="last">
-<div><p>The values of the correlation parameters at which to evaluate the
-posterior. Because the evidence is vectorized, standard
-array broadcasting rules apply</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="buqeyemodel.models.SGP.cov">
-<code class="descname">cov</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.cov" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.cov">
+<code class="descname">cov</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.cov" title="Permalink to this definition">¶</a></dt>
 <dd><p>The covariance <span class="math">\(V\)</span> of the normal distribution on <span class="math">\(\beta\)</span></p>
 <p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> is given or <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> has been used,
 then the posterior value is returned, else, the prior value is
@@ -321,8 +300,8 @@ to the valued supplied to <code class="docutils literal highlight highlight-defa
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.evidence">
-<code class="descname">evidence</code><span class="sig-paren">(</span><em>log=True</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.evidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.evidence" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.evidence">
+<code class="descname">evidence</code><span class="sig-paren">(</span><em>log=True</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.evidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.evidence" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the evidence, or marginal likelihood, of the observed data</p>
 <p>Specifically, the evidence integrates out <span class="math">\(\beta\)</span> and
 <span class="math">\(\sigma^2\)</span> such that</p>
@@ -369,8 +348,8 @@ to those passed to the <code class="docutils literal highlight highlight-default
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.inv_cov">
-<code class="descname">inv_cov</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.inv_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.inv_cov" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.inv_cov">
+<code class="descname">inv_cov</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.inv_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.inv_cov" title="Permalink to this definition">¶</a></dt>
 <dd><p>The inverse covariance <span class="math">\(V^{-1}\)</span> of the normal distribution on
 <span class="math">\(\beta\)</span></p>
 <p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> is given or <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> has been used,
@@ -407,8 +386,8 @@ to the valued supplied to <code class="docutils literal highlight highlight-defa
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.means">
-<code class="descname">means</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.means"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.means" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.means">
+<code class="descname">means</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.means"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.means" title="Permalink to this definition">¶</a></dt>
 <dd><p>The mean parameters <span class="math">\(\mu\)</span> of the normal distribution on <span class="math">\(\beta\)</span></p>
 <p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> is given or <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> has been used,
 then the posterior value is returned, else, the prior value is
@@ -444,8 +423,8 @@ value is returned, else it is recomputed.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.observe">
-<code class="descname">observe</code><span class="sig-paren">(</span><em>X</em>, <em>y</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.observe" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.observe">
+<code class="descname">observe</code><span class="sig-paren">(</span><em>X</em>, <em>y</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.observe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Observe GP outputs and update parameters.</p>
 <p>Conditions on <span class="math">\(n\)</span> iid processes at <span class="math">\(N\)</span> locations
 <span class="math">\(X\)</span>.</p>
@@ -478,8 +457,8 @@ values will be saved and used as defaults for all other methods.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.posterior">
-<code class="descname">posterior</code><span class="sig-paren">(</span><em>name</em>, <em>logprior=None</em>, <em>log=False</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.posterior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.posterior" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.posterior">
+<code class="descname">posterior</code><span class="sig-paren">(</span><em>name</em>, <em>logprior=None</em>, <em>log=False</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.posterior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.posterior" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the posterior pdf for arbitrary correlation variables</p>
 <p>Uses Bayes’ Theorem to compute</p>
 <div class="math">
@@ -494,7 +473,7 @@ used to compute the posterior.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>name</strong> : str</p>
 <blockquote>
 <div><p>The name of the variable passed to the correlation function
-for which to calculate the poster</p>
+for which to calculate the posterior</p>
 </div></blockquote>
 <p><strong>logprior</strong> : callable, optional</p>
 <blockquote>
@@ -526,8 +505,8 @@ be inferred from the <code class="docutils literal highlight highlight-default">
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.predictive">
-<code class="descname">predictive</code><span class="sig-paren">(</span><em>Xnew</em>, <em>corr=False</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.predictive" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.predictive">
+<code class="descname">predictive</code><span class="sig-paren">(</span><em>Xnew</em>, <em>corr=False</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.predictive" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a posterior predictive distribution object.</p>
 <p>Predicts new curves given the observed curves <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code></p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -566,8 +545,8 @@ returned, else a
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.scale">
-<code class="descname">scale</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.scale" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.scale">
+<code class="descname">scale</code><span class="sig-paren">(</span><em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.scale" title="Permalink to this definition">¶</a></dt>
 <dd><p>The scale parameter <span class="math">\(b\)</span> of the inverse gamma distribution</p>
 <p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> is given or <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> has been used,
 then the posterior value is returned, else, the prior value is
@@ -603,8 +582,8 @@ value is returned, else it is recomputed.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.shape">
-<code class="descname">shape</code><span class="sig-paren">(</span><em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.shape" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.shape">
+<code class="descname">shape</code><span class="sig-paren">(</span><em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.shape" title="Permalink to this definition">¶</a></dt>
 <dd><p>The shape parameter <span class="math">\(a\)</span> of the inverse gamma distribution</p>
 <p>If <code class="docutils literal highlight highlight-default"><span></span><span class="n">y</span></code> is given or <code class="docutils literal highlight highlight-default"><span></span><span class="n">observe</span></code> has been used, then the posterior
 value is returned, else, the prior value is returned. The prior
@@ -632,8 +611,8 @@ If observe has not been called, this returns the prior.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.SGP.student_params">
-<code class="descname">student_params</code><span class="sig-paren">(</span><em>X=None</em>, <em>H=None</em>, <em>R=None</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#SGP.student_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.SGP.student_params" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.SGP.student_params">
+<code class="descname">student_params</code><span class="sig-paren">(</span><em>X=None</em>, <em>H=None</em>, <em>R=None</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#SGP.student_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.SGP.student_params" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the parameters of the student <span class="math">\(t\)</span> distribution.</p>
 <p>Given a function</p>
 <div class="math">
@@ -695,8 +674,8 @@ instead.</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="buqeyemodel.models.PowerProcess">
-<em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">PowerProcess</code><span class="sig-paren">(</span><em>dim=None</em>, <em>basis=None</em>, <em>means=None</em>, <em>cov=None</em>, <em>shape=None</em>, <em>scale=None</em>, <em>corr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerProcess">
+<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">PowerProcess</code><span class="sig-paren">(</span><em>dim=None</em>, <em>basis=None</em>, <em>means=None</em>, <em>cov=None</em>, <em>shape=None</em>, <em>scale=None</em>, <em>corr=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerProcess" title="Permalink to this definition">¶</a></dt>
 <dd><p>A power series with iid random processes as coefficients.</p>
 <p>Implements the following model</p>
 <div class="math">
@@ -710,8 +689,8 @@ conjugate priors</p>
 allow one to estimate the full summation and obtain posteriors for the
 parameters.</p>
 <dl class="method">
-<dt id="buqeyemodel.models.PowerProcess.condition">
-<code class="descname">condition</code><span class="sig-paren">(</span><em>Xnew</em>, <em>index</em>, <em>dob=None</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.condition" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerProcess.condition">
+<code class="descname">condition</code><span class="sig-paren">(</span><em>Xnew</em>, <em>index</em>, <em>dob=None</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerProcess.condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerProcess.condition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Conditions on observed data and returns interpolant and error bands.</p>
 <p>Extracts the mean and degree of belief intervals from the corresponding
 conditional object.</p>
@@ -763,8 +742,8 @@ degree of belief intervals is returned.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.PowerProcess.conditional">
-<code class="descname">conditional</code><span class="sig-paren">(</span><em>Xnew</em>, <em>index</em>, <em>corr=False</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.conditional"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.conditional" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerProcess.conditional">
+<code class="descname">conditional</code><span class="sig-paren">(</span><em>Xnew</em>, <em>index</em>, <em>corr=False</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerProcess.conditional"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerProcess.conditional" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a conditional distribution object anchored to observed points.</p>
 <p>The conditional distribution of the coefficients, or partial sums, is
 marginalized over the means and variance parameter.</p>
@@ -817,8 +796,8 @@ returned, else a
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.PowerProcess.evidence">
-<code class="descname">evidence</code><span class="sig-paren">(</span><em>log=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.evidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.evidence" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerProcess.evidence">
+<code class="descname">evidence</code><span class="sig-paren">(</span><em>log=True</em>, <em>ratio_kwargs=None</em>, <em>y=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerProcess.evidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerProcess.evidence" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the evidence, or marginal likelihood, of the partial sums</p>
 <p>Specifically, the evidence integrates out <span class="math">\(\beta\)</span> and
 <span class="math">\(\sigma^2\)</span> such that</p>
@@ -869,8 +848,8 @@ to those passed to the <code class="docutils literal highlight highlight-default
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.PowerProcess.observe">
-<code class="descname">observe</code><span class="sig-paren">(</span><em>X</em>, <em>partials</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em>, <em>leading_kwargs=None</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.observe" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerProcess.observe">
+<code class="descname">observe</code><span class="sig-paren">(</span><em>X</em>, <em>partials</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em>, <em>leading_kwargs=None</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerProcess.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerProcess.observe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Observe the partial sums of the series and update parameters.</p>
 <p>The partial sums are observed at the input locations <code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code>.
 Using the given <code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio</span></code> and <code class="docutils literal highlight highlight-default"><span></span><span class="n">ref</span></code>, the coefficients of the series
@@ -937,8 +916,8 @@ methods.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.PowerProcess.posterior">
-<code class="descname">posterior</code><span class="sig-paren">(</span><em>name</em>, <em>logprior=None</em>, <em>log=False</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.posterior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.posterior" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerProcess.posterior">
+<code class="descname">posterior</code><span class="sig-paren">(</span><em>name</em>, <em>logprior=None</em>, <em>log=False</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerProcess.posterior"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerProcess.posterior" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the posterior pdf for arbitrary correlation or ratio variables</p>
 <p>Uses Bayes’ Theorem to compute</p>
 <div class="math">
@@ -991,8 +970,8 @@ be inferred from the <code class="docutils literal highlight highlight-default">
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.PowerProcess.predict">
-<code class="descname">predict</code><span class="sig-paren">(</span><em>Xnew</em>, <em>dob=None</em>, <em>max_order=None</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.predict" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerProcess.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>Xnew</em>, <em>dob=None</em>, <em>max_order=None</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerProcess.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerProcess.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Predicts the power series value and provides error bands.</p>
 <p>Gets the mean value of the predictive distribution and computes
 the degree of belief interval.</p>
@@ -1044,8 +1023,8 @@ degree of belief intervals is returned.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.PowerProcess.predictive">
-<code class="descname">predictive</code><span class="sig-paren">(</span><em>Xnew</em>, <em>corr=False</em>, <em>max_order=None</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerProcess.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerProcess.predictive" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerProcess.predictive">
+<code class="descname">predictive</code><span class="sig-paren">(</span><em>Xnew</em>, <em>corr=False</em>, <em>max_order=None</em>, <em>rescale=True</em>, <em>ratio_kwargs=None</em>, <em>**corr_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerProcess.predictive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerProcess.predictive" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a posterior predictive distribution object.</p>
 <p>Predicts the value of the power series up to <code class="docutils literal highlight highlight-default"><span></span><span class="n">max_order</span></code> at
 the input locations <code class="docutils literal highlight highlight-default"><span></span><span class="n">X</span></code>.</p>
@@ -1101,8 +1080,8 @@ returned, else a
 </dd></dl>
 
 <dl class="class">
-<dt id="buqeyemodel.models.PowerSeries">
-<em class="property">class </em><code class="descclassname">buqeyemodel.models.</code><code class="descname">PowerSeries</code><span class="sig-paren">(</span><em>shape=None</em>, <em>scale=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerSeries">
+<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">PowerSeries</code><span class="sig-paren">(</span><em>shape=None</em>, <em>scale=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerSeries" title="Permalink to this definition">¶</a></dt>
 <dd><p>A power series with iid random variables as coefficients.</p>
 <p>Implements the following model</p>
 <div class="math">
@@ -1116,8 +1095,8 @@ conjugate prior</p>
 one to estimate the full summation and obtain posteriors for the
 parameters.</p>
 <dl class="method">
-<dt id="buqeyemodel.models.PowerSeries.observe">
-<code class="descname">observe</code><span class="sig-paren">(</span><em>partials</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em>, <em>rm_orders=None</em>, <em>X=None</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries.observe" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerSeries.observe">
+<code class="descname">observe</code><span class="sig-paren">(</span><em>partials</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em>, <em>rm_orders=None</em>, <em>X=None</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerSeries.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerSeries.observe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Observe the partial sums of the series and update parameters.</p>
 <p>The partial sums are observed and converted to coefficients
 using the given <code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio</span></code> and <code class="docutils literal highlight highlight-default"><span></span><span class="n">ref</span></code>. Posterior distributions for the
@@ -1171,8 +1150,8 @@ to <code class="docutils literal highlight highlight-default"><span></span><span
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.PowerSeries.scale">
-<code class="descname">scale</code><span class="sig-paren">(</span><em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries.scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries.scale" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerSeries.scale">
+<code class="descname">scale</code><span class="sig-paren">(</span><em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerSeries.scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerSeries.scale" title="Permalink to this definition">¶</a></dt>
 <dd><p>The scale parameter <span class="math">\(b\)</span> of the inverse gamma distribution.</p>
 <p>[description]</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1200,8 +1179,8 @@ to <code class="docutils literal highlight highlight-default"><span></span><span
 </dd></dl>
 
 <dl class="method">
-<dt id="buqeyemodel.models.PowerSeries.shape">
-<code class="descname">shape</code><span class="sig-paren">(</span><em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/models.html#PowerSeries.shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.models.PowerSeries.shape" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.models.PowerSeries.shape">
+<code class="descname">shape</code><span class="sig-paren">(</span><em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#PowerSeries.shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.PowerSeries.shape" title="Permalink to this definition">¶</a></dt>
 <dd><p>The shape parameter <span class="math">\(a\)</span> of the inverse gamma distribution.</p>
 </dd></dl>
 
@@ -1242,7 +1221,7 @@ to <code class="docutils literal highlight highlight-default"><span></span><span
         <li class="right" >
           <a href="../api.html" title="API Reference"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">buqeyemodel 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">gsum 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../api.html" >API Reference</a> &#187;</li> 
       </ul>
     </div>

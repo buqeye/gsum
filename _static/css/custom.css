@@ -3,14 +3,13 @@
 /* I don't know if changing this makes something else ugly */
 .mn { color: #009999 }
 
-/*<style>
-    div.prompt{
-        display: None;
-    }
-</style>*/
-
+/* Taken from
+https://github.com/CamDavidsonPilon/Probabilistic-Programming-and-Bayesian-Methods-for-Hackers/blob/master/styles/custom.css
+This somehow removes "In []" in Jupyter notebooks using the '.prompt' I think.
+It probably does other stuff as well.
+*/
 <style>
-    @font-face {
+    /*@font-face {
         font-family: "Computer Modern";
         src: url('http://mirrors.ctan.org/fonts/cm-unicode/fonts/otf/cmunss.otf');
     }
@@ -25,7 +24,7 @@
     h4{
         margin-top:12px;
         margin-bottom: 3px;
-       }
+       }*/
     div.text_cell_render{
         font-family: Computer Modern, "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
         line-height: 145%;
@@ -40,7 +39,7 @@
     .prompt{
         display: None;
     }
-    .text_cell_render h5 {
+    /*.text_cell_render h5 {
         font-weight: 300;
         font-size: 16pt;
         color: #4057A1;
@@ -52,9 +51,9 @@
     
     .warning{
         color: rgb( 240, 20, 20 )
-        }  
+        } */ 
 </style>
-<script>
+/*<script>
     MathJax.Hub.Config({
                         TeX: {
                            extensions: ["AMSmath.js"]
@@ -68,4 +67,4 @@
                     styles: {'.MathJax_Display': {"margin": 4}}
                 }
         });
-</script>
+</script>*/

@@ -2,7 +2,7 @@
 Models
 ********
 
-.. currentmodule:: buqeyemodel.models
+.. currentmodule:: gsum.models
 
-.. automodule:: buqeyemodel.models
+.. automodule:: gsum.models
    :members:

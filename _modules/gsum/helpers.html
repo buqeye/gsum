@@ -14,7 +14,7 @@
   <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-    <title>buqeyemodel.helpers &#8212; buqeyemodel 0.1 documentation</title>
+    <title>gsum.helpers &#8212; gsum 0.1 documentation</title>
     <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
@@ -48,7 +48,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">buqeyemodel 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">gsum 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
       </ul>
     </div>
@@ -59,7 +59,7 @@
       </div>
   <div id="left-column">
     <div class="sphinxsidebar"><a href="
-    ../../index.html" class="text-logo">buqeyemodel</a>
+    ../../index.html" class="text-logo">gsum</a>
 <div class="sidebar-block">
   <div class="sidebar-wrapper">
     <h2>Table Of Contents</h2>
@@ -100,13 +100,13 @@
               
                 <li><a href="../index.html">Module code</a></li>
               
-              <li>buqeyemodel.helpers</li>
+              <li>gsum.helpers</li>
             </ol>
           </div>
           
           <div class="document clearer body">
             
-  <h1>Source code for buqeyemodel.helpers</h1><div class="highlight"><pre>
+  <h1>Source code for gsum.helpers</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">import</span> <span class="nn">pymc3</span> <span class="k">as</span> <span class="nn">pm</span>
 <span class="kn">import</span> <span class="nn">theano</span>
@@ -122,7 +122,7 @@
 <span class="p">]</span>
 
 
-<div class="viewcode-block" id="cartesian"><a class="viewcode-back" href="../../api/helpers.html#buqeyemodel.helpers.cartesian">[docs]</a><span class="k">def</span> <span class="nf">cartesian</span><span class="p">(</span><span class="o">*</span><span class="n">arrays</span><span class="p">):</span>
+<div class="viewcode-block" id="cartesian"><a class="viewcode-back" href="../../api/helpers.html#gsum.helpers.cartesian">[docs]</a><span class="k">def</span> <span class="nf">cartesian</span><span class="p">(</span><span class="o">*</span><span class="n">arrays</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Makes the Cartesian product of arrays.</span>
 
 <span class="sd">    Parameters</span>
@@ -134,30 +134,66 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="n">arrays</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s1">&#39;ij&#39;</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span></div>
 
 
-<span class="k">def</span> <span class="nf">toy_data</span><span class="p">(</span><span class="n">orders</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sd</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">Q</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="c1"># def toy_data(orders, mu=0, sd=1, Q=0.5, ref=1, ls=None, noise=1e-6, X=None, size=None):</span>
+<span class="c1">#     # Set up covariance matrix</span>
+<span class="c1">#     if ls is not None:</span>
+<span class="c1">#         if size is not None:</span>
+<span class="c1">#             print(&#39;Warning: size parameter will be overriden&#39;)</span>
+<span class="c1">#         size = X.shape[0]</span>
+<span class="c1">#         with pm.Model():</span>
+<span class="c1">#             cov = sd**2 * pm.gp.cov.ExpQuad(input_dim=X.shape[1], ls=ls)</span>
+<span class="c1">#             K = cov(X) + noise**2 * tt.eye(size)</span>
+<span class="c1">#         # evaluate the covariance with the given hyperparameters</span>
+<span class="c1">#         K = theano.function([], K)()</span>
+<span class="c1">#     else:</span>
+<span class="c1">#         K = (sd**2 + noise**2) * np.eye(size)</span>
+<span class="c1">#     mean = mu*np.ones(size)</span>
+<span class="c1">#     coeffs = np.random.multivariate_normal(mean, K, size=len(orders))</span>
+
+<span class="c1">#     # Convert coefficients to observables</span>
+<span class="c1">#     ordervec = np.atleast_2d(orders).T</span>
+<span class="c1">#     obs_diffs = ref * coeffs * Q**(ordervec)</span>
+<span class="c1">#     obs = np.cumsum(obs_diffs, axis=0)</span>
+<span class="c1">#     return obs</span>
+
+<span class="k">def</span> <span class="nf">toy_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">orders</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sd</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+             <span class="n">ref</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
     <span class="c1"># Set up covariance matrix</span>
-    <span class="k">if</span> <span class="n">ls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Warning: size parameter will be overriden&#39;</span><span class="p">)</span>
-        <span class="n">size</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">with</span> <span class="n">pm</span><span class="o">.</span><span class="n">Model</span><span class="p">():</span>
-            <span class="n">cov</span> <span class="o">=</span> <span class="n">sd</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">pm</span><span class="o">.</span><span class="n">gp</span><span class="o">.</span><span class="n">cov</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ls</span><span class="o">=</span><span class="n">ls</span><span class="p">)</span>
-            <span class="n">K</span> <span class="o">=</span> <span class="n">cov</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">+</span> <span class="n">noise</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">tt</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
-        <span class="c1"># evaluate the covariance with the given hyperparameters</span>
-        <span class="n">K</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">([],</span> <span class="n">K</span><span class="p">)()</span>
+    <span class="k">if</span> <span class="n">corr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">corr</span> <span class="o">=</span> <span class="n">gaussian</span>
+    <span class="n">K</span> <span class="o">=</span> <span class="n">sd</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">corr</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span>
+    <span class="n">K</span> <span class="o">+=</span> <span class="n">noise</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">basis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">basis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">K</span> <span class="o">=</span> <span class="p">(</span><span class="n">sd</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">noise</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
-    <span class="n">mean</span> <span class="o">=</span> <span class="n">mu</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">basis</span> <span class="o">=</span> <span class="n">basis</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">beta</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">ratio_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ratio_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">orders</span><span class="p">))</span>
-
-    <span class="c1"># Convert coefficients to observables</span>
-    <span class="n">ordervec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
-    <span class="n">obs_diffs</span> <span class="o">=</span> <span class="n">ref</span> <span class="o">*</span> <span class="n">coeffs</span> <span class="o">*</span> <span class="n">Q</span><span class="o">**</span><span class="p">(</span><span class="n">ordervec</span><span class="p">)</span>
-    <span class="n">obs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">obs_diffs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">obs</span>
+    <span class="k">return</span> <span class="n">partials</span><span class="p">(</span><span class="n">coeffs</span><span class="o">=</span><span class="n">coeffs</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="n">ratio</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="p">,</span>
+                    <span class="n">orders</span><span class="o">=</span><span class="n">orders</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="coefficients"><a class="viewcode-back" href="../../api/helpers.html#buqeyemodel.helpers.coefficients">[docs]</a><span class="k">def</span> <span class="nf">coefficients</span><span class="p">(</span><span class="n">partials</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">generate_coefficients</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sd</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                          <span class="n">noise</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="c1"># Set up covariance matrix</span>
+    <span class="k">if</span> <span class="n">corr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">corr</span> <span class="o">=</span> <span class="n">gaussian</span>
+    <span class="n">K</span> <span class="o">=</span> <span class="n">sd</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">corr</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span>
+    <span class="n">K</span> <span class="o">+=</span> <span class="n">noise</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">basis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">basis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">basis</span> <span class="o">=</span> <span class="n">basis</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">beta</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="coefficients"><a class="viewcode-back" href="../../api/helpers.html#gsum.helpers.coefficients">[docs]</a><span class="k">def</span> <span class="nf">coefficients</span><span class="p">(</span><span class="n">partials</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Returns the coefficients of a power series</span>
 
 <span class="sd">    Parameters</span>
@@ -203,7 +239,7 @@
     <span class="k">return</span> <span class="n">coeffs</span></div>
 
 
-<div class="viewcode-block" id="partials"><a class="viewcode-back" href="../../api/helpers.html#buqeyemodel.helpers.partials">[docs]</a><span class="k">def</span> <span class="nf">partials</span><span class="p">(</span><span class="n">coeffs</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="partials"><a class="viewcode-back" href="../../api/helpers.html#gsum.helpers.partials">[docs]</a><span class="k">def</span> <span class="nf">partials</span><span class="p">(</span><span class="n">coeffs</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Returns the partial sums of a power series given the coefficients</span>
 
 <span class="sd">    The ``k``th partial sum is given by</span>
@@ -252,10 +288,10 @@
 
 
 <span class="k">def</span> <span class="nf">stabilize</span><span class="p">(</span><span class="n">M</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">M</span> <span class="o">+</span> <span class="mf">1e-6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="o">*</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">M</span> <span class="o">+</span> <span class="mf">1e-5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="o">*</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="predictions"><a class="viewcode-back" href="../../api/helpers.html#buqeyemodel.helpers.predictions">[docs]</a><span class="k">def</span> <span class="nf">predictions</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="predictions"><a class="viewcode-back" href="../../api/helpers.html#gsum.helpers.predictions">[docs]</a><span class="k">def</span> <span class="nf">predictions</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return the mean and set of degree of belief intervals for a distribution</span>
 
 <span class="sd">    Parameters</span>
@@ -282,7 +318,7 @@
     <span class="k">return</span> <span class="n">mean</span></div>
 
 
-<div class="viewcode-block" id="gaussian"><a class="viewcode-back" href="../../api/helpers.html#buqeyemodel.helpers.gaussian">[docs]</a><span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Xp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="gaussian"><a class="viewcode-back" href="../../api/helpers.html#gsum.helpers.gaussian">[docs]</a><span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Xp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A gaussian correlation function</span>
 
 <span class="sd">    Parameters</span>
@@ -291,11 +327,19 @@
 <span class="sd">    Xp : (M, d) array, optional</span>
 <span class="sd">    ls : scalar</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">cov</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">gp</span><span class="o">.</span><span class="n">cov</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">ls</span><span class="o">=</span><span class="n">ls</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">cov</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Xp</span><span class="p">)</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span></div>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">X</span> <span class="o">*</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">ls</span>
+    <span class="n">X2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">X</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">Xp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">Xp</span> <span class="o">=</span> <span class="n">X</span>
+    <span class="n">Xp2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Xp</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">sqd</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Xp</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">X2</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Xp2</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">sqd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">sqd</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">sqd</span><span class="p">)</span></div>
+    <span class="c1"># cov = pm.gp.cov.ExpQuad(input_dim=X.shape[-1], ls=ls)</span>
+    <span class="c1"># return cov(X, Xp).eval()</span>
 
 
-<div class="viewcode-block" id="HPD"><a class="viewcode-back" href="../../api/helpers.html#buqeyemodel.helpers.HPD">[docs]</a><span class="k">def</span> <span class="nf">HPD</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<div class="viewcode-block" id="HPD"><a class="viewcode-back" href="../../api/helpers.html#gsum.helpers.HPD">[docs]</a><span class="k">def</span> <span class="nf">HPD</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
     <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Returns the highest probability density interval of scipy dist.</span>
 
 <span class="sd">    Inspired by this answer https://stackoverflow.com/a/25777507</span>
@@ -363,7 +407,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">buqeyemodel 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">gsum 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
       </ul>
     </div>

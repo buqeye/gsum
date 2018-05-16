@@ -14,7 +14,7 @@
   <link rel="stylesheet" type="text/css" href="../_static/css/bootstrap-theme.min.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-    <title>Helpers &#8212; buqeyemodel 0.1 documentation</title>
+    <title>Helpers &#8212; gsum 0.1 documentation</title>
     <link rel="stylesheet" href="../_static/guzzle.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
@@ -52,7 +52,7 @@
         <li class="right" >
           <a href="models.html" title="Models"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">buqeyemodel 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">gsum 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../api.html" accesskey="U">API Reference</a> &#187;</li> 
       </ul>
     </div>
@@ -63,7 +63,7 @@
       </div>
   <div id="left-column">
     <div class="sphinxsidebar"><a href="
-    ../index.html" class="text-logo">buqeyemodel</a>
+    ../index.html" class="text-logo">gsum</a>
 <div class="sidebar-block">
   <div class="sidebar-wrapper">
     <h2>Table Of Contents</h2>
@@ -114,11 +114,11 @@
           
           <div class="document clearer body">
             
-  <div class="section" id="module-buqeyemodel.helpers">
-<span id="helpers"></span><h1>Helpers<a class="headerlink" href="#module-buqeyemodel.helpers" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-gsum.helpers">
+<span id="helpers"></span><h1>Helpers<a class="headerlink" href="#module-gsum.helpers" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
-<dt id="buqeyemodel.helpers.cartesian">
-<code class="descclassname">buqeyemodel.helpers.</code><code class="descname">cartesian</code><span class="sig-paren">(</span><em>*arrays</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/helpers.html#cartesian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.helpers.cartesian" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.helpers.cartesian">
+<code class="descclassname">gsum.helpers.</code><code class="descname">cartesian</code><span class="sig-paren">(</span><em>*arrays</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#cartesian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.cartesian" title="Permalink to this definition">¶</a></dt>
 <dd><p>Makes the Cartesian product of arrays.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -135,8 +135,8 @@
 </dd></dl>
 
 <dl class="function">
-<dt id="buqeyemodel.helpers.coefficients">
-<code class="descclassname">buqeyemodel.helpers.</code><code class="descname">coefficients</code><span class="sig-paren">(</span><em>partials</em>, <em>ratio</em>, <em>X=None</em>, <em>ref=1</em>, <em>orders=None</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/helpers.html#coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.helpers.coefficients" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.helpers.coefficients">
+<code class="descclassname">gsum.helpers.</code><code class="descname">coefficients</code><span class="sig-paren">(</span><em>partials</em>, <em>ratio</em>, <em>X=None</em>, <em>ref=1</em>, <em>orders=None</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.coefficients" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the coefficients of a power series</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -160,8 +160,8 @@
 </dd></dl>
 
 <dl class="function">
-<dt id="buqeyemodel.helpers.partials">
-<code class="descclassname">buqeyemodel.helpers.</code><code class="descname">partials</code><span class="sig-paren">(</span><em>coeffs</em>, <em>ratio</em>, <em>X=None</em>, <em>ref=1</em>, <em>orders=None</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/helpers.html#partials"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.helpers.partials" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.helpers.partials">
+<code class="descclassname">gsum.helpers.</code><code class="descname">partials</code><span class="sig-paren">(</span><em>coeffs</em>, <em>ratio</em>, <em>X=None</em>, <em>ref=1</em>, <em>orders=None</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#partials"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.partials" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the partial sums of a power series given the coefficients</p>
 <p>The <a href="#id1"><span class="problematic" id="id2">``</span></a>k``th partial sum is given by</p>
 <div class="math">
@@ -211,8 +211,8 @@ assumes that the n lowest order coefficients are given:
 </dd></dl>
 
 <dl class="function">
-<dt id="buqeyemodel.helpers.predictions">
-<code class="descclassname">buqeyemodel.helpers.</code><code class="descname">predictions</code><span class="sig-paren">(</span><em>dist</em>, <em>dob=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/helpers.html#predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.helpers.predictions" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.helpers.predictions">
+<code class="descclassname">gsum.helpers.</code><code class="descname">predictions</code><span class="sig-paren">(</span><em>dist</em>, <em>dob=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.predictions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the mean and set of degree of belief intervals for a distribution</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -236,8 +236,8 @@ length 1.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="buqeyemodel.helpers.gaussian">
-<code class="descclassname">buqeyemodel.helpers.</code><code class="descname">gaussian</code><span class="sig-paren">(</span><em>X</em>, <em>Xp=None</em>, <em>ls=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/helpers.html#gaussian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.helpers.gaussian" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.helpers.gaussian">
+<code class="descclassname">gsum.helpers.</code><code class="descname">gaussian</code><span class="sig-paren">(</span><em>X</em>, <em>Xp=None</em>, <em>ls=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#gaussian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.gaussian" title="Permalink to this definition">¶</a></dt>
 <dd><p>A gaussian correlation function</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -253,8 +253,8 @@ length 1.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="buqeyemodel.helpers.HPD">
-<code class="descclassname">buqeyemodel.helpers.</code><code class="descname">HPD</code><span class="sig-paren">(</span><em>dist</em>, <em>alpha</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/buqeyemodel/helpers.html#HPD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#buqeyemodel.helpers.HPD" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.helpers.HPD">
+<code class="descclassname">gsum.helpers.</code><code class="descname">HPD</code><span class="sig-paren">(</span><em>dist</em>, <em>alpha</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#HPD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.HPD" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the highest probability density interval of scipy dist.</p>
 <p>Inspired by this answer <a class="reference external" href="https://stackoverflow.com/a/25777507">https://stackoverflow.com/a/25777507</a></p>
 </dd></dl>
@@ -288,7 +288,7 @@ length 1.</p>
         <li class="right" >
           <a href="models.html" title="Models"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">buqeyemodel 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">gsum 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../api.html" >API Reference</a> &#187;</li> 
       </ul>
     </div>
