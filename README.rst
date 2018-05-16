@@ -61,8 +61,8 @@ Dependencies
 gsum has only been tested with python 3.5.
 .. Additionally, some functionality relies on the ``StatsModels`` package.
 
-Citing buqeyemodel
-==================
+Citing gsum
+============
 
 
 Contact
