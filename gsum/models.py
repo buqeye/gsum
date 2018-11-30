@@ -1,7 +1,7 @@
 from __future__ import division
 from functools import reduce
 from .helpers import coefficients, predictions, gaussian, stabilize, \
-    cartesian, HPD
+    cartesian, HPD, KL_Gauss
 import numpy as np
 import pymc3 as pm
 import scipy as sp
@@ -177,7 +177,8 @@ class SGP(object):
         self._y = y
 
         self._corr_kwargs = corr_kwargs
-        self._chol = np.linalg.cholesky(stabilize(self.corr(X, **corr_kwargs)))
+
+        self._chol = self.setup_chol(**corr_kwargs)
         self._shape = self.shape(y=y)
         self._scale = self.scale(y=y, **corr_kwargs)
         self._means = self.means(y=y, **corr_kwargs)
@@ -368,12 +369,17 @@ class SGP(object):
             return self._cov
         return np.linalg.inv(self.inv_cov(y=y, **corr_kwargs))
 
+    def setup_chol(self, **corr_kwargs):
+        corr = stabilize(self.corr(self.X, **corr_kwargs))
+        cond = np.linalg.cond(corr)
+        print('Warning: stabilized corr has condition number of {:.2e}'.format(cond))
+        return np.linalg.cholesky(corr)
+
     def chol(self, **corr_kwargs):
         if self._recompute_corr(**corr_kwargs):
-            return np.linalg.cholesky(stabilize(self.corr(self.X, **corr_kwargs)))
+            return self.setup_chol(**corr_kwargs)
         else:
             return self._chol
-        # return np.linalg.cholesky(stabilize(self.corr(self.X, **corr_kwargs)))
 
     @property
     def y(self):
@@ -382,6 +388,41 @@ class SGP(object):
     @property
     def X(self):
         return self._X
+
+    def ESS(self, **corr_kwargs):
+        R_chol = self.chol(**corr_kwargs)
+        N = len(self.X)
+        H = self.basis(self.X)
+        right = sp.linalg.solve_triangular(R_chol, H, lower=True)
+        return N * np.trace(np.dot(right.T, right)) / np.trace(np.dot(H.T, H))
+
+    def MAP_params(self, y=None, **corr_kwargs):
+        """The MAP parameters mu, cov for the GP based on data
+        
+        [description]
+        
+        Parameters
+        ----------
+        **corr_kwargs : {[type]}
+            [description]
+        y : {[type]}, optional
+            [description] (the default is None, which [default_description])
+        """
+        if not self._recompute_corr(**corr_kwargs):
+            corr_kwargs = self._corr_kwargs
+        R = self.corr(self.X, **corr_kwargs)
+        corr_chol = self.chol(**corr_kwargs)
+
+        H = self.basis(self.X)
+        shape = self.shape(y=y)
+        scale = self.scale(y=y, **corr_kwargs)
+        means = self.means(y=y, **corr_kwargs)
+        MAP_mean = np.dot(H, means)
+        MAP_var = scale / (1.0 + shape)
+
+        MAP_cov = MAP_var * R
+        MAP_chol = np.sqrt(MAP_var) * corr_chol
+        return MAP_mean, MAP_cov, MAP_chol
 
     def student_params(self, X=None, H=None, R=None, y=None, **corr_kwargs):
         R"""Returns the parameters of the student :math:`t` distribution.
@@ -674,7 +715,7 @@ class SGP(object):
         return ev
 
     def posterior(self, name, logprior=None, log=False, y=None, **corr_kwargs):
-        """Returns the posterior pdf for arbitrary correlation variables
+        R"""Returns the posterior pdf for arbitrary correlation variables
 
         Uses Bayes' Theorem to compute
 
@@ -1290,7 +1331,7 @@ class PowerProcess(SGP):
 
     def posterior(self, name, logprior=None, log=False, ratio_kwargs=None,
                   **corr_kwargs):
-        """Returns the posterior pdf for arbitrary correlation or ratio variables
+        R"""Returns the posterior pdf for arbitrary correlation or ratio variables
 
         Uses Bayes' Theorem to compute
 
