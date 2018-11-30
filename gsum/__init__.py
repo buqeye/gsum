@@ -12,3 +12,4 @@ from .helpers import stabilize
 from .helpers import gaussian
 from .helpers import HPD
 from .helpers import HPD_pdf
+from .helpers import KL_Gauss
