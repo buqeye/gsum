@@ -9,7 +9,7 @@ from scipy.optimize import fmin
 
 __all__ = [
     'cartesian', 'toy_data', 'coefficients', 'partials', 'stabilize',
-    'predictions', 'gaussian', 'HPD'
+    'predictions', 'gaussian', 'HPD', 'KL_Gauss'
 ]
 
 
@@ -131,7 +131,7 @@ def coefficients(partials, ratio, X=None, ref=1, orders=None, **ratio_kwargs):
 
 
 def partials(coeffs, ratio, X=None, ref=1, orders=None, **ratio_kwargs):
-    """Returns the partial sums of a power series given the coefficients
+    R"""Returns the partial sums of a power series given the coefficients
 
     The ``k``th partial sum is given by
 
@@ -282,3 +282,60 @@ def HPD_pdf(pdf, alpha, x, opt_kwargs=None, *args):
         mask = pdf > hline
     interval = np.asarray(x)[mask]
     return np.min(interval), np.max(interval)
+
+
+def KL_Gauss(mu0, cov0, mu1, cov1=None, chol1=None):
+    R"""The Kullbeck-Liebler divergence between two mv Gaussians
+    
+    The divergence from :math:`\mathcal{N}_1` to :math:`\mathcal{N}_0` is given by
+
+    .. math::
+
+        D_\text{KL}(\mathcal{N}_0 \| \mathcal{N}_1) = \frac{1}{2} \left[ \mathrm{Tr} \left( \Sigma_1^{-1} \Sigma_0 \right) + \left( \mu_1 - \mu_0\right)^\text{T} \Sigma_1^{-1} ( \mu_1 - \mu_0 ) - k + \ln \left( \frac{\det \Sigma_1}{\det \Sigma_0} \right)  \right],
+    
+    which can be thought of as the amount of information lost when :math:`\mathcal{N}_1`
+    is used to approximate :math:`\mathcal{N}_0`.
+
+    Parameters
+    ----------
+    mu0 : Scalar or 1d array
+        The mean of the posterior
+    cov0 : Scalar or 2d array
+        The covariance of the posterior
+    mu1 : Scalar or 1d array
+        The mean of the prior
+    cov1 : Scalar or 2d array
+        The covariance of the prior
+    chol1 : Scalar or 2d array
+        The cholesky docomposition of the prior
+    
+    Returns
+    -------
+    number
+        The KL divergence
+    
+    Raises
+    ------
+    ValueError
+        Exactly one of cov1 or chol1 must be given
+    """
+    mu0, mu1 = np.atleast_1d(mu0), np.atleast_1d(mu1)
+    cov0 = np.atleast_2d(cov0)
+    if chol1 is not None and cov1 is None:
+        chol1 = np.atleast_2d(chol1)
+    elif cov1 is not None and chol1 is None:
+        cov1 = np.atleast_2d(cov1)
+        chol1 = np.linalg.cholesky(stabilize(cov1))
+    else:
+        raise ValueError('Exactly one of cov1 or chol1 must be given.')
+    
+    k = cov0.shape[0]
+    _, logdet0 = np.linalg.slogdet(cov0)
+    logdet1 = 2*np.sum(np.log(np.diag(chol1)))
+
+    right_quad = np.linalg.solve(chol1, mu1-mu0)
+    quad = np.dot(right_quad.T, right_quad)
+
+    tr_mat = np.trace(sp.linalg.cho_solve((chol1, True), cov0))
+
+    return 0.5*(tr_mat + quad - k + logdet1 - logdet0)
