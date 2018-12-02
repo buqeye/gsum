@@ -1,9 +1,9 @@
+gsl
 pymc3>=3.1
 numpy
 scipy
 statsmodels
 matplotlib
 sklearn
-gsl
 Cython
 CythonGSL
