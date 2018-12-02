@@ -13,9 +13,6 @@
         <img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo" hspace="20"/>
    </p>
 
-
-.. image:: https://mybinder.org/badge_logo.svg :target: https://mybinder.org/v2/gh/jordan-melendez/gsum/master
-
 .. raw : : html
 
    <p style="text-align:center;"><img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo"/></p>
@@ -25,6 +22,8 @@
 ..   :height: 150px
 ..   :align: center
 ..   :alt: BUQEYE logo
+
+.. image:: https://mybinder.org/badge_logo.svg :target: https://mybinder.org/v2/gh/jordan-melendez/gsum/master
 
 The gsum package provides two classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
 Specifically, this is a conjugacy-based implementation of the statistical model developed in `this paper <https://arxiv.org/abs/1506.01343>`_.
