@@ -27,7 +27,8 @@
 The gsum package provides two classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
 Specifically, this is a conjugacy-based implementation of the statistical model developed in `this paper <https://arxiv.org/abs/1506.01343>`_.
 
-.. image:: https://mybinder.org/badge_logo.svg :target: https://mybinder.org/v2/gh/jordan-melendez/gsum/master
+.. image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/jordan-melendez/gsum/master
 
 .. The heavy lifting is done by the ``PyMC3`` package, which can be downloaded `here <https://github.com/pymc-devs/pymc3>`_.
 .. Some working knowledge of ``PyMC3`` is recommended before reading the usage information below.
