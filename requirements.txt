@@ -4,5 +4,6 @@ scipy
 statsmodels
 matplotlib
 sklearn
+gsl
 Cython
 CythonGSL
