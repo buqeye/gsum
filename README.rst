@@ -9,9 +9,12 @@
 .. raw:: html
 
    <p style="text-align:center;">
-        <img src="https://cdn.rawgit.com/jordan-melendez/gsum/c85d832b/docs/logos/gsum.png" width="30%" alt="gsum logo"/>
-        <img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo"/>
+        <img src="https://cdn.rawgit.com/jordan-melendez/gsum/c85d832b/docs/logos/gsum.png" width="30%" alt="gsum logo" hspace="20"/>
+        <img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo" hspace="20"/>
    </p>
+
+
+.. image:: https://mybinder.org/badge_logo.svg :target: https://mybinder.org/v2/gh/jordan-melendez/gsum/master
 
 .. raw : : html
 
