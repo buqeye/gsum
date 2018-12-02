@@ -5,11 +5,14 @@ import theano.tensor as tt
 import numpy as np
 import scipy as sp
 from scipy.optimize import fmin
+from functools import wraps
+import inspect
 
 
 __all__ = [
     'cartesian', 'toy_data', 'coefficients', 'partials', 'stabilize',
-    'predictions', 'gaussian', 'HPD', 'KL_Gauss'
+    'predictions', 'gaussian', 'HPD', 'KL_Gauss', 'rbf', 'default_attributes',
+    'cholesky_errors', 'mahalanobis'
 ]
 
 
@@ -230,6 +233,16 @@ def gaussian(X, Xp=None, ls=1):
     # return cov(X, Xp).eval()
 
 
+def rbf(X, Xp=None, ls=1):
+    if Xp is None:
+        Xp = X
+    diff = X[:, None, ...] - Xp[None, ...]
+    dist = np.linalg.norm(diff, axis=-1)
+    if ls == 0:
+        return np.where(dist == 0, 1., 0.)
+    return np.exp(- dist**2 / ls**2)
+
+
 def HPD(dist, alpha, *args):
     R"""Returns the highest probability density interval of scipy dist.
 
@@ -339,3 +352,149 @@ def KL_Gauss(mu0, cov0, mu1, cov1=None, chol1=None):
     tr_mat = np.trace(sp.linalg.cho_solve((chol1, True), cov0))
 
     return 0.5*(tr_mat + quad - k + logdet1 - logdet0)
+
+
+def lazy_property(function):
+    R"""Stores as a hidden attribute if it doesn't exist yet, else it returns the hidden attribute.
+    
+    This means that any method decorated with this function will only be computed if necessary, and will be
+    stored if needed to be called again.
+    """
+    attribute = '_cache_' + function.__name__
+
+    @property
+    @wraps(function)
+    def decorator(self):
+        if not hasattr(self, attribute):
+            setattr(self, attribute, function(self))
+        return getattr(self, attribute)
+
+    return decorator            
+
+
+def lazy(function):
+    attribute = '_cache_' + function.__name__
+
+    @wraps(function)
+    def decorator(self, *args, **kwargs):
+        lazy = True
+
+        # If y are passed and are not the defaults
+        y = kwargs.pop('y', None)
+        if y is not None and not np.allclose(y, self.y):
+            lazy = False
+        else:
+            y = self.y
+
+        # If cholesky is passed and are not the defaults
+        corr_chol = kwargs.pop('corr_chol', None)
+        if corr_chol is not None and not np.allclose(corr_chol, self._corr_chol):
+            lazy = False
+        else:
+            corr_chol = self._corr_chol
+
+        if not lazy or not hasattr(self, attribute):
+            setattr(self, attribute, function(self, *args, y=y, corr_chol=corr_chol, **kwargs))
+        return getattr(self, attribute)
+    return decorator
+
+
+def default_attributes(**kws):
+    """Sets `None` or empty `*args`/`**kwargs` arguments to attributes already stored in a class.
+    
+    This is a handy decorator to avoid `if` statements at the beginning of method
+    calls:
+    
+    def func(self, x=None):
+        if x is None:
+            x = self.x
+        ...
+    
+    but is particularly useful when the function uses a cache to avoid
+    unnecessary computations. Caches don't recognize when the attributes change,
+    so could result in incorrect returned values. This decorator **must** be put
+    outside of the cache decorator though.
+    
+    Parameters
+    ----------
+    kws : dict
+        The key must match the parameter name in the decorated function, and the value
+        corresponds to the name of the attribute to use as the default
+        
+    Example
+    -------
+    from fastcache import lru_cache
+    
+    class TestClass:
+    
+        def __init__(self, x, y):
+            self.x = x
+            self._y = y
+
+        @lru_cache()
+        def add(self, x=None, y=None):
+            if x is None:
+                x = self.x
+            if y is None:
+                y = self._y
+            return x + y
+
+        @lru_cache()
+        @default_attributes(x='x', y='_y')
+        def add2(self, x=None, y=None):
+            return x + y
+
+        @default_attributes(x='x', y='_y')
+        @lru_cache()
+        def add_correctly(self, x=None, y=None):
+            return x + y
+
+    tc = TestClass(2, 3)
+    print(tc.add(), tc.add2(), tc.add_correctly())  # Prints 5 5 5
+    tc.x = 20
+    print(tc.add(), tc.add2(), tc.add_correctly())  # Prints 5 5 23
+    tc._y = 5
+    print(tc.add(), tc.add2(), tc.add_correctly())  # Prints 5 5 25
+    """
+    def decorator(function):
+        sig = inspect.signature(function)
+
+        @wraps(function)
+        def new_func(self, *args, **kwargs):
+            # Puts all arguments---positional, keyword, and default---explicitly in bound_args
+            bound_args = sig.bind(self, *args, **kwargs)
+            bound_args.apply_defaults()
+            for key, value in bound_args.arguments.items():
+                param = sig.parameters[key]
+                if isinstance(value, np.ndarray):
+                    continue
+                
+                # Update standard arguments if they are `None`, but also allow for
+                # *args and **kwargs to be set to defaults if they are empty.
+                # Standard arguments:
+                default_poskey = value is None and param.kind == param.POSITIONAL_OR_KEYWORD
+                # Keyword only arguments (comes after *args):
+                default_key = value is None and param.kind == param.KEYWORD_ONLY
+                # *args argument:
+                default_varpos = value == () and param.kind == param.VAR_POSITIONAL
+                # **kwargs argument:
+                default_varkey = value == {} and param.kind == param.VAR_KEYWORD
+
+                if (default_poskey or default_key or default_varpos or default_varkey) and key in kws:
+                    bound_args.arguments[key] = getattr(self, kws[key])
+            return function(*bound_args.args, **bound_args.kwargs)
+        return new_func
+    return decorator
+
+vec_solve_triangular = np.vectorize(sp.linalg.solve_triangular, excluded=['lower'], signature='(m,m),(m,n)->(m,n)')
+
+def cholesky_errors(y, mean, chol):
+    y = np.atleast_2d(y)
+    return np.squeeze(np.swapaxes(vec_solve_triangular(chol, (y - mean).T, lower=True), -1, -2))
+
+# def chol_errors(y, mean, chol):
+#     return sp.linalg.solve_triangular(chol, (y - mean).T, lower=True).T
+
+def mahalanobis(y, mean, chol):
+    err = cholesky_errors(y, mean, chol)
+    return np.linalg.norm(err, axis=-1)
