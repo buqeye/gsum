@@ -1,7 +1,8 @@
 from __future__ import division
 from functools import reduce
 from .helpers import coefficients, predictions, gaussian, stabilize, \
-    cartesian, HPD, KL_Gauss
+    cartesian, HPD, KL_Gauss, default_attributes, cholesky_errors, mahalanobis, lazy_property
+from .cutils import pivoted_cholesky
 import numpy as np
 import pymc3 as pm
 import scipy as sp
@@ -12,8 +13,617 @@ import theano
 import theano.tensor as tt
 import warnings
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from functools import wraps
+from cycler import cycler
+from itertools import cycle
 
-__all__ = ['SGP', 'PowerProcess', 'PowerSeries']
+
+__all__ = [
+    'SGP', 'PowerProcess', 'PowerSeries', 'ConjugateProcess',
+    'ConjugateGaussianProcess', 'ConjugateStudentProcess', 'Diagnostic',
+    'GraphicalDiagnostic']
+
+
+
+
+class ConjugateProcess:
+    
+    def __init__(self, corr_kernel, m0=0, v0=1, a0=1, b0=1, sd=None):
+        """A conjugate Gaussian Process model
+        
+        Parameters
+        ----------
+        corr_kernel : callable
+            The kernel for the correlation matrix
+        m0 : float
+            The mean hyperparameter for the normal prior placed on the mean
+        v0 : float
+            The variance hyperparameter for the normal prior placed on the mean
+        a0 : float > 0
+            The shape hyperparameter for the inverse gamma prior placed on sd**2
+        b0 : float > 0
+            The scale hyperparameter for the inverse gamma prior placed on sd**2
+        """
+        self.m0 = m0
+        self.v0 = v0
+        self.a0 = a0
+        self.b0 = b0
+        self.corr_kernel = corr_kernel
+        self.X = None
+        self.y = None
+        self._sd = sd
+        self.corr_kwargs = {}
+        self._corr_chol = None
+        self.noise_sd = 1e-7
+        
+    def _recompute_corr(self, **corr_kwargs):
+        # Must be non-empty and not equal to the defaults
+        return corr_kwargs and corr_kwargs != self.corr_kwargs
+    
+    def cleanup(self):
+        """Removes all attributes except those set at initialization"""
+        def attr_name(name):
+            return '_cache_' + name
+        for attr in ['y', 'X', 'corr']:
+            try:
+                delattr(self, attr)
+            except AttributeError:
+                pass
+        for attr in ['m', 'v', 'a', 'b', 'sd']:
+            try:
+                delattr(self, attr_name(attr))
+            except AttributeError:
+                pass
+    
+    @default_attributes(y='y', corr_chol='_corr_chol')
+    def m(self, y=None, corr_chol=None):
+        """The posterior mean hyperparameter given y for the normal prior placed on the GP mean"""
+        # Mean is not updated if its prior variance is zero (i.e. delta function prior)
+        # Do by hand to prevent dividing by zero
+        if self.v0 == 0:
+            return self.m0
+
+        y_avg = y
+        if y.ndim == 2:
+            y_avg = np.average(y, axis=0)
+        ny = self.num_y(y)
+        one = np.ones_like(y_avg)
+        # print(y_avg.shape, corr_chol.shape)
+        right_half = cholesky_errors(y_avg, 0, corr_chol)
+        left_half = cholesky_errors(one, 0, corr_chol)
+        # if left_half.ndim > 1:
+        #     left_half = np.swapaxes(left_half, -1, -2)
+        v = self.v(y=y, corr_chol=corr_chol)
+        return v * (self.m0 / self.v0 + ny * np.sum(left_half * right_half, axis=-1))
+    
+    @default_attributes(y='y', corr_chol='_corr_chol')
+    def v(self, y=None, corr_chol=None):
+        """The posterior variance hyperparameter for the normal prior placed on the mean"""
+        # If prior variance is zero, it stays zero
+        # Do by hand to prevent dividing by zero
+        if self.v0 == 0:
+            return 0.
+
+        ny = self.num_y(y)
+        one = np.ones(corr_chol.shape[-1])
+        quad = mahalanobis(one, 0, corr_chol) ** 2
+        return (1. / self.v0 + ny * quad) ** (-1)
+    
+    @default_attributes(y='y')
+    def a(self, y=None):
+        """The posterior shape hyperparameter for the inverse gamma prior placed on sd**2"""
+        return self.a0 + y.size / 2.
+    
+    @default_attributes(y='y', corr_chol='_corr_chol')
+    def b(self, y=None, corr_chol=None):
+        """The posterior scale hyperparameter for the inverse gamma prior placed on sd**2"""
+        mean_terms = 0
+        if self.v0 != 0:
+            m = self.m(y=y, corr_chol=corr_chol)
+            v = self.v(y=y, corr_chol=corr_chol)
+            mean_terms = self.m0**2 / self.v0 - m**2 / v
+        quad = mahalanobis(y, 0, corr_chol)**2
+        # sum over y axes, but not extra corr axes
+        if np.squeeze(y).ndim > 1:
+            quad = np.sum(quad, axis=-1)
+        return self.b0 + 0.5 * (mean_terms + quad)
+    
+    @default_attributes(y='y', corr_chol='_corr_chol')
+    def sd(self, y=None, corr_chol=None, broadcast=False):
+        """The mean value for the marginal standard deviation given y.
+        
+        It turns out that for both the GP and TP, `sd**2` is the conversion factor to go
+        from the correlation matrix to the covariance matrix.
+        
+        Note: if the correlation matrix does equal 1 when `X == Xp`, `sd` **will not**
+        be the standard deviation at `X`. Instead, one must look at `cov` directly.
+        """
+        sd = self._sd
+        if sd is None:
+            b = self.b(y=y, corr_chol=corr_chol)
+            a = self.a(y=y)
+            sd = np.sqrt(b / (a - 1))
+        if broadcast:  # For when a set of corr_chols are given
+            sd = np.atleast_1d(sd)[:, None, None]
+        return sd
+
+    @default_attributes(X='X', y='y', corr_chol='_corr_chol')
+    def mean(self, X=None, y=None, corr_chol=None):
+        """The MAP value for the mean given y"""
+        m = np.atleast_1d(self.m(y=y, corr_chol=corr_chol))[:, None]
+        return np.squeeze(m * np.ones(len(X)))
+
+    @default_attributes(X='X', y='y', noise_sd='noise_sd', kwargs='corr_kwargs')
+    def cov(self, X=None, Xp=None, y=None, noise_sd=None, **kwargs):
+        if Xp is None:
+            Xp = X
+        corr = self.corr_kernel(X, Xp, **kwargs)
+        corr_chol = self.corr_chol(noise_sd=noise_sd, **kwargs)  # use X from fit
+        sd = self.sd(y=y, corr_chol=corr_chol, broadcast=True)
+        return np.squeeze(sd**2 * corr)
+    
+    @default_attributes(X='X', noise_sd='noise_sd', kwargs='corr_kwargs')
+    def corr_chol(self, X=None, noise_sd=None, **kwargs):
+        attr = '_corr_chol'
+        corr = self.corr_kernel(X, X, **kwargs)
+        chol = np.linalg.cholesky(corr + noise_sd**2 * np.eye(len(X)))
+        return chol
+    
+    @staticmethod
+    def num_y(y):
+        ny = 1
+        if y.ndim == 2:
+            ny = y.shape[0]
+        return ny
+    
+    def fit(self, X, y, noise_sd=1e-7, **kwargs):
+        """Fits the GP, i.e., sets/updates all hyperparameters, given y(X)"""
+        # self.cleanup()
+        self.X = X
+        self.y = y
+        self.corr_kwargs = kwargs
+        self.noise_sd = noise_sd
+        self.corr = self.corr_kernel(X, **kwargs)
+        self._corr_chol = self.corr_chol(X, noise_sd=noise_sd, **kwargs)
+    
+    @default_attributes(y='y')
+    def predict(self, Xnew, return_std=False, return_cov=False, y=None, pred_noise=True):
+        """Returns the predictive GP at unevaluated points Xnew"""
+        kwargs = self.corr_kwargs
+        # corr_chol = self.corr_chol(**kwargs)
+        corr_chol = self._corr_chol
+        # Use y from fit for hyperparameters
+        m_old = self.mean(y=self.y, corr_chol=corr_chol)
+        m_new = self.mean(Xnew, y=self.y, corr_chol=corr_chol)
+        R_on = self.corr_kernel(self.X, Xnew, **kwargs)
+        R_no = R_on.T
+        R_nn = self.corr_kernel(Xnew, Xnew, **kwargs)
+
+        # Use given y for prediction
+        mfilter = np.dot(R_no, sp.linalg.cho_solve((corr_chol, True), (y - m_old).T)).T
+        m_pred = m_new + mfilter
+        if return_std or return_cov:
+            half_quad = sp.linalg.solve_triangular(corr_chol, R_on, lower=True)
+            R_pred = R_nn - np.dot(half_quad.T, half_quad)
+            if pred_noise:
+                R_pred += self.noise_sd**2 * np.eye(len(Xnew))
+            # Use y from fit for hyperparameters
+            sd = self.sd(y=self.y, corr_chol=corr_chol, broadcast=True)
+            K_pred = np.squeeze(sd**2 * R_pred)
+            if return_std:
+                return m_pred, np.sqrt(np.diag(K_pred))
+            return m_pred, K_pred
+        return m_pred
+    
+    @default_attributes(y='y', corr_chol='_corr_chol')
+    def likelihood(self, log=True, y=None, corr_chol=None):
+        raise NotImplementedError
+
+    def ratio_likelihood(self, ratio, y, corr_chol, orders=None):
+        if y.ndim < 2:
+            raise ValueError('y must be at least 2d, not {}'.format(y.shape))
+        if orders is None:
+            orders = np.arange(y.shape[0])
+        ys = y / ratio[:, None, ...] ** orders[:, None]
+        loglikes = np.array([self.likelihood(log=True, y=yi, corr_chol=corr_chol) for yi in ys])
+        loglikes -= np.sum(orders) * np.sum(np.log(ratio), axis=-1)[:, None]
+        return loglikes
+
+        
+class ConjugateGaussianProcess(ConjugateProcess):
+    
+    @default_attributes(y='y', corr_chol='_corr_chol')
+    def likelihood(self, log=True, y=None, corr_chol=None):
+        # Multiple corr_chols can be passed to quickly get likelihoods for many correlation parameters
+        if corr_chol.ndim == 2:
+            corr_chol = corr_chol[None, :, :]
+        n = corr_chol.shape[0]
+        
+        # Setup best guesses for mean and cov
+        means = np.atleast_2d(self.mean(y=y, corr_chol=corr_chol))
+        sd = self.sd(y=y, corr_chol=corr_chol, broadcast=True)
+        corrs = corr_chol @ np.swapaxes(corr_chol, -2, -1)
+        covs = sd**2 * corrs
+
+        loglikes = np.zeros(n)
+        for i in range(n):
+            dist = st.multivariate_normal(mean=means[i], cov=covs[i])
+            loglikes[i] = np.sum(dist.logpdf(y))
+        loglikes = np.squeeze(loglikes)
+        if log:
+            return loglikes
+        return np.exp(loglikes)
+
+    
+class ConjugateStudentProcess(ConjugateProcess):
+    
+    @default_attributes(y='y', corr_chol='_corr_chol')
+    def likelihood(self, log=True, y=None, corr_chol=None):
+        mean = self.mean(y=y, corr_chol=corr_chol)
+        a0, a = self.a0, self.a(y=y)
+        b0, b = self.b0, self.b(y=y, corr_chol=corr_chol)
+        v0, v = self.v0, self.v(y=y, corr_chol=corr_chol)
+        ny = self.num_y(y)
+        N = chol.shape[-1]
+        
+        def log_nig_norm(aa, bb, vv):
+            """Normalization of the normal inverse gamma distribution"""
+            val = loggamma(aa) - aa * np.log(bb)
+            if vv != 0:
+                val += np.log(np.sqrt(2*np.pi*vv))
+            return val
+        
+        tr_log_corr = 2 * np.sum(np.log(np.diagonal(corr_chol, axis1=-2, axis2=-1)), axis=-1)
+        loglike = log_nig_norm(a, b, v) - log_nig_norm(a0, b0, v0) - ny / 2. * tr_log_corr
+        loglike -= ny * N / 2. * np.log(2*np.pi)
+        if log:
+            return loglike
+        return np.exp(loglike)
+
+    
+# def ratio_likelihood(ratio, process, y, corr_chol, orders=None):
+#     if y.ndim < 2:
+#         raise ValueError('y must be at least 2d, not {}'.format(y.shape))
+#     if orders is None:
+#         orders = np.arange(y.shape[0])
+#     # ratios = ratio[:, None, ...]
+#     ys = y / ratio[:, None, ...] ** orders[:, None]
+#     loglikes = np.array([process.likelihood(log=True, y=yi, corr_chol=corr_chol) for yi in ys])
+#     loglikes -= np.sum(orders) * np.sum(np.log(ratios), axis=-1)[:, None]
+#     return loglikes
+
+class Diagnostic:
+    R"""A class for quickly testing model checking methods discussed in Bastos & O'Hagan.
+    
+    """
+    
+    def __init__(self, mean, cov, df=None):
+        self.mean = mean
+        self.cov = cov
+        self.sd = sd = np.sqrt(np.diag(cov))
+        if df is None:
+            self.dist = st.multivariate_normal(mean=mean, cov=cov)
+            self.udist = st.norm(loc=mean, scale=sd)
+            self.std_udist = st.norm(loc=0., scale=1.)
+        else:
+            sigma = cov * (df - 2) / df
+            self.dist = MVT(mean=mean, sigma=sigma, df=df)
+            self.udist = st.t(loc=mean, scale=sd, df=df)
+            self.std_udist = st.t(loc=0., scale=1., df=df)
+        
+    @lazy_property
+    def chol(self):
+        """Returns the lower cholesky matrix G where cov = G.G^T"""
+        return np.linalg.cholesky(self.cov)
+    
+    @lazy_property
+    def pivoted_chol(self):
+        """Returns the pivoted cholesky matrix G where cov = G.G^T"""
+        return pivoted_cholesky(self.cov)
+    
+    @lazy_property
+    def eig(self):
+        """Returns the eigen-docomposition matrix G where cov = G.G^T"""
+        e, v = np.linalg.eigh(self.cov)
+        ee = np.diag(np.sqrt(e))
+        return np.dot(v, ee)
+
+    def samples(self, n):
+        return self.dist.rvs(n)
+    
+    def individual_errors(self, y):
+        return (y - self.mean) / np.sqrt(np.diag(self.cov))
+    
+    def cholesky_errors(self, y):
+        return cholesky_errors(y, self.mean, self.chol)
+    
+    def pivoted_cholesky_errors(self, y):
+        return np.linalg.solve(self.pivoted_chol, (y - self.mean).T).T
+    
+    def eigen_errors(self, y):
+        return np.linalg.solve(self.eig, (y - self.mean).T).T
+    
+    def chi2(self, y):
+        return np.sum(self.indiv_errors(y), axis=-1)
+
+    def md(self, y):
+        R"""The Mahalanobis distance"""
+        return mahalanobis(y, self.mean, self.chol)
+
+    def kl(self, mean, cov):
+        R"""The Kullbeck-Leibler divergence"""
+        m1, c1, chol1 = self.mean, self.cov, self.chol
+        m0, c0 = mean, cov
+        tr = np.trace(sp.linalg.cho_solve((chol1, True), c0))
+        dist = self.md(m0) ** 2
+        k = c1.shape[-1]
+        logs = 2*np.sum(np.log(np.diag(c1))) - np.linalg.slogdet(c0)[-1]
+        return 0.5 * (tr + dist - k + logs)
+    
+    def credible_interval(self, y, intervals):
+        """The credible interval diagnostic.
+        
+        Parameters
+        ----------
+        y : (n_c, d) shaped array
+        intervals : 1d array
+            The credible intervals at which to perform the test
+        """
+        lower, upper = self.udist.interval(np.atleast_2d(intervals).T)
+        
+        def diagnostic(data, lower, upper):
+            indicator = (lower < data) & (data < upper)  # 1 if in, 0 if out
+            return np.average(indicator, axis=1)   # The diagnostic
+
+        dci = np.apply_along_axis(
+                diagnostic, axis=1, arr=np.atleast_2d(y), lower=lower,
+                upper=upper)
+        dci = np.squeeze(dci)
+        return dci
+
+
+
+class GraphicalDiagnostic:
+    
+    def __init__(self, diagnostic, data, nref=1000, colors=None):
+        self.diagnostic = diagnostic
+        self.data = data
+        self.samples = self.diagnostic.samples(nref)
+        if colors is None:
+            # The standard Matplotlib 2.0 colors, or whatever they've been updated to be.
+            clist = list(mpl.rcParams['axes.prop_cycle'])
+            colors = [c['color'] for c in clist]
+        self.colors = colors
+        self.color_cycle = cycler('color', colors)
+    
+    def error_plot(self, err, title=None, ylabel=None, ax=None):
+        if ax is None:
+            ax = plt.gca()
+        ax.axhline(0, 0, 1, linestyle='-', color='k', lw=1)
+        # The standardized 2 sigma bands since the sd has been divided out.
+        sd = self.diagnostic.std_udist.std()
+        ax.axhline(-2*sd, 0, 1, linestyle='--', color='gray')
+        ax.axhline(2*sd, 0, 1, linestyle='--', color='gray')
+        ax.set_prop_cycle(self.color_cycle)
+        ax.plot(np.arange(self.data.shape[-1]), err.T, ls='', marker='o')
+        ax.set_xlabel('index')
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+        if title is not None:
+            ax.set_title(title)
+        return ax
+    
+    def individual_errors(self, ax=None):
+        err = self.diagnostic.individual_errors(self.data)
+        return self.error_plot(err, title='Individual Errors', ax=ax)
+    
+    def individual_errors_qq(self, ax=None):
+        return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.individual_errors,
+                       title='Individual QQ Plot', ax=ax)
+    
+    def cholesky_errors(self, ax=None):
+        err = self.diagnostic.cholesky_errors(self.data)
+        return self.error_plot(err, title='Cholesky Decomposed Errors', ax=ax)
+
+    def cholesky_errors_qq(self, ax=None):
+        return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.cholesky_errors,
+                       title='Cholesky QQ Plot', ax=ax)
+    
+    def pivoted_cholesky_errors(self, ax=None):
+        err = self.diagnostic.pivoted_cholesky_errors(self.data)
+        return self.error_plot(err, title='Pivoted Cholesky Decomposed Errors', ax=ax)
+    
+    def pivoted_cholesky_errors_qq(self, ax=None):
+        return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.pivoted_cholesky_errors,
+                       title='Pivoted Cholesky QQ Plot', ax=ax)
+    
+    def eigen_errors(self, ax=None):
+        err = self.diagnostic.eigen_errors(self.data)
+        return self.error_plot(err, title='Eigen Decomposed Errors', ax=ax)
+    
+    def eigen_errors_qq(self, ax=None):
+        return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.eigen_errors,
+                       title='Eigen QQ Plot', ax=ax)
+    
+    def hist(self, data, ref, title=None, xlabel=None, ylabel=None, vlines=True, ax=None):
+        ref_stats = st.describe(ref)
+        ref_sd = np.sqrt(ref_stats.variance)
+        ref_mean = ref_stats.mean
+
+        if ax is None:
+            ax = plt.gca()
+        ax.hist(ref, density=1, label='ref', histtype='step', color='k')
+        # ax.vlines([ref_mean - ref_sd, ref_mean + ref_sd], 0, 1, color='gray',
+        #           linestyle='--', transform=ax.get_xaxis_transform(), label='68%')
+        ax.axvline(ref_mean - ref_sd, 0, 1, color='gray', linestyle='--', label='68%')
+        ax.axvline(ref_mean + ref_sd, 0, 1, color='gray', linestyle='--')
+        if vlines:
+            for c, d in zip(cycle(self.color_cycle), np.atleast_1d(data)):
+                ax.axvline(d, 0, 1, zorder=50, **c)
+        else:
+            ax.hist(data, density=1, label='data', histtype='step')
+        ax.legend()
+        if title is not None:
+            ax.set_title(title)
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+        return ax
+    
+    def qq(self, data, ref, band_perc, func, title=None, ax=None):
+        data = np.sort(func(data.copy()), axis=-1)
+        ref = np.sort(func(ref.copy()), axis=-1)
+        bands = np.array([np.percentile(ref, [100*(1.-bi)/2, 100*(1.+bi)/2], axis=0)
+                          for bi in band_perc])
+        n = data.shape[-1]
+        quants = (np.arange(1, n+1) - 0.5) / n
+        q_theory = self.diagnostic.std_udist.ppf(quants)
+        
+        if ax is None:
+            ax = plt.gca()
+        ax.set_prop_cycle(self.color_cycle)
+        
+        for i in range(len(band_perc)-1, -1, -1):
+            ax.fill_between(q_theory, bands[i, 0], bands[i, 1], alpha=0.5, color='gray')
+
+        ax.plot(q_theory, data.T)
+        yl, yu = ax.get_ylim()
+        xl, xu = ax.get_xlim()
+        ax.plot([xl, xu], [xl, xu], c='k')
+        ax.set_ylim([yl, yu])
+        ax.set_xlim([xl, xu])
+        if title is not None:
+            ax.set_title(title)
+        ax.set_xlabel('Theoretical Quantiles')
+        ax.set_ylabel('Empirical Quantiles')
+        return ax
+    
+    def md(self, vlines=True, ax=None):
+        if ax is None:
+            ax = plt.gca()
+        md_data = self.diagnostic.md(self.data)
+        md_ref = self.diagnostic.md(self.samples)
+        return self.hist(md_data, md_ref, title='Mahalanobis Distance',
+                         xlabel='MD', ylabel='density', vlines=vlines, ax=ax)
+    
+    def kl(self, X, gp, predict=False, vlines=True, ax=None):
+        if ax is None:
+            ax = plt.gca()
+        ref_means = []
+        ref_covs = []
+        for i, sample in enumerate(self.samples):
+            gp.fit(X, sample)
+            if predict:
+                mean, cov = gp.predict(X, return_cov=True)
+            else:
+                mean, cov = gp.mean(X), gp.cov(X)
+            ref_means.append(mean)
+            ref_covs.append(cov)
+            
+        data_means = []
+        data_covs = []
+        for i, data in enumerate(np.atleast_2d(self.data)):
+            gp.fit(X, data)
+            if predict:
+                mean, cov = gp.predict(X, return_cov=True)
+            else:
+                mean, cov = gp.mean(X), gp.cov(X)
+            data_means.append(mean)
+            data_covs.append(cov)
+        
+        kl_ref = [self.diagnostic.kl(mean, cov) for mean, cov in zip(ref_means, ref_covs)]
+        kl_data = [self.diagnostic.kl(mean, cov) for mean, cov in zip(data_means, data_covs)]
+        return self.hist(kl_data, kl_ref, title='KL Divergence',
+                         xlabel='KL', ylabel='density', vlines=vlines, ax=ax)
+    
+    def credible_interval(self, intervals, band_perc, ax=None):
+        dci_data = self.diagnostic.credible_interval(self.data, intervals)
+        dci_ref = self.diagnostic.credible_interval(self.samples, intervals)
+        bands = np.array([np.percentile(dci_ref, [100*(1.-bi)/2, 100*(1.+bi)/2], axis=0)
+                          for bi in band_perc])
+        if ax is None:
+            ax = plt.gca()
+        for i in range(len(band_perc)-1, -1, -1):
+            ax.fill_between(intervals, bands[i, 0], bands[i, 1], alpha=0.5, color='gray')
+        
+        ax.plot([0, 1], [0, 1], c='k')
+        ax.set_prop_cycle(self.color_cycle)
+        ax.plot(intervals, dci_data.T)
+        ax.set_xlim([0, 1])
+        ax.set_ylim([0, 1])
+        ax.set_ylabel('Empirical Coverage')
+        ax.set_xlabel('Credible Interval')
+        return ax
+    
+    def plotzilla(self, X, gp=None, predict=False, vlines=True):
+        if gp is None:
+            pass
+        fig, axes = plt.subplots(4, 3, figsize=(12, 12))
+        self.md(vlines=vlines, ax=axes[0, 0])
+        self.kl(X, gp, predict, vlines=vlines, ax=axes[0, 1])
+        self.credible_interval(np.linspace(0, 1, 101), [0.68, 0.95], axes[0, 2])
+        self.individual_errors(axes[1, 0])
+        self.individual_errors_qq(axes[2, 0])
+        self.cholesky_errors(axes[1, 1])
+        self.cholesky_errors_qq(axes[2, 1])
+        self.eigen_errors(axes[1, 2])
+        self.eigen_errors_qq(axes[2, 2])
+        self.pivoted_cholesky_errors(axes[3, 0])
+        self.pivoted_cholesky_errors_qq(axes[3, 1])
+        fig.tight_layout()
+        return fig, axes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class SGP(object):
