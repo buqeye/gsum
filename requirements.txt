@@ -3,5 +3,4 @@ numpy
 scipy
 statsmodels
 matplotlib
-inspect
 sklearn
