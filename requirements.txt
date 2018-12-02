@@ -1,1 +1,7 @@
 pymc3>=3.1
+numpy
+scipy
+statsmodels
+matplotlib
+inspect
+sklearn
