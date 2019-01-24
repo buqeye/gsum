@@ -3,11 +3,13 @@ from Cython.Build import cythonize, build_ext
 import numpy
 import cython_gsl
 
+# Run: python setup.py build_ext --build-lib ./
+
 extensions = [Extension(
     name="gsum.cutils", 
     sources=["gsum/cutils.pyx"],
     # depends=['gsl/gsl_linalg.h', 'gsl/gsl_permutation.h'],
-    libraries=cython_gsl.get_libraries(),
+    libraries=[*cython_gsl.get_libraries()],
     library_dirs=[cython_gsl.get_library_dir()],
     include_dirs=[numpy.get_include(), cython_gsl.get_cython_include_dir()],
 )]
