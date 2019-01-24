@@ -2,8 +2,10 @@ from __future__ import division
 import pymc3 as pm
 import theano
 import theano.tensor as tt
+from math import gamma
 import numpy as np
 import scipy as sp
+from scipy.special import hyp2f1
 from scipy.optimize import fmin
 from functools import wraps
 import inspect
@@ -12,7 +14,7 @@ import inspect
 __all__ = [
     'cartesian', 'toy_data', 'coefficients', 'partials', 'stabilize',
     'predictions', 'gaussian', 'HPD', 'KL_Gauss', 'rbf', 'default_attributes',
-    'cholesky_errors', 'mahalanobis'
+    'cholesky_errors', 'mahalanobis', 'VariogramFourthRoot'
 ]
 
 
@@ -240,7 +242,7 @@ def rbf(X, Xp=None, ls=1):
     dist = np.linalg.norm(diff, axis=-1)
     if ls == 0:
         return np.where(dist == 0, 1., 0.)
-    return np.exp(- dist**2 / ls**2)
+    return np.exp(- 0.5 * dist**2 / ls**2)
 
 
 def HPD(dist, alpha, *args):
@@ -486,7 +488,9 @@ def default_attributes(**kws):
         return new_func
     return decorator
 
+
 vec_solve_triangular = np.vectorize(sp.linalg.solve_triangular, excluded=['lower'], signature='(m,m),(m,n)->(m,n)')
+
 
 def cholesky_errors(y, mean, chol):
     y = np.atleast_2d(y)
@@ -495,6 +499,221 @@ def cholesky_errors(y, mean, chol):
 # def chol_errors(y, mean, chol):
 #     return sp.linalg.solve_triangular(chol, (y - mean).T, lower=True).T
 
-def mahalanobis(y, mean, chol):
-    err = cholesky_errors(y, mean, chol)
-    return np.linalg.norm(err, axis=-1)
+
+def mahalanobis(y, mean, chol=None, inv=None):
+    if (chol is not None) and (inv is not None):
+        raise ValueError('Only one of chol and pinv can be given')
+    if chol is not None:
+        err = cholesky_errors(y, mean, chol)
+        return np.linalg.norm(err, axis=-1)
+    y = np.atleast_2d(y)
+    return np.squeeze(np.sqrt(np.diag((y - mean) @ inv @ (y - mean).T)))
+    # return np.sum(np.square(np.dot(y - mean, inv)), axis=-1)
+
+
+class VariogramFourthRoot:
+    """Computes the empirical semivariogram and uncertainties via the fourth root transformation.
+
+    Based mostly on the theory developed in Bowman & Crujeiras (2013) and Cressie & Hawkins (1980).
+    Their original code was implemented in the `sm` R package, but was rewritten in Python as a check
+    and to gain a better understanding of the implementation. There are unresolved discrepancies
+    with their code to date.
+
+    Parameters
+    ----------
+    X : 2d array
+        The (N, d) shaped input locations of the observed function.
+    y : 1d or 2d array
+        The (N,) or (N, Ncurve) shaped function values
+    bin_bounds : 1d array
+        The boundaries of the bins for the distances between the inputs. The
+        bin location is computed as the average of all distances within the bin.
+    """
+
+    mean_factor = np.sqrt(2 / np.pi) * gamma(0.75)
+    var_factor = 2. / np.pi * (np.sqrt(np.pi) - gamma(0.75)**2)
+    corr_factor = gamma(0.75)**2 / (np.sqrt(np.pi) - gamma(0.75)**2)
+
+    def __init__(self, X, z, bin_bounds):
+        # Set up NxN grid of distances and determine bins
+        N = len(X)
+        hij = np.linalg.norm(X[:, None, :] - X, axis=-1)
+        bin_grid = np.digitize(hij, bin_bounds)  # NxN
+
+        # Put all NxN data in a structured array so they can all be manipulated at once
+        inputs = np.recarray((N, N), dtype=[
+            ('hij', float), ('bin_idxs', int),
+            ('i', int), ('j', int)])
+        inputs.hij = hij
+        inputs.i = np.arange(N)[:, None]
+        inputs.j = np.arange(N)
+        inputs.bin_idxs = bin_grid
+
+        # In general we could be testing many curves, so a new structure is needed
+        # for the observations
+        z = np.atleast_2d(z)
+        Ncurves = z.shape[0]
+        data = np.recarray((N, N, Ncurves), dtype=[
+            ('dij', float), ('zi', float), ('zj', float)])
+        data.zi = zi = z.T[:, None, :]
+        data.zj = zj = z.T[None, :, :]
+        data.dij = np.sqrt(np.abs(zi - zj))
+
+        # Remove duplicate data (don't double count ij and ji, and remove i == j)
+        tri_idx = np.tril_indices(N, -1)
+        inputs = inputs[tri_idx]
+        data = data[tri_idx]
+
+        # Binning time
+        Nb = len(bin_bounds) + 1
+        bin_labels = np.arange(Nb)
+        gamma_star_hat = np.full((Nb, Ncurves), np.nan)
+
+        # Setup bin locations at midpoints of bin boundaries
+        bin_locations = np.zeros(Nb)
+        bin_locations[1:-1] = (bin_bounds[1:] + bin_bounds[:-1]) / 2
+        # Overflow bins don't have midpoints. Move outer midpoints one bin length over.
+        bin_locations[0] = 2 * bin_bounds[0] - bin_locations[1]
+        bin_locations[-1] = 2 * bin_bounds[-1] - bin_locations[-2]
+
+        # Determine binning for the reduced dataset
+        bin_idx = np.digitize(inputs.hij, bin_bounds)
+        bin_mask = bin_labels[:, None] == bin_idx
+        bin_counts = np.sum(bin_mask, axis=-1)
+
+        # Calculate binned semivariogram
+        # Move bin locations to average of points within that bin, if applicable
+        for b, mask_b in enumerate(bin_mask):
+            if np.any(mask_b):
+                bin_locations[b] = np.average(inputs.hij[mask_b], axis=0)
+                # What about dividing by two?!
+                gamma_star_hat[b] = np.average(data.dij[mask_b], axis=0)
+        # Do not multiply by mean factor before conversion to gamma tilde
+        gamma_tilde = self.variogram_scale(gamma_star_hat)
+        # Allows to use [i, j] index to get the corresponding binned gamma tilde
+        gamma_tilde_grid = gamma_tilde[bin_grid]
+        gamma_star_mean = self.mean_factor * gamma_star_hat
+
+        self.N = N
+        self.Nb = Nb
+        self.Ncurves = Ncurves
+        self.inputs = inputs
+        self.data = data
+        self.bin_mask = bin_mask
+        self.bin_idx = bin_idx
+        self.bin_labels = bin_labels
+        self.bin_counts = bin_counts
+        self.bin_locations = bin_locations
+        self.gamma_star_hat = gamma_star_hat
+        self.gamma_star_mean = gamma_star_mean
+        self.gamma_tilde = gamma_tilde
+        self.gamma_tilde_grid = gamma_tilde_grid
+
+    def rho_ijkl(self, i, j, k, l):
+        """The correlation between (Z_i - Z_j) and (Z_k - Z_l), estimated by gamma tilde"""
+        gamma = self.gamma_tilde_grid
+        gam_jk = gamma[j, k]
+        gam_il = gamma[i, l]
+        gam_ik = gamma[i, k]
+        gam_jl = gamma[j, l]
+        gam_ij = gamma[i, j]
+        gam_kl = gamma[k, l]
+        rho = (gam_jk + gam_il - gam_ik - gam_jl) / (2 * np.sqrt(gam_ij * gam_kl))
+        return rho
+
+    def corr_ijkl(self, i, j, k, l):
+        """The correlation between sqrt(|Z_i - Z_j|) and sqrt(|Z_k - Z_l|), estimated by gamma tilde
+
+        This is estimated using gamma tilde, the estimate of the variogram via the 4th root transform.
+        Because the estimate can exceed the bounds [-1, 1], any correlation outside this range is
+        manually set to +/-1.
+        """
+        rho = self.rho_ijkl(i, j, k, l)
+        corr = (1 - rho**2) * hyp2f1(0.75, 0.75, 0.5, rho**2) - 1
+        corr *= self.corr_factor
+        # Rho estimate can be greater than one, though in reality the true value must be in [-1, 1]
+        # Approaches one in limit of rho -> 1, checked via Mathematica
+        # 0.96 is the cutoff used in the Fortran file for the `sm` R package
+        # corr[rho >= 0.96] = 1.
+        # corr[rho <= -0.96] = -1.
+        corr[rho >= 1.] = 1.
+        corr[rho <= -1.] = -1.
+        return corr
+
+    def cov_ijkl(self, i, j, k, l):
+        """The covariance between sqrt(|Z_i - Z_j|) and sqrt(|Z_k - Z_l|), estimated by gamma tilde
+
+        Only estimates the correlation when (i,j) != (k,l), otherwise uses 1.
+        """
+        i, j, k, l = np.atleast_1d(i, j, k, l)
+        if not (i.shape == j.shape == k.shape == l.shape):
+            raise ValueError(i.shape == j.shape == k.shape == l.shape, 'i, j, k, l must have the same shape')
+        # If (i, j) == (k, l), then return 1, else use corr formula
+        n = i.shape[0], self.Ncurves
+        corr = np.where((i == k) & (j == l), np.ones(n).T, self.corr_ijkl(i, j, k, l).T).T
+        return corr * np.sqrt(self.var_ij(i, j) * self.var_ij(k, l))
+
+    def var_ij(self, i, j):
+        """The variance of sqrt(|Z_i - Z_j|), estimated by gamma tilde"""
+        return self.var_factor * np.sqrt(self.gamma_tilde_grid[i, j])
+
+    def cov(self, bin1, bin2=None):
+        mask1 = self.bin_mask[bin1]
+        data1 = self.inputs[mask1]
+        nb1 = self.bin_counts[bin1]
+
+        if bin2 is None or bin2 == bin1:
+            nb2 = nb1
+            data2 = data1
+            # For this case, could reduce so ij and kl don't repeat, then multiply by 2 ?
+        else:
+            nb2 = self.bin_counts[bin2]
+            mask2 = self.bin_mask[bin2]
+            data2 = self.inputs[mask2]
+
+        if (nb1 * nb2) == 0:
+            return 0.
+
+        # I get a deprecation warning if I don't use copy()
+        ijkl = cartesian(data1[['i', 'j']].copy(), data2[['i', 'j']].copy())
+        cov = 0.
+        if ijkl.size > 0:
+            i, j, k, l = ijkl[:, 0]['i'], ijkl[:, 0]['j'], ijkl[:, 1]['i'], ijkl[:, 1]['j']
+            cov += np.sum(self.cov_ijkl(i, j, k, l), axis=0)
+        cov /= nb1 * nb2
+        return cov
+
+    def variogram_scale(self, x):
+        return (x / self.mean_factor) ** 4
+
+    def fourth_root_scale(self, x):
+        return self.mean_factor * x**(0.25)
+
+    def compute(self, rt_scale=False):
+        """Returns the mean semivariogram and approximate 68% confidence intervals.
+        
+        Can be given on the 4th root scale or the variogram scale (default).
+        
+        Parameters
+        ----------
+        rt_scale : bool
+            Returns results on 4th root scale if True (default is False)
+        
+        Returns
+        -------
+        gamma, lower, upper
+            The semivariogram estimate and its lower and upper 68% bands
+        """
+        if rt_scale:
+            gamma = self.gamma_star_mean
+        else:
+            gamma = self.gamma_tilde
+        sd = np.zeros((self.Nb, self.Ncurves))
+        for i in range(self.Nb):
+            sd[i] = np.sqrt(self.cov(i))
+        lower = self.gamma_star_mean - sd
+        upper = self.gamma_star_mean + sd
+        if not rt_scale:
+            lower = self.variogram_scale(lower)
+            upper = self.variogram_scale(upper)
+        return gamma, lower, upper
