@@ -1,12 +1,14 @@
 from __future__ import division
 from functools import reduce
 from .helpers import coefficients, predictions, gaussian, stabilize, \
-    cartesian, HPD, KL_Gauss, default_attributes, cholesky_errors, mahalanobis, lazy_property
+    cartesian, HPD, KL_Gauss, default_attributes, cholesky_errors, mahalanobis, lazy_property, \
+    VariogramFourthRoot
 from .cutils import pivoted_cholesky
 import numpy as np
 import pymc3 as pm
 import scipy as sp
 import scipy.integrate as integrate
+from scipy.special import loggamma
 import scipy.stats as st
 from statsmodels.sandbox.distributions.mv_normal import MVT
 import theano
@@ -26,37 +28,87 @@ __all__ = [
     'GraphicalDiagnostic']
 
 
-
+# See Bayesian Linear Regression on Wikipedia
+# Interesting take on Model Evidence calculations
 
 class ConjugateProcess:
     
-    def __init__(self, corr_kernel, m0=0, v0=1, a0=1, b0=1, sd=None):
-        """A conjugate Gaussian Process model
+    def __init__(self, kernel, beta=0, disp=1, df=1, scale=1, sd=None, basis=None, kernel_kws=None):
+        """A conjugate Gaussian Process model.
+
+
         
         Parameters
         ----------
-        corr_kernel : callable
-            The kernel for the correlation matrix
-        m0 : float
-            The mean hyperparameter for the normal prior placed on the mean
-        v0 : float
-            The variance hyperparameter for the normal prior placed on the mean
-        a0 : float > 0
-            The shape hyperparameter for the inverse gamma prior placed on sd**2
-        b0 : float > 0
-            The scale hyperparameter for the inverse gamma prior placed on sd**2
+        kernel : callable
+            The kernel for the correlation matrix. The covariance matrix is the kernel multiplied by the squared scale.
+        beta : float
+            The prior mean for the Gaussian process. This is the location parameter of the normal prior placed
+            on the mean.
+        disp : float >= 0
+            The dispersion parameter for the normal prior placed on the mean. This, multiplied by the squared scale
+            parameter from the inverse chi squared prior, determines the variance of the mean.
+            The smaller the dispersion, the better determined is the mean.
+            Set this to zero for a mean that is known to be `mean`.
+        df : float > 0
+            The degrees of freedom parameter for the inverse chi squared prior placed on the marginal variance.
+            This is a measure of how well the marginal standard deviation (or variance) is known, with
+            larger degrees of freedom implying a better known standard deviation. Set this to infinity for a
+            standard deviation that is known to be `scale`, or use the `sd` keyword argument.
+        scale : float > 0
+            Approximately the prior standard deviation for the Gaussian process. This is the scale parameter of the
+            scaled inverse chi squared prior placed on the marginal variance of the Gaussian process
+        sd : float > 0, optional
+            A convenience argument that sets the marginal standard deviation for the Gaussian process. This is equivalent
+            to setting df0 to infinity and scale0 to sd (i.e., a delta function prior on the standard deviation).
         """
-        self.m0 = m0
-        self.v0 = v0
-        self.a0 = a0
-        self.b0 = b0
-        self.corr_kernel = corr_kernel
+        self.kernel = kernel
+        self._beta_0 = beta
+        self._disp_0 = disp
+        if sd is not None:
+            self._df_0 = np.inf
+            self._scale_0 = sd
+        else:
+            self._df_0 = df
+            self._scale_0 = scale
         self.X = None
         self.y = None
-        self._sd = sd
-        self.corr_kwargs = {}
+
+        self.all_kernel_kws = None
+        if kernel_kws is None:
+            kernel_kws = {}
+        if isinstance(kernel_kws, list):
+            self.all_kernel_kws = kernel_kws
+        elif isinstance(kernel_kws, dict):
+            self.kernel_kws = kernel_kws
+        else:
+            raise ValueError('kernel_kws must be a list or dict')
         self._corr_chol = None
-        self.noise_sd = 1e-7
+        self.corr = None
+        self.noise_sd = None
+        # self.rcond = None
+        self.method = None
+        # self.regularizer = None
+        self.use_pinv = None
+
+        if basis is None:
+            self.basis = lambda x: np.ones(x.shape)
+
+    @property
+    def beta_0(self):
+        return self._beta_0
+
+    @property
+    def disp_0(self):
+        return self._disp_0
+
+    @property
+    def df_0(self):
+        return self._df_0
+
+    @property
+    def scale_0(self):
+        return self._scale_0
         
     def _recompute_corr(self, **corr_kwargs):
         # Must be non-empty and not equal to the defaults
@@ -66,6 +118,7 @@ class ConjugateProcess:
         """Removes all attributes except those set at initialization"""
         def attr_name(name):
             return '_cache_' + name
+
         for attr in ['y', 'X', 'corr']:
             try:
                 delattr(self, attr)
@@ -78,57 +131,79 @@ class ConjugateProcess:
                 pass
     
     @default_attributes(y='y', corr_chol='_corr_chol')
-    def m(self, y=None, corr_chol=None):
-        """The posterior mean hyperparameter given y for the normal prior placed on the GP mean"""
+    def beta(self, y=None, corr_chol=None):
+        """The posterior mean coefficients beta given y for the normal prior placed on the GP mean"""
         # Mean is not updated if its prior variance is zero (i.e. delta function prior)
         # Do by hand to prevent dividing by zero
-        if self.v0 == 0:
-            return self.m0
+        if self.disp_0 == 0:
+            return self.beta_0
 
         y_avg = y
         if y.ndim == 2:
             y_avg = np.average(y, axis=0)
         ny = self.num_y(y)
         one = np.ones_like(y_avg)
-        # print(y_avg.shape, corr_chol.shape)
+        # print(y_avg.shape, corr_chol.shape, flush=True)
         right_half = cholesky_errors(y_avg, 0, corr_chol)
         left_half = cholesky_errors(one, 0, corr_chol)
         # if left_half.ndim > 1:
         #     left_half = np.swapaxes(left_half, -1, -2)
-        v = self.v(y=y, corr_chol=corr_chol)
-        return v * (self.m0 / self.v0 + ny * np.sum(left_half * right_half, axis=-1))
+        v = self.disp(y=y, corr_chol=corr_chol)
+        return v * (self.beta_0 / self.disp_0 + ny * np.sum(left_half * right_half, axis=-1))
     
     @default_attributes(y='y', corr_chol='_corr_chol')
-    def v(self, y=None, corr_chol=None):
-        """The posterior variance hyperparameter for the normal prior placed on the mean"""
+    def disp(self, y=None, corr_chol=None):
+        """The posterior dispersion hyperparameter for the normal prior placed on the mean"""
         # If prior variance is zero, it stays zero
         # Do by hand to prevent dividing by zero
-        if self.v0 == 0:
+        if self.disp_0 == 0:
             return 0.
 
         ny = self.num_y(y)
         one = np.ones(corr_chol.shape[-1])
         quad = mahalanobis(one, 0, corr_chol) ** 2
-        return (1. / self.v0 + ny * quad) ** (-1)
+        return (1. / self.disp_0 + ny * quad) ** (-1)
     
+    # @default_attributes(y='y')
+    # def a(self, y=None):
+    #     """The posterior shape hyperparameter for the inverse gamma prior placed on sd**2"""
+    #     return self.a0 + y.size / 2.
+    #
+    # @default_attributes(y='y', corr_chol='_corr_chol')
+    # def b(self, y=None, corr_chol=None):
+    #     """The posterior scale hyperparameter for the inverse gamma prior placed on sd**2"""
+    #     mean_terms = 0
+    #     if self.v0 != 0:
+    #         m = self.m(y=y, corr_chol=corr_chol)
+    #         v = self.v(y=y, corr_chol=corr_chol)
+    #         mean_terms = self._mean**2 / self._disp - m**2 / v
+    #     quad = mahalanobis(y, 0, corr_chol)**2
+    #     # sum over y axes, but not extra corr axes
+    #     if np.squeeze(y).ndim > 1:
+    #         quad = np.sum(quad, axis=-1)
+    #     return self.b0 + 0.5 * (mean_terms + quad)
+
     @default_attributes(y='y')
-    def a(self, y=None):
+    def df(self, y=None):
         """The posterior shape hyperparameter for the inverse gamma prior placed on sd**2"""
-        return self.a0 + y.size / 2.
-    
+        return self.df_0 + y.size
+
     @default_attributes(y='y', corr_chol='_corr_chol')
-    def b(self, y=None, corr_chol=None):
+    def scale(self, y=None, corr_chol=None):
         """The posterior scale hyperparameter for the inverse gamma prior placed on sd**2"""
+        if self.df_0 == np.inf:
+            return self.scale_0
+
         mean_terms = 0
-        if self.v0 != 0:
-            m = self.m(y=y, corr_chol=corr_chol)
-            v = self.v(y=y, corr_chol=corr_chol)
-            mean_terms = self.m0**2 / self.v0 - m**2 / v
-        quad = mahalanobis(y, 0, corr_chol)**2
+        if self.disp_0 != 0:
+            m = self.beta(y=y, corr_chol=corr_chol)
+            v = self.disp(y=y, corr_chol=corr_chol)
+            mean_terms = self.beta_0 ** 2 / self.disp_0 - m ** 2 / v
+        quad = mahalanobis(y, 0, corr_chol) ** 2
         # sum over y axes, but not extra corr axes
         if np.squeeze(y).ndim > 1:
             quad = np.sum(quad, axis=-1)
-        return self.b0 + 0.5 * (mean_terms + quad)
+        return np.sqrt((self.df_0 * self.scale_0**2 + mean_terms + quad) / self.df(y))
     
     @default_attributes(y='y', corr_chol='_corr_chol')
     def sd(self, y=None, corr_chol=None, broadcast=False):
@@ -140,36 +215,50 @@ class ConjugateProcess:
         Note: if the correlation matrix does equal 1 when `X == Xp`, `sd` **will not**
         be the standard deviation at `X`. Instead, one must look at `cov` directly.
         """
-        sd = self._sd
-        if sd is None:
-            b = self.b(y=y, corr_chol=corr_chol)
-            a = self.a(y=y)
-            sd = np.sqrt(b / (a - 1))
+        # sd = self._sd
+        sd = self.scale_0
+        if self.df_0 != np.inf:
+            # b = self.b(y=y, corr_chol=corr_chol)
+            # a = self.a(y=y)
+            # sd = np.sqrt(b / (a - 1))
+            scale = self.scale(y=y, corr_chol=corr_chol)
+            df = self.df(y=y)
+            sd = np.sqrt(df * scale**2 / (df - 2))
         if broadcast:  # For when a set of corr_chols are given
             sd = np.atleast_1d(sd)[:, None, None]
         return sd
 
     @default_attributes(X='X', y='y', corr_chol='_corr_chol')
     def mean(self, X=None, y=None, corr_chol=None):
-        """The MAP value for the mean given y"""
-        m = np.atleast_1d(self.m(y=y, corr_chol=corr_chol))[:, None]
-        return np.squeeze(m * np.ones(len(X)))
+        """The MAP value for the mean of the process at inputs X with hyperparameters updated by y.
 
-    @default_attributes(X='X', y='y', noise_sd='noise_sd', kwargs='corr_kwargs')
+        This does not interpolate the y values. For that functionality, use `predict`.
+        """
+        # m = np.atleast_1d(self.beta(y=y, corr_chol=corr_chol))[:, None]
+        beta = np.atleast_1d(self.beta(y=y, corr_chol=corr_chol))[:, None]
+        basis = self.basis(X)
+        return np.squeeze(beta @ basis.T)
+
+    @default_attributes(X='X', y='y', noise_sd='noise_sd', kwargs='kernel_kws')
     def cov(self, X=None, Xp=None, y=None, noise_sd=None, **kwargs):
         if Xp is None:
             Xp = X
-        corr = self.corr_kernel(X, Xp, **kwargs)
-        corr_chol = self.corr_chol(noise_sd=noise_sd, **kwargs)  # use X from fit
+        corr = self.kernel(X, Xp, **kwargs)
+        corr_chol = self.cholesky(noise_sd=noise_sd, **kwargs)  # use X from fit
         sd = self.sd(y=y, corr_chol=corr_chol, broadcast=True)
         return np.squeeze(sd**2 * corr)
     
-    @default_attributes(X='X', noise_sd='noise_sd', kwargs='corr_kwargs')
-    def corr_chol(self, X=None, noise_sd=None, **kwargs):
-        attr = '_corr_chol'
-        corr = self.corr_kernel(X, X, **kwargs)
+    @default_attributes(X='X', noise_sd='noise_sd', kwargs='kernel_kws')
+    def cholesky(self, X=None, noise_sd=None, **kwargs):
+        # attr = '_corr_chol'
+        corr = self.kernel(X, X, **kwargs)
         chol = np.linalg.cholesky(corr + noise_sd**2 * np.eye(len(X)))
         return chol
+
+    @default_attributes(X='X', rcond='noise_sd', kwargs='kernel_kws')
+    def pinv(self, X=None, rcond=None, **kwargs):
+        corr = self.kernel(X, X, **kwargs)
+        return np.linalg.pinv(corr, rcond=rcond)
     
     @staticmethod
     def num_y(y):
@@ -178,31 +267,75 @@ class ConjugateProcess:
             ny = y.shape[0]
         return ny
     
-    def fit(self, X, y, noise_sd=1e-7, **kwargs):
+    def fit(self, X, y, noise_sd=1e-7,
+            # regularizer=1e-7, method='nugget',
+            verbose=True):
+        R"""Fits the hyperparameters to the data (X, y).
+
+        Parameters
+        ----------
+        X : array
+            The input variables where the response is observed
+        y : array
+            The response values
+        noise_sd : float
+            The standard deviation of the white noise nugget added to the diagonal of the
+            correlation matrix
+        # regularizer : float
+        #     A number that quantifies the amount of regularization. For method='nugget', this
+        #     is the standard deviation of the white noise nugget added to the diagonal of the
+        #     correlation matrix. For method='pinv', this is the `rcond` argument for the `pinv`
+        #     function.
+        # method : string
+        #     The regularization method. Currently supports nugget regularization ('nugget') and
+        #     pseudo-inverse regularization ('pinv')
+        verbose : bool
+            Whether to print info about the hyperparameter fitting.
+        Returns
+        -------
+        None
+        """
         """Fits the GP, i.e., sets/updates all hyperparameters, given y(X)"""
-        # self.cleanup()
         self.X = X
         self.y = y
-        self.corr_kwargs = kwargs
+
+        # if method not in ['nugget', 'pinv']:
+        #     raise ValueError('method must be either "nugget" or "pinv", not {}'.format(method))
+        #
+        # self.method = method
+        # self.regularizer = regularizer
         self.noise_sd = noise_sd
-        self.corr = self.corr_kernel(X, **kwargs)
-        self._corr_chol = self.corr_chol(X, noise_sd=noise_sd, **kwargs)
+
+        if self.all_kernel_kws is None:
+            self.corr = self.kernel(X, **self.kernel_kws)
+        else:
+            corrs = np.array([self.kernel(X, X, **kws) for kws in self.all_kernel_kws])
+            # loglike = self.likelihood(log=True, y=y, corr=corrs, regularizer=regularizer, method=method)
+            loglike = self.likelihood(log=True, y=y, corr=corrs, noise_sd=noise_sd)
+            best_idx = np.argmax(loglike)
+            kernel_kws = self.all_kernel_kws[best_idx]
+            if verbose:
+                print('Setting kernel kwargs to {}'.format(kernel_kws))
+            self.corr = self.kernel(X=X, Xp=None, **kernel_kws)
+            self.kernel_kws = kernel_kws
+        self._corr_chol = self.cholesky()
+
     
     @default_attributes(y='y')
     def predict(self, Xnew, return_std=False, return_cov=False, y=None, pred_noise=True):
         """Returns the predictive GP at unevaluated points Xnew"""
-        kwargs = self.corr_kwargs
+        kwargs = self.kernel_kws
         # corr_chol = self.corr_chol(**kwargs)
         corr_chol = self._corr_chol
         # Use y from fit for hyperparameters
         m_old = self.mean(y=self.y, corr_chol=corr_chol)
         m_new = self.mean(Xnew, y=self.y, corr_chol=corr_chol)
-        R_on = self.corr_kernel(self.X, Xnew, **kwargs)
+        R_on = self.kernel(self.X, Xnew, **kwargs)
         R_no = R_on.T
-        R_nn = self.corr_kernel(Xnew, Xnew, **kwargs)
+        R_nn = self.kernel(Xnew, Xnew, **kwargs)
 
         # Use given y for prediction
-        mfilter = np.dot(R_no, sp.linalg.cho_solve((corr_chol, True), (y - m_old).T)).T
+        mfilter = (R_no @ sp.linalg.cho_solve((corr_chol, True), (y - m_old).T)).T
         m_pred = m_new + mfilter
         if return_std or return_cov:
             half_quad = sp.linalg.solve_triangular(corr_chol, R_on, lower=True)
@@ -217,8 +350,8 @@ class ConjugateProcess:
             return m_pred, K_pred
         return m_pred
     
-    @default_attributes(y='y', corr_chol='_corr_chol')
-    def likelihood(self, log=True, y=None, corr_chol=None):
+    @default_attributes(X='X', y='y')
+    def likelihood(self, log=True, X=None, y=None, corr=None, noise_sd=1e-7):
         raise NotImplementedError
 
     def ratio_likelihood(self, ratio, y, corr_chol, orders=None):
@@ -234,18 +367,20 @@ class ConjugateProcess:
         
 class ConjugateGaussianProcess(ConjugateProcess):
     
-    @default_attributes(y='y', corr_chol='_corr_chol')
-    def likelihood(self, log=True, y=None, corr_chol=None):
+    @default_attributes(X='X', y='y')
+    def likelihood(self, log=True, X=None, y=None, corr=None, noise_sd=1e-7):
         # Multiple corr_chols can be passed to quickly get likelihoods for many correlation parameters
-        if corr_chol.ndim == 2:
-            corr_chol = corr_chol[None, :, :]
-        n = corr_chol.shape[0]
+        if corr.ndim == 2:
+            corr = corr[None, :, :]
+        n = corr.shape[0]
+        corr = corr + noise_sd**2 * np.eye(corr.shape[-1])
+        corr_chol = np.linalg.cholesky(corr)
         
         # Setup best guesses for mean and cov
-        means = np.atleast_2d(self.mean(y=y, corr_chol=corr_chol))
+        means = np.atleast_2d(self.mean(X=X, y=y, corr_chol=corr_chol))
         sd = self.sd(y=y, corr_chol=corr_chol, broadcast=True)
-        corrs = corr_chol @ np.swapaxes(corr_chol, -2, -1)
-        covs = sd**2 * corrs
+        # corrs = corr_chol @ np.swapaxes(corr_chol, -2, -1)
+        covs = sd**2 * corr
 
         loglikes = np.zeros(n)
         for i in range(n):
@@ -259,15 +394,24 @@ class ConjugateGaussianProcess(ConjugateProcess):
     
 class ConjugateStudentProcess(ConjugateProcess):
     
-    @default_attributes(y='y', corr_chol='_corr_chol')
-    def likelihood(self, log=True, y=None, corr_chol=None):
-        mean = self.mean(y=y, corr_chol=corr_chol)
-        a0, a = self.a0, self.a(y=y)
-        b0, b = self.b0, self.b(y=y, corr_chol=corr_chol)
-        v0, v = self.v0, self.v(y=y, corr_chol=corr_chol)
+    @default_attributes(X='X', y='y')
+    def likelihood(self, log=True, X=None, y=None, corr=None, noise_sd=1e-7):
+        if corr.ndim == 2:
+            corr = corr[None, :, :]
+        n = corr.shape[0]
+        N = corr.shape[-1]
         ny = self.num_y(y)
-        N = chol.shape[-1]
-        
+        corr = corr + noise_sd**2 * np.eye(corr.shape[-1])
+        corr_chol = np.linalg.cholesky(corr)
+
+        mean = self.mean(X=X, y=y, corr_chol=corr_chol)
+        # a0, a = self.a0, self.a(y=y)
+        # b0, b = self.b0, self.b(y=y, corr_chol=corr_chol)
+        # v0, v = self.v0, self.v(y=y, corr_chol=corr_chol)
+        disp_0, disp = self.disp_0, self.disp(y=y, corr_chol=corr_chol)
+        df_0, df = self.df_0, self.df(y=y)
+        scale_0, scale = self.scale_0, self.scale(y=y, corr_chol=corr_chol)
+
         def log_nig_norm(aa, bb, vv):
             """Normalization of the normal inverse gamma distribution"""
             val = loggamma(aa) - aa * np.log(bb)
@@ -382,6 +526,12 @@ class Diagnostic:
                 upper=upper)
         dci = np.squeeze(dci)
         return dci
+
+    def variogram(self, X, y, bin_bounds):
+        v = VariogramFourthRoot(X, y, bin_bounds)
+        bin_locations = v.bin_locations
+        gamma, lower, upper = v.compute(rt_scale=False)
+        return v, bin_locations, gamma, lower, upper
 
 
 
@@ -557,7 +707,25 @@ class GraphicalDiagnostic:
         ax.set_ylabel('Empirical Coverage')
         ax.set_xlabel('Credible Interval')
         return ax
-    
+
+    def variogram(self, X, ax=None):
+        y = self.data
+        N = len(X)
+        nbins = np.ceil((N*(N-1)/2.)**(1./3))
+        bin_bounds = np.linspace(0, np.max(np.linalg.norm(X, axis=-1)), nbins)
+        v, loc, gamma, lower, upper = self.diagnostic.variogram(X, y, bin_bounds)
+
+        if ax is None:
+            ax = plt.gca()
+
+        ax.set_title('Variogram')
+        ax.set_xlabel(r"$|x-x'|$")
+        for i in range(y.shape[0]):
+            ax.plot(loc, gamma[:, i], ls='', marker='o', c=self.colors[i])
+            ax.plot(loc, lower[:, i], lw=0.5, c=self.colors[i])
+            ax.plot(loc, upper[:, i], lw=0.5, c=self.colors[i])
+        return ax
+
     def plotzilla(self, X, gp=None, predict=False, vlines=True):
         if gp is None:
             pass
@@ -573,6 +741,7 @@ class GraphicalDiagnostic:
         self.eigen_errors_qq(axes[2, 2])
         self.pivoted_cholesky_errors(axes[3, 0])
         self.pivoted_cholesky_errors_qq(axes[3, 1])
+        self.variogram(X, axes[3, 2])
         fig.tight_layout()
         return fig, axes
 
