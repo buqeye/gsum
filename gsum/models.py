@@ -92,7 +92,7 @@ class ConjugateProcess:
         self.use_pinv = None
 
         if basis is None:
-            self.basis = lambda x: np.ones(x.shape)
+            self.basis = lambda x: np.ones((x.shape[0], 1))
 
     @property
     def beta_0(self):
@@ -534,7 +534,6 @@ class Diagnostic:
         return v, bin_locations, gamma, lower, upper
 
 
-
 class GraphicalDiagnostic:
     
     def __init__(self, diagnostic, data, nref=1000, colors=None):
@@ -706,6 +705,7 @@ class GraphicalDiagnostic:
         ax.set_ylim([0, 1])
         ax.set_ylabel('Empirical Coverage')
         ax.set_xlabel('Credible Interval')
+        ax.set_title('Credible Interval Diagnostic')
         return ax
 
     def variogram(self, X, ax=None):
@@ -741,7 +741,18 @@ class GraphicalDiagnostic:
         self.eigen_errors_qq(axes[2, 2])
         self.pivoted_cholesky_errors(axes[3, 0])
         self.pivoted_cholesky_errors_qq(axes[3, 1])
-        self.variogram(X, axes[3, 2])
+        # self.variogram(X, axes[3, 2])
+        fig.tight_layout()
+        return fig, axes
+
+    def essentials(self, vlines=True):
+        fig, axes = plt.subplots(2, 3, figsize=(12, 6))
+        self.md(vlines=vlines, ax=axes[0, 0])
+        self.credible_interval(np.linspace(0, 1, 101), [0.68, 0.95], axes[1, 0])
+        self.eigen_errors(axes[0, 1])
+        self.eigen_errors_qq(axes[1, 1])
+        self.pivoted_cholesky_errors(axes[0, 2])
+        self.pivoted_cholesky_errors_qq(axes[1, 2])
         fig.tight_layout()
         return fig, axes
 
