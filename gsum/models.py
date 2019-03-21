@@ -5,8 +5,10 @@ from .helpers import coefficients, predictions, gaussian, stabilize, \
     VariogramFourthRoot
 from .cutils import pivoted_cholesky
 import numpy as np
+from numpy.linalg import solve
 import pymc3 as pm
 import scipy as sp
+from scipy.linalg import cho_solve, solve_triangular, inv
 import scipy.integrate as integrate
 from scipy.special import loggamma
 import scipy.stats as st
@@ -63,8 +65,8 @@ class ConjugateProcess:
             to setting df0 to infinity and scale0 to sd (i.e., a delta function prior on the standard deviation).
         """
         self.kernel = kernel
-        self._beta_0 = beta
-        self._disp_0 = disp
+        self._beta_0 = np.atleast_1d(beta)
+        self._disp_0 = np.atleast_2d(disp)
         if sd is not None:
             self._df_0 = np.inf
             self._scale_0 = sd
@@ -130,39 +132,37 @@ class ConjugateProcess:
             except AttributeError:
                 pass
     
-    @default_attributes(y='y', corr_chol='_corr_chol')
-    def beta(self, y=None, corr_chol=None):
-        """The posterior mean coefficients beta given y for the normal prior placed on the GP mean"""
+    @default_attributes(X='X', y='y', corr_chol='_corr_chol')
+    def beta(self, X=None, y=None, corr_chol=None):
+        """The posterior regression coefficients beta given y for the normal prior placed on the GP mean"""
         # Mean is not updated if its prior variance is zero (i.e. delta function prior)
         # Do by hand to prevent dividing by zero
-        if self.disp_0 == 0:
-            return self.beta_0
+        v0 = self.disp_0
+        if v0 == 0:
+            return np.copy(self.beta_0)
 
         y_avg = y
         if y.ndim == 2:
             y_avg = np.average(y, axis=0)
         ny = self.num_y(y)
-        one = np.ones_like(y_avg)
-        # print(y_avg.shape, corr_chol.shape, flush=True)
-        right_half = cholesky_errors(y_avg, 0, corr_chol)
-        left_half = cholesky_errors(one, 0, corr_chol)
-        # if left_half.ndim > 1:
-        #     left_half = np.swapaxes(left_half, -1, -2)
+
+        basis_mat = self.basis(X)
+        corr_inv_y_avg = cho_solve((corr_chol, True), y_avg)
         v = self.disp(y=y, corr_chol=corr_chol)
-        return v * (self.beta_0 / self.disp_0 + ny * np.sum(left_half * right_half, axis=-1))
+        return v @ (solve(v0, self.beta_0) + ny * basis_mat.T @ corr_inv_y_avg)
     
-    @default_attributes(y='y', corr_chol='_corr_chol')
-    def disp(self, y=None, corr_chol=None):
+    @default_attributes(X='X', y='y', corr_chol='_corr_chol')
+    def disp(self, X=None, y=None, corr_chol=None):
         """The posterior dispersion hyperparameter for the normal prior placed on the mean"""
         # If prior variance is zero, it stays zero
         # Do by hand to prevent dividing by zero
-        if self.disp_0 == 0:
-            return 0.
+        if np.all(self.disp_0 == 0):
+            return np.copy(self.disp_0)
 
         ny = self.num_y(y)
-        one = np.ones(corr_chol.shape[-1])
-        quad = mahalanobis(one, 0, corr_chol) ** 2
-        return (1. / self.disp_0 + ny * quad) ** (-1)
+        # one = np.ones(corr_chol.shape[-1])
+        quad = mahalanobis(self.basis(X).T, 0, corr_chol) ** 2
+        return inv(inv(self.disp_0) + ny * quad)
     
     # @default_attributes(y='y')
     # def a(self, y=None):
@@ -188,25 +188,26 @@ class ConjugateProcess:
         """The posterior shape hyperparameter for the inverse gamma prior placed on sd**2"""
         return self.df_0 + y.size
 
-    @default_attributes(y='y', corr_chol='_corr_chol')
-    def scale(self, y=None, corr_chol=None):
+    @default_attributes(X='X', y='y', corr_chol='_corr_chol')
+    def scale(self, X=None, y=None, corr_chol=None):
         """The posterior scale hyperparameter for the inverse gamma prior placed on sd**2"""
         if self.df_0 == np.inf:
             return self.scale_0
 
         mean_terms = 0
         if self.disp_0 != 0:
-            m = self.beta(y=y, corr_chol=corr_chol)
-            v = self.disp(y=y, corr_chol=corr_chol)
-            mean_terms = self.beta_0 ** 2 / self.disp_0 - m ** 2 / v
+            m0, m = self.beta_0, self.beta(X=X, y=y, corr_chol=corr_chol)
+            v0, v = self.disp_0, self.disp(X=X, y=y, corr_chol=corr_chol)
+            # mean_terms = self.beta_0 ** 2 / self.disp_0 - m ** 2 / v
+            mean_terms = m0 @ inv(v0) @ m0 + m @ inv(v) @ m
         quad = mahalanobis(y, 0, corr_chol) ** 2
         # sum over y axes, but not extra corr axes
         if np.squeeze(y).ndim > 1:
             quad = np.sum(quad, axis=-1)
         return np.sqrt((self.df_0 * self.scale_0**2 + mean_terms + quad) / self.df(y))
     
-    @default_attributes(y='y', corr_chol='_corr_chol')
-    def sd(self, y=None, corr_chol=None, broadcast=False):
+    @default_attributes(X='X', y='y', corr_chol='_corr_chol')
+    def sd(self, X=None, y=None, corr_chol=None, broadcast=False):
         """The mean value for the marginal standard deviation given y.
         
         It turns out that for both the GP and TP, `sd**2` is the conversion factor to go
@@ -215,38 +216,37 @@ class ConjugateProcess:
         Note: if the correlation matrix does equal 1 when `X == Xp`, `sd` **will not**
         be the standard deviation at `X`. Instead, one must look at `cov` directly.
         """
-        # sd = self._sd
         sd = self.scale_0
         if self.df_0 != np.inf:
-            # b = self.b(y=y, corr_chol=corr_chol)
-            # a = self.a(y=y)
-            # sd = np.sqrt(b / (a - 1))
-            scale = self.scale(y=y, corr_chol=corr_chol)
+            scale = self.scale(X=X, y=y, corr_chol=corr_chol)
             df = self.df(y=y)
             sd = np.sqrt(df * scale**2 / (df - 2))
-        if broadcast:  # For when a set of corr_chols are given
-            sd = np.atleast_1d(sd)[:, None, None]
+        # if broadcast:  # For when a set of corr_chols are given
+        #     sd = np.atleast_1d(sd)[:, None, None]
         return sd
 
-    @default_attributes(X='X', y='y', corr_chol='_corr_chol')
-    def mean(self, X=None, y=None, corr_chol=None):
+    @default_attributes(X='X', Xfit='X', y='y', corr_chol='_corr_chol')
+    def mean(self, X=None, Xfit=None, y=None, corr_chol=None):
         """The MAP value for the mean of the process at inputs X with hyperparameters updated by y.
 
         This does not interpolate the y values. For that functionality, use `predict`.
         """
         # m = np.atleast_1d(self.beta(y=y, corr_chol=corr_chol))[:, None]
-        beta = np.atleast_1d(self.beta(y=y, corr_chol=corr_chol))[:, None]
+        # beta = np.atleast_1d(self.beta(X=X, y=y, corr_chol=corr_chol))[:, None]
+        beta = self.beta(X=Xfit, y=y, corr_chol=corr_chol)
         basis = self.basis(X)
-        return np.squeeze(beta @ basis.T)
+        # return np.squeeze(beta @ basis.T)
+        return basis @ beta
 
-    @default_attributes(X='X', y='y', noise_sd='noise_sd', kwargs='kernel_kws')
-    def cov(self, X=None, Xp=None, y=None, noise_sd=None, **kwargs):
+    @default_attributes(X='X', Xfit='X', y='y', noise_sd='noise_sd', kwargs='kernel_kws')
+    def cov(self, X=None, Xp=None, Xfit=None, y=None, noise_sd=None, **kwargs):
         if Xp is None:
             Xp = X
         corr = self.kernel(X, Xp, **kwargs)
         corr_chol = self.cholesky(noise_sd=noise_sd, **kwargs)  # use X from fit
-        sd = self.sd(y=y, corr_chol=corr_chol, broadcast=True)
-        return np.squeeze(sd**2 * corr)
+        sd = self.sd(X=Xfit, y=y, corr_chol=corr_chol, broadcast=True)
+        # return np.squeeze(sd**2 * corr)
+        return sd**2 * corr
     
     @default_attributes(X='X', noise_sd='noise_sd', kwargs='kernel_kws')
     def cholesky(self, X=None, noise_sd=None, **kwargs):
@@ -298,12 +298,6 @@ class ConjugateProcess:
         """Fits the GP, i.e., sets/updates all hyperparameters, given y(X)"""
         self.X = X
         self.y = y
-
-        # if method not in ['nugget', 'pinv']:
-        #     raise ValueError('method must be either "nugget" or "pinv", not {}'.format(method))
-        #
-        # self.method = method
-        # self.regularizer = regularizer
         self.noise_sd = noise_sd
 
         if self.all_kernel_kws is None:
@@ -320,7 +314,6 @@ class ConjugateProcess:
             self.kernel_kws = kernel_kws
         self._corr_chol = self.cholesky()
 
-    
     @default_attributes(y='y')
     def predict(self, Xnew, return_std=False, return_cov=False, y=None, pred_noise=True):
         """Returns the predictive GP at unevaluated points Xnew"""
@@ -328,17 +321,17 @@ class ConjugateProcess:
         # corr_chol = self.corr_chol(**kwargs)
         corr_chol = self._corr_chol
         # Use y from fit for hyperparameters
-        m_old = self.mean(y=self.y, corr_chol=corr_chol)
-        m_new = self.mean(Xnew, y=self.y, corr_chol=corr_chol)
+        m_old = self.mean(Xfit=self.X, y=self.y, corr_chol=corr_chol)
+        m_new = self.mean(Xnew, Xfit=self.X, y=self.y, corr_chol=corr_chol)
         R_on = self.kernel(self.X, Xnew, **kwargs)
         R_no = R_on.T
         R_nn = self.kernel(Xnew, Xnew, **kwargs)
 
         # Use given y for prediction
-        mfilter = (R_no @ sp.linalg.cho_solve((corr_chol, True), (y - m_old).T)).T
+        mfilter = (R_no @ cho_solve((corr_chol, True), (y - m_old).T)).T
         m_pred = m_new + mfilter
         if return_std or return_cov:
-            half_quad = sp.linalg.solve_triangular(corr_chol, R_on, lower=True)
+            half_quad = solve_triangular(corr_chol, R_on, lower=True)
             R_pred = R_nn - np.dot(half_quad.T, half_quad)
             if pred_noise:
                 R_pred += self.noise_sd**2 * np.eye(len(Xnew))
@@ -377,10 +370,12 @@ class ConjugateGaussianProcess(ConjugateProcess):
         corr_chol = np.linalg.cholesky(corr)
         
         # Setup best guesses for mean and cov
-        means = np.atleast_2d(self.mean(X=X, y=y, corr_chol=corr_chol))
-        sd = self.sd(y=y, corr_chol=corr_chol, broadcast=True)
+        # means = np.atleast_2d(self.mean(X=X, y=y, corr_chol=corr_chol))
+        means = np.array([self.mean(X=X, y=y, corr_chol=chol) for chol in corr_chol])
+        sds = np.array([self.sd(X=X, y=y, corr_chol=chol) for chol in corr_chol])[:, None, None]
+        # sd = self.sd(y=y, corr_chol=corr_chol, broadcast=True)
         # corrs = corr_chol @ np.swapaxes(corr_chol, -2, -1)
-        covs = sd**2 * corr
+        covs = sds**2 * corr
 
         loglikes = np.zeros(n)
         for i in range(n):
@@ -393,6 +388,14 @@ class ConjugateGaussianProcess(ConjugateProcess):
 
     
 class ConjugateStudentProcess(ConjugateProcess):
+
+    @default_attributes(X='X', y='y', noise_sd='noise_sd', kwargs='kernel_kws')
+    def cov(self, X=None, Xp=None, y=None, noise_sd=None, **kwargs):
+        pass
+
+    @default_attributes(y='y')
+    def predict(self, Xnew, return_std=False, return_cov=False, y=None, pred_noise=True):
+        pass
     
     @default_attributes(X='X', y='y')
     def likelihood(self, log=True, X=None, y=None, corr=None, noise_sd=1e-7):
@@ -484,10 +487,10 @@ class Diagnostic:
         return cholesky_errors(y, self.mean, self.chol)
     
     def pivoted_cholesky_errors(self, y):
-        return np.linalg.solve(self.pivoted_chol, (y - self.mean).T).T
+        return solve(self.pivoted_chol, (y - self.mean).T).T
     
     def eigen_errors(self, y):
-        return np.linalg.solve(self.eig, (y - self.mean).T).T
+        return solve(self.eig, (y - self.mean).T).T
     
     def chi2(self, y):
         return np.sum(self.indiv_errors(y), axis=-1)
@@ -500,7 +503,7 @@ class Diagnostic:
         R"""The Kullbeck-Leibler divergence"""
         m1, c1, chol1 = self.mean, self.cov, self.chol
         m0, c0 = mean, cov
-        tr = np.trace(sp.linalg.cho_solve((chol1, True), c0))
+        tr = np.trace(cho_solve((chol1, True), c0))
         dist = self.md(m0) ** 2
         k = c1.shape[-1]
         logs = 2*np.sum(np.log(np.diag(c1))) - np.linalg.slogdet(c0)[-1]
@@ -536,28 +539,35 @@ class Diagnostic:
 
 class GraphicalDiagnostic:
     
-    def __init__(self, diagnostic, data, nref=1000, colors=None):
+    def __init__(self, diagnostic, data, nref=1000, colors=None, markers=None):
         self.diagnostic = diagnostic
         self.data = data
         self.samples = self.diagnostic.samples(nref)
+        prop_list = list(mpl.rcParams['axes.prop_cycle'])
         if colors is None:
             # The standard Matplotlib 2.0 colors, or whatever they've been updated to be.
-            clist = list(mpl.rcParams['axes.prop_cycle'])
-            colors = [c['color'] for c in clist]
+            colors = [c['color'] for c in prop_list]
+        if markers is None:
+            markers = ['o' for c in prop_list]
+        self.markers = markers
+        self.marker_cycle = cycler('marker', colors)
         self.colors = colors
         self.color_cycle = cycler('color', colors)
     
     def error_plot(self, err, title=None, ylabel=None, ax=None):
         if ax is None:
             ax = plt.gca()
-        ax.axhline(0, 0, 1, linestyle='-', color='k', lw=1)
+        ax.axhline(0, 0, 1, linestyle='-', color='k', lw=1, zorder=0)
         # The standardized 2 sigma bands since the sd has been divided out.
         sd = self.diagnostic.std_udist.std()
-        ax.axhline(-2*sd, 0, 1, linestyle='--', color='gray')
-        ax.axhline(2*sd, 0, 1, linestyle='--', color='gray')
-        ax.set_prop_cycle(self.color_cycle)
-        ax.plot(np.arange(self.data.shape[-1]), err.T, ls='', marker='o')
-        ax.set_xlabel('index')
+        ax.axhline(-2*sd, 0, 1, linestyle='--', color='gray', label=r'$2\sigma$', zorder=0)
+        ax.axhline(2*sd, 0, 1, linestyle='--', color='gray', zorder=0)
+        ax.set_prop_cycle(color=self.colors, marker=self.markers)
+        index = np.arange(self.data.shape[-1])
+        # print(np.arange(self.data.shape[-1]).shape, err.T.shape)
+        for error in err:
+            ax.plot(index, error, ls='')
+        ax.set_xlabel('Index')
         if ylabel is not None:
             ax.set_ylabel(ylabel)
         if title is not None:
@@ -606,8 +616,8 @@ class GraphicalDiagnostic:
         ax.hist(ref, density=1, label='ref', histtype='step', color='k')
         # ax.vlines([ref_mean - ref_sd, ref_mean + ref_sd], 0, 1, color='gray',
         #           linestyle='--', transform=ax.get_xaxis_transform(), label='68%')
-        ax.axvline(ref_mean - ref_sd, 0, 1, color='gray', linestyle='--', label='68%')
-        ax.axvline(ref_mean + ref_sd, 0, 1, color='gray', linestyle='--')
+        ax.axvline(ref_mean - 2*ref_sd, 0, 1, color='gray', linestyle='--', label=r'$2\sigma$')
+        ax.axvline(ref_mean + 2*ref_sd, 0, 1, color='gray', linestyle='--')
         if vlines:
             for c, d in zip(cycle(self.color_cycle), np.atleast_1d(data)):
                 ax.axvline(d, 0, 1, zorder=50, **c)
@@ -621,7 +631,63 @@ class GraphicalDiagnostic:
         if ylabel is not None:
             ax.set_ylabel(ylabel)
         return ax
-    
+
+    def violin(self, data, ref, title=None, xlabel=None, ylabel=None, vlines=True, ax=None):
+        import seaborn as sns
+        import pandas as pd
+        if ax is None:
+            ax = plt.gca()
+        n = len(data)
+        nref = len(ref)
+        orders = np.arange(n)
+        zero = np.zeros(len(data), dtype=int)
+        nans = np.nan * np.ones(nref)
+        fake = np.hstack((np.ones(nref, dtype=bool), np.zeros(nref, dtype=bool)))
+        fake_ref = np.hstack((fake[:, None], np.hstack((ref, nans))[:, None]))
+        ref_df = pd.DataFrame(fake_ref, columns=['fake', title])
+        tidy_data = np.hstack((orders[:, None], data[:, None]))
+        print(tidy_data.shape, tidy_data)
+        data_df = pd.DataFrame(tidy_data, columns=['orders', title])
+        sns.violinplot(x=np.zeros(2*nref, dtype=int), y=title, data=ref_df,
+                       color='lightgrey', hue='fake', split=True, inner='box', ax=ax)
+        sns.set_palette(self.colors)
+        sns.swarmplot(x=zero, y=title, data=data_df, hue='orders', ax=ax)
+        ax.set_xlabel('Density')
+        ax.set_xlim(-0.05, 0.5)
+        return ax
+
+    def box(self, data, ref, title=None, xlabel=None, ylabel=None, vlines=True, ax=None):
+        import seaborn as sns
+        import pandas as pd
+        if ax is None:
+            ax = plt.gca()
+        n = len(data)
+        nref = len(ref)
+        orders = np.array([r'$c_{{{}}}$'.format(i) for i in range(n)])
+        zero = np.zeros(len(data), dtype=int)
+        # nans = np.nan * np.ones(nref)
+        # fake = np.hstack((np.ones(nref, dtype=bool), np.zeros(nref, dtype=bool)))
+        # fake_ref = np.hstack((fake[:, None], np.hstack((ref, nans))[:, None]))
+        ref_df = pd.DataFrame(ref, columns=[title])
+        tidy_data = np.array([orders, data], dtype=np.object).T
+        # print(tidy_data)
+        data_df = pd.DataFrame(tidy_data, columns=['orders', title])
+        sns.boxplot(x=np.zeros(nref, dtype=int), y=title, data=ref_df,
+                    color='lightgrey', ax=ax,
+                    fliersize=0,
+                    sym='',
+                    whis=[2.5, 97.5],
+                    )
+        sns.set_palette(self.colors)
+        sns.swarmplot(x=zero, y=title, data=data_df, hue='orders', ax=ax)
+        ax.set_xticks([])
+        ax.legend(title=None)
+        # ax.set_xticklabels([''])
+        # ax.set_xlabel('Density')
+        # ax.set_xlim(-0.05, 0.5)
+        sns.despine(offset=0, trim=True, bottom=True, ax=ax)
+        return ax
+
     def qq(self, data, ref, band_perc, func, title=None, ax=None):
         data = np.sort(func(data.copy()), axis=-1)
         ref = np.sort(func(ref.copy()), axis=-1)
@@ -650,13 +716,22 @@ class GraphicalDiagnostic:
         ax.set_ylabel('Empirical Quantiles')
         return ax
     
-    def md(self, vlines=True, ax=None):
+    def md(self, vlines=True, ax=None, type='hist'):
         if ax is None:
             ax = plt.gca()
         md_data = self.diagnostic.md(self.data)
         md_ref = self.diagnostic.md(self.samples)
-        return self.hist(md_data, md_ref, title='Mahalanobis Distance',
-                         xlabel='MD', ylabel='density', vlines=vlines, ax=ax)
+        if type == 'violin':
+            return self.violin(
+                md_data, md_ref, title='Mahalanobis Distance',
+                xlabel='MD', ylabel='density', ax=ax)
+        elif type == 'hist':
+            return self.hist(md_data, md_ref, title='Mahalanobis Distance',
+                             xlabel='MD', ylabel='density', vlines=vlines, ax=ax)
+        elif type == 'box':
+            return self.box(
+                md_data, md_ref, title='Mahalanobis Distance',
+                xlabel='MD', ylabel='density', ax=ax)
     
     def kl(self, X, gp, predict=False, vlines=True, ax=None):
         if ax is None:
@@ -693,10 +768,16 @@ class GraphicalDiagnostic:
         dci_ref = self.diagnostic.credible_interval(self.samples, intervals)
         bands = np.array([np.percentile(dci_ref, [100*(1.-bi)/2, 100*(1.+bi)/2], axis=0)
                           for bi in band_perc])
+        greys = mpl.cm.get_cmap('Greys')
         if ax is None:
             ax = plt.gca()
-        for i in range(len(band_perc)-1, -1, -1):
-            ax.fill_between(intervals, bands[i, 0], bands[i, 1], alpha=0.5, color='gray')
+        # for i in range(len(band_perc)-1, -1, -1):
+        #     ax.fill_between(intervals, bands[i, 0], bands[i, 1], alpha=1., color=greys((i+1)/(len(band_perc)+1)))
+        band_perc = np.sort(band_perc)
+        for i, perc in enumerate(band_perc):
+            ax.fill_between(intervals, bands[i, 0], bands[i, 1], alpha=1.,
+                            color=greys((len(band_perc) - i) / (len(band_perc) + 2.5)),
+                            zorder=-perc)
         
         ax.plot([0, 1], [0, 1], c='k')
         ax.set_prop_cycle(self.color_cycle)
@@ -745,15 +826,41 @@ class GraphicalDiagnostic:
         fig.tight_layout()
         return fig, axes
 
-    def essentials(self, vlines=True):
-        fig, axes = plt.subplots(2, 3, figsize=(12, 6))
-        self.md(vlines=vlines, ax=axes[0, 0])
-        self.credible_interval(np.linspace(0, 1, 101), [0.68, 0.95], axes[1, 0])
-        self.eigen_errors(axes[0, 1])
-        self.eigen_errors_qq(axes[1, 1])
-        self.pivoted_cholesky_errors(axes[0, 2])
-        self.pivoted_cholesky_errors_qq(axes[1, 2])
-        fig.tight_layout()
+    def essentials(self, vlines=True, bare=False):
+        if bare:
+            fig, axes = plt.subplots(1, 3, figsize=(7, 3))
+            self.md(vlines=vlines, ax=axes[0])
+            self.pivoted_cholesky_errors(axes[1])
+            self.credible_interval(np.linspace(0, 1, 101), [0.68, 0.95], axes[2])
+            axes[0].set_title('')
+            axes[0].legend(title=r'$\mathrm{D}_{\mathrm{MD}}$')
+            axes[0].set_ylabel('')
+            axes[0].set_yticks([])
+            axes[1].set_yticks([])
+            axes[1].legend(title=r'$\mathrm{D}_{\mathrm{PC}}$')
+            axes[1].set_title('')
+            axes[1].set_ylabel('')
+            axes[2].set_title('')
+            axes[2].set_ylabel('')
+            # axes[2].set_yticks([])
+            axes[2].set_xticks([0, 0.5, 1])
+            axes[2].set_xticklabels(['0', '0.5', '1'])
+            axes[2].yaxis.tick_right()
+            axes[2].text(0.05, 0.94, r'$\mathrm{D}_{\mathrm{CI}}$', transform=axes[2].transAxes,
+                         verticalalignment='top',
+                         bbox=dict(boxstyle='round', facecolor='white', alpha=0.5, ec='grey'))
+            # axes[2].legend(title=r'$\mathrm{D}_{\mathrm{CI}}$')
+            # plt.tight
+            fig.tight_layout(h_pad=0.01, w_pad=0.1)
+        else:
+            fig, axes = plt.subplots(2, 3, figsize=(12, 6))
+            self.md(vlines=vlines, ax=axes[0, 0])
+            self.credible_interval(np.linspace(0, 1, 101), [0.68, 0.95], axes[1, 0])
+            self.eigen_errors(axes[0, 1])
+            self.eigen_errors_qq(axes[1, 1])
+            self.pivoted_cholesky_errors(axes[0, 2])
+            self.pivoted_cholesky_errors_qq(axes[1, 2])
+            fig.tight_layout()
         return fig, axes
 
 
@@ -1044,7 +1151,7 @@ class SGP(object):
         #     np.trace(np.dot(y, sp.linalg.cho_solve((R_chol, True), y.T))) - \
         #     np.dot(means.T, np.dot(inv_cov, means))
 
-        right_quad = sp.linalg.solve_triangular(R_chol, y.T, lower=True)
+        right_quad = solve_triangular(R_chol, y.T, lower=True)
         quad = np.trace(np.dot(right_quad.T, right_quad))
         # print('scalequad', quad)
         val = np.dot(means_0.T, np.dot(inv_cov_0, means_0)) + quad - \
@@ -1086,7 +1193,7 @@ class SGP(object):
         H = self.basis(self.X)
         cov = self.cov(y=y, **corr_kwargs)
 
-        Rinv_y = sp.linalg.cho_solve((R_chol, True), avg_y)
+        Rinv_y = cho_solve((R_chol, True), avg_y)
         val = np.dot(self.inv_cov_0, self.means_0) + \
             num_y * np.dot(H.T, Rinv_y)
         return np.dot(cov, val)
