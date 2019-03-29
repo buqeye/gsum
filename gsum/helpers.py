@@ -262,7 +262,7 @@ def HPD(dist, alpha, *args):
     return dist.ppf([start, alpha + start])
 
 
-def HPD_pdf(pdf, alpha, x, opt_kwargs=None, *args):
+def HPD_pdf(pdf, alpha, x, x0=None, opt_kwargs=None, *args):
     R"""Returns the highest probability density interval given the pdf.
 
     Inspired by this answer https://stackoverflow.com/a/22290087
@@ -270,6 +270,9 @@ def HPD_pdf(pdf, alpha, x, opt_kwargs=None, *args):
     # if not callable(pdf):
     #     pdf = sp.interpolate.interp1d(x, pdf)
     #     args = []
+    if x0 is None:
+        x0 = 0
+
     if opt_kwargs is None:
         opt_kwargs = {}
 
@@ -288,9 +291,10 @@ def HPD_pdf(pdf, alpha, x, opt_kwargs=None, *args):
         mask = pdf_array > p
         f[mask] = pdf_array[mask]
         prob = np.trapz(f, x)
+        # print(p, prob, (prob - alpha)**2)
         return (prob - alpha)**2
 
-    hline = fmin(errfn, x0=0, args=(alpha, *args), **opt_kwargs)[0]
+    hline = fmin(errfn, x0=x0, args=(alpha, *args), **opt_kwargs)[0]
     if callable(pdf):
         mask = pdf(x, *args) > hline
     else:
@@ -489,15 +493,15 @@ def default_attributes(**kws):
     return decorator
 
 
-vec_solve_triangular = np.vectorize(sp.linalg.solve_triangular, excluded=['lower'], signature='(m,m),(m,n)->(m,n)')
-
+# vec_solve_triangular = np.vectorize(sp.linalg.solve_triangular, excluded=['lower'], signature='(m,m),(m,n)->(m,n)')
+#
+#
+# def cholesky_errors(y, mean, chol):
+#     y = np.atleast_2d(y)
+#     return np.squeeze(np.swapaxes(vec_solve_triangular(chol, (y - mean).T, lower=True), -1, -2))
 
 def cholesky_errors(y, mean, chol):
-    y = np.atleast_2d(y)
-    return np.squeeze(np.swapaxes(vec_solve_triangular(chol, (y - mean).T, lower=True), -1, -2))
-
-# def chol_errors(y, mean, chol):
-#     return sp.linalg.solve_triangular(chol, (y - mean).T, lower=True).T
+    return sp.linalg.solve_triangular(chol, (y - mean).T, lower=True).T
 
 
 def mahalanobis(y, mean, chol=None, inv=None):
