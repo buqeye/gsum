@@ -4,6 +4,6 @@ numpy>=1.12.0
 scipy
 statsmodels
 matplotlib
-sklearn
+scikit-learn
 Cython
-CythonGSL
+cythongsl
