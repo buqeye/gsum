@@ -6,4 +6,4 @@ statsmodels
 matplotlib
 scikit-learn
 Cython
-cythongsl
+CythonGSL
