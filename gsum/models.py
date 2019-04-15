@@ -1,46 +1,41 @@
 from __future__ import division
-from .helpers import coefficients, predictions, gaussian, stabilize, \
-    cartesian, HPD, KL_Gauss, default_attributes, cholesky_errors, mahalanobis, lazy_property, \
-    VariogramFourthRoot
-from .cutils import pivoted_cholesky
+from .helpers import coefficients, predictions, gaussian, stabilize, HPD, default_attributes, mahalanobis, rbf
 import numpy as np
-from numpy.linalg import solve
+from numpy.linalg import solve, cholesky
 import scipy as sp
 from scipy.linalg import cho_solve, solve_triangular, inv
 from scipy.special import loggamma
 import scipy.stats as st
+from scipy.optimize import fmin_l_bfgs_b
 from statsmodels.sandbox.distributions.mv_normal import MVT
+from sklearn.base import BaseEstimator, RegressorMixin, clone
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 from sklearn.utils import check_random_state
+from sklearn.utils.validation import check_X_y, check_array
+from sklearn.exceptions import ConvergenceWarning
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from cycler import cycler
-from itertools import cycle
+import warnings
+from operator import itemgetter
 
 
 __all__ = [
     'SGP', 'PowerProcess', 'PowerSeries', 'ConjugateProcess',
-    'ConjugateGaussianProcess', 'ConjugateStudentProcess', 'TruncationGP', 'TruncationTP', 'Diagnostic',
-    'GraphicalDiagnostic']
+    'ConjugateGaussianProcess', 'ConjugateStudentProcess', 'TruncationGP', 'TruncationTP']
 
-
-# See Bayesian Linear Regression on Wikipedia
-# Interesting take on Model Evidence calculations
 
 class ConjugateProcess:
     
-    def __init__(self, kernel, beta=0, disp=1, df=1, scale=1, sd=None, basis=None, kernel_kws=None):
-        """A conjugate Gaussian Process model.
+    def __init__(self, kernel=None, center=0, disp=1, df=1, scale=1, sd=None, basis=None, kernel_kws=None,
+                 nugget=1e-10, optimizer='fmin_l_bfgs_b', n_restarts_optimizer=0, copy_X_train=True, random_state=None):
+        R"""A conjugate Gaussian Process model.
 
 
-        
         Parameters
         ----------
         kernel : callable
             The kernel for the correlation matrix. The covariance matrix is the kernel multiplied by the squared scale.
-        beta : float
-            The prior mean for the Gaussian process. This is the location parameter of the normal prior placed
-            on the mean.
+        center : float
+            The prior central values for the parameters of the mean function.
         disp : float >= 0
             The dispersion parameter for the normal prior placed on the mean. This, multiplied by the squared scale
             parameter from the inverse chi squared prior, determines the variance of the mean.
@@ -52,14 +47,63 @@ class ConjugateProcess:
             larger degrees of freedom implying a better known standard deviation. Set this to infinity for a
             standard deviation that is known to be `scale`, or use the `sd` keyword argument.
         scale : float > 0
-            Approximately the prior standard deviation for the Gaussian process. This is the scale parameter of the
-            scaled inverse chi squared prior placed on the marginal variance of the Gaussian process
+            The scale parameter of the scaled inverse chi squared prior placed on the marginal variance
+            of the Gaussian process. Approximately the prior standard deviation for the Gaussian process.
         sd : float > 0, optional
-            A convenience argument that sets the marginal standard deviation for the Gaussian process. This is equivalent
-            to setting df0 to infinity and scale0 to sd (i.e., a delta function prior on the standard deviation).
+            A convenience argument that sets the marginal standard deviation for the Gaussian process.
+            This is equivalent to setting df0 to infinity and scale0 to sd
+            (i.e., a delta function prior on the standard deviation).
+        nugget : float, optional (default: 1e-10)
+            Value added to the diagonal of the correlation matrix during fitting.
+            Larger values correspond to increased noise level in the observations.
+            This can also prevent a potential numerical issue during fitting, by
+            ensuring that the calculated values form a positive definite matrix.
+        verbose : bool, optional (default: True)
+            Whether to print info about the chosen kernel parameters when fitting.
+        optimizer : string or callable, optional (default: "fmin_l_bfgs_b")
+            Can either be one of the internally supported optimizers for optimizing
+            the kernel's parameters, specified by a string, or an externally
+            defined optimizer passed as a callable. If a callable is passed, it
+            must have the signature::
+                def optimizer(obj_func, initial_theta, bounds):
+                    # * 'obj_func' is the objective function to be minimized, which
+                    #   takes the hyperparameters theta as parameter and an
+                    #   optional flag eval_gradient, which determines if the
+                    #   gradient is returned additionally to the function value
+                    # * 'initial_theta': the initial value for theta, which can be
+                    #   used by local optimizers
+                    # * 'bounds': the bounds on the values of theta
+                    ....
+                    # Returned are the best found hyperparameters theta and
+                    # the corresponding value of the target function.
+                    return theta_opt, func_min
+            Per default, the 'fmin_l_bfgs_b' algorithm from scipy.optimize
+            is used. If None is passed, the kernel's parameters are kept fixed.
+            Available internal optimizers are::
+                'fmin_l_bfgs_b'
+        n_restarts_optimizer : int, optional (default: 0)
+            The number of restarts of the optimizer for finding the kernel's
+            parameters which maximize the log-marginal likelihood. The first run
+            of the optimizer is performed from the kernel's initial parameters,
+            the remaining ones (if any) from thetas sampled log-uniform randomly
+            from the space of allowed theta-values. If greater than 0, all bounds
+            must be finite. Note that n_restarts_optimizer == 0 implies that one
+            run is performed.
+        copy_X_train : bool, optional (default: True)
+            If True, a persistent copy of the training data is stored in the
+            object. Otherwise, just a reference to the training data is stored,
+            which might cause predictions to change if the data is modified
+            externally.
+        random_state : int, RandomState instance or None, optional (default: None)
+            The generator used to initialize the centers. If int, random_state is
+            the seed used by the random number generator; If RandomState instance,
+            random_state is the random number generator; If None, the random number
+            generator is the RandomState instance used by `np.random`.
         """
         self.kernel = kernel
-        self._beta_0 = np.atleast_1d(beta)
+
+        # Setup hyperparameters
+        self._center_0 = np.atleast_1d(center)
         self._disp_0 = np.atleast_2d(disp)
         if sd is not None:
             self._df_0 = np.inf
@@ -67,173 +111,397 @@ class ConjugateProcess:
         else:
             self._df_0 = df
             self._scale_0 = scale
-        self.X = None
-        self.y = None
 
-        self.all_kernel_kws = None
-        if kernel_kws is None:
-            kernel_kws = {}
-        if isinstance(kernel_kws, list):
-            self.all_kernel_kws = kernel_kws
-        elif isinstance(kernel_kws, dict):
-            self.kernel_kws = kernel_kws
-        else:
-            raise ValueError('kernel_kws must be a list or dict')
-        self._corr_chol = None
-        self.corr = None
+        self.X_train_ = None
+        self.y_train_ = None
+        self.corr_L_ = None
+        self.corr_ = None
         self.noise_sd = None
-        # self.rcond = None
-        self.method = None
-        # self.regularizer = None
-        self.use_pinv = None
+
+        self.nugget = nugget
+        # self.verbose = verbose
+        self.copy_X_train = copy_X_train
+        self.random_state = random_state
+        self.n_restarts_optimizer = n_restarts_optimizer
+        self.optimizer = optimizer
+
+        # Setup kernel keywords for fitting via maximum likelihood
+        # self.all_kernel_kws = None
+        # if kernel_kws is None:
+        #     kernel_kws = {}
+        # if isinstance(kernel_kws, (list, np.ndarray)):
+        #     self.all_kernel_kws = np.array(kernel_kws)
+        # elif isinstance(kernel_kws, dict):
+        #     self.kernel_kws = kernel_kws
+        # else:
+        #     raise ValueError('kernel_kws must be a list or dict')
+
+        # if kernel_kws is None:
+        #     kernel_kws = {}
+        # self.kernel_kws = kernel_kws
+
+        # self.optimize = False
+        # if isinstance(kernel_kws, (list, np.ndarray)):
+        #     self.optimize = True
 
         if basis is None:
             self.basis = lambda X: np.ones((X.shape[0], 1))
+        self.basis_train_ = None
 
     @property
-    def beta_0(self):
-        return self._beta_0
+    def center0(self):
+        return self._center_0
 
     @property
-    def disp_0(self):
+    def disp0(self):
         return self._disp_0
 
     @property
-    def df_0(self):
+    def df0(self):
         return self._df_0
 
     @property
-    def scale_0(self):
+    def scale0(self):
         return self._scale_0
-        
-    def _recompute_corr(self, **corr_kwargs):
-        # Must be non-empty and not equal to the defaults
-        return corr_kwargs and corr_kwargs != self.corr_kwargs
-    
-    def cleanup(self):
-        """Removes all attributes except those set at initialization"""
-        def attr_name(name):
-            return '_cache_' + name
 
-        for attr in ['y', 'X', 'corr']:
-            try:
-                delattr(self, attr)
-            except AttributeError:
-                pass
-        for attr in ['m', 'v', 'a', 'b', 'sd']:
-            try:
-                delattr(self, attr_name(attr))
-            except AttributeError:
-                pass
-    
-    @default_attributes(X='X', y='y', corr_chol='_corr_chol')
-    def beta(self, X=None, y=None, corr_chol=None):
-        """The posterior regression coefficients beta given y for the normal prior placed on the GP mean"""
+    @classmethod
+    def compute_center(cls, y, chol, basis, center0, disp0, eval_gradient=False, dR=None):
+        R"""Computes the regression coefficients' center hyperparameter :math:`\eta` updated based on data
+
+        Parameters
+        ----------
+        y : array, shape = (n_curves, n_samples)
+            The data to condition upon
+        chol : array, shape = (n_samples, n_samples)
+            The cholesky decomposition of the correlation matrix
+        basis : array, shape = (n_samples, n_param)
+            The basis matrix that multiplies the regression coefficients beta to create the GP mean.
+        center0 : scalar or array, shape = (n_param)
+            The prior regression coefficients for the mean
+        disp0 : scalar or array, shape = (n_param, n_param)
+            The prior dispersion for the regression coefficients
+        eval_gradient : bool
+        dR
+
+        Returns
+        -------
+        center : scalar or array, shape = (n_param)
+            The posterior regression coefficients for the mean
+        """
         # Mean is not updated if its prior variance is zero (i.e. delta function prior)
         # Do by hand to prevent dividing by zero
-        v0 = self.disp_0
-        if v0 == 0:
-            return np.copy(self.beta_0)
+        if np.all(disp0 == 0):
+            if eval_gradient:
+                if dR is None:
+                    raise ValueError('dR must be given if eval_gradient is True')
+                return np.copy(center0), np.zeros((*center0.shape, dR.shape[-1]))
+            return np.copy(center0)
 
-        y_avg = y
-        if y.ndim == 2:
-            y_avg = np.average(y, axis=0)
-        ny = self.num_y(y)
+        y_avg = cls.avg_y(y)
+        ny = cls.num_y(y)
 
-        basis_mat = self.basis(X)
-        corr_inv_y_avg = cho_solve((corr_chol, True), y_avg)
-        v = self.disp(X=X, y=y, corr_chol=corr_chol)
-        return v @ (solve(v0, self.beta_0) + ny * basis_mat.T @ corr_inv_y_avg)
-    
-    @default_attributes(X='X', y='y', corr_chol='_corr_chol')
-    def disp(self, X=None, y=None, corr_chol=None):
-        """The posterior dispersion hyperparameter for the normal prior placed on the mean"""
+        invR_y_avg = cho_solve((chol, True), y_avg)
+        disp = cls.compute_disp(y=y, chol=chol, basis=basis, disp0=disp0)
+        factor = solve(disp0, center0) + ny * basis.T @ invR_y_avg
+        center = disp @ factor
+
+        if eval_gradient:
+            if dR is None:
+                raise ValueError('dR must be given if eval_gradient is True')
+            invR_basis = cho_solve((chol, True), basis)
+            invR_diff = cho_solve((chol, True), basis @ center - y_avg)
+            d_center = ny * disp @ np.einsum('ji,jkp,k->ip', invR_basis, dR, invR_diff)
+            return center, d_center
+        return center
+
+    @classmethod
+    def compute_disp(cls, y, chol, basis, disp0, eval_gradient=False, dR=None):
+        R"""The dispersion hyperparameter :math:`V` updated based on data.
+
+        Parameters
+        ----------
+        y : array, shape = (n_curves, n_samples)
+            The data to condition upon
+        chol : (n_samples, n_samples)-shaped array
+            The lower Cholesky decomposition of the correlation matrix
+        basis : (n_samples, n_param)-shaped array
+            The basis for the `p` regression coefficients `beta`
+        disp0 : (n_param, n_param)-shaped array
+            The prior dispersion
+        eval_gradient : bool
+        dR
+
+        Returns
+        -------
+        disp : (p, p)-shaped array
+            The updated dispersion hyperparameter
+        d_disp : array, shape = (
+        """
         # If prior variance is zero, it stays zero
         # Do by hand to prevent dividing by zero
-        if np.all(self.disp_0 == 0):
-            return np.copy(self.disp_0)
+        if np.all(disp0 == 0):
+            if eval_gradient:
+                if dR is None:
+                    raise ValueError('dR must be given if eval_gradient is True')
+                return np.zeros_like(disp0), np.zeros((*disp0.shape, dR.shape[-1]))
+            return np.zeros_like(disp0)
 
-        ny = self.num_y(y)
-        quad = mahalanobis(self.basis(X).T, 0, corr_chol) ** 2
-        return inv(inv(self.disp_0) + ny * quad)
+        ny = cls.num_y(y)
+        quad = mahalanobis(basis.T, 0, chol) ** 2
+        disp = inv(inv(disp0) + ny * quad)
+        if eval_gradient:
+            if dR is None:
+                raise ValueError('dR must be given if eval_gradient is True')
+            invRBV = cho_solve((chol, True), basis) @ disp
+            dV = ny * np.einsum('ji,jkp,kl->ilp', invRBV, dR, invRBV)
+            return disp, dV
+        return disp
 
-    @default_attributes(y='y')
-    def df(self, y=None):
-        """The posterior shape hyperparameter for the inverse gamma prior placed on sd**2"""
-        return self.df_0 + y.size
+    @classmethod
+    def compute_df(cls, y, df0, eval_gradient=False, dR=None):
+        R"""Computes the degrees of freedom hyperparameter :math:`\nu` based on data
 
-    @default_attributes(X='X', y='y', corr_chol='_corr_chol')
-    def scale(self, X=None, y=None, corr_chol=None):
-        """The posterior scale hyperparameter for the inverse gamma prior placed on sd**2"""
-        if self.df_0 == np.inf:
-            return self.scale_0
+        Parameters
+        ----------
+        y : array, shape = (n_curves, n_samples)
+            The data to condition upon
+        df0 : scalar
+            The prior degrees of freedom
+        eval_gradient
+        dR
 
-        mean_terms = 0
-        if self.disp_0 != 0:
-            m0, m = self.beta_0, self.beta(X=X, y=y, corr_chol=corr_chol)
-            v0, v = self.disp_0, self.disp(X=X, y=y, corr_chol=corr_chol)
-            # mean_terms = self.beta_0 ** 2 / self.disp_0 - m ** 2 / v
-            mean_terms = m0 @ inv(v0) @ m0 + m @ inv(v) @ m
-        quad = mahalanobis(y, 0, corr_chol) ** 2
-        # sum over y axes, but not extra corr axes
-        # if np.squeeze(y).ndim > 1:
-        #     quad = np.sum(quad, axis=-1)
-        quad = np.sum(quad, axis=-1)
-        scale = np.sqrt((self.df_0 * self.scale_0**2 + mean_terms + quad) / self.df(y))
-        return np.squeeze(scale)
-    
-    @default_attributes(X='X', y='y', corr_chol='_corr_chol')
-    def sd(self, X=None, y=None, corr_chol=None):
-        """The mean value for the marginal standard deviation given y.
-        
-        It turns out that for both the GP and TP, `sd**2` is the conversion factor to go
-        from the correlation matrix to the covariance matrix.
-        
-        Note: if the correlation matrix does equal 1 when `X == Xp`, `sd` **will not**
-        be the standard deviation at `X`. Instead, one must look at `cov` directly.
+        Returns
+        -------
+        df : scalar
+            The updated degrees of freedom
+        d_df : array, size = (n_kernel_params,), optional
+            The gradient of the updated degrees of freedom with respect to the kernel parameters
         """
-        sd = self.scale_0
-        if self.df_0 != np.inf:
-            scale = self.scale(X=X, y=y, corr_chol=corr_chol)
-            df = self.df(y=y)
-            sd = np.sqrt(df * scale**2 / (df - 2))
-        # if broadcast:  # For when a set of corr_chols are given
-        #     sd = np.atleast_1d(sd)[:, None, None]
-        return sd
+        df = df0 + y.size
+        if eval_gradient:
+            if dR is None:
+                raise ValueError('dR must be given if eval_gradient is True')
+            return df, np.zeros(dR.shape[-1])
+        return df
 
-    @default_attributes(X='X', Xfit='X', y='y', corr_chol='_corr_chol')
-    def mean(self, X=None, Xfit=None, y=None, corr_chol=None):
+    @classmethod
+    def compute_scale_sq_v2(cls, y, chol, basis, center0, disp0, df0, scale0, eval_gradient=False, dR=None):
+        R"""The squared scale hyperparameter :math:`\tau^2` updated based on data.
+
+        Parameters
+        ----------
+        y : array, shape = (n_curves, n_samples)
+            The data to condition upon
+        chol : array, shape = (n_samples, n_samples)
+            The lower Cholesky decomposition of the correlation matrix
+        basis : array, shape = (n_samples, n_param)
+            The basis for the `p` regression coefficients `beta`
+        center0 : scalar or array, shape = (n_param)
+            The prior regression coefficients for the mean
+        disp0 : array, shape = (n_param, n_param)
+            The prior dispersion
+        df0 : scalar
+            The prior degrees of freedom hyperparameter
+        scale0 : scalar
+            The prior scale hyperparameter
+        eval_gradient : bool, optional
+            Whether to return to the gradient with respect to kernel hyperparameters. Optional, defaults to False.
+        dR : array, shape = (n_samples, n_samples, n_kernel_params), optional
+            The gradient of the correlation matrix
+
+        Returns
+        -------
+        scale_sq : scalar
+            The updated scale hyperparameter squared
+        d_scale_sq : array, shape = (n_kernel_params,), optional
+            The gradient of scale^2 with respect to the kernel hyperparameters. Only returned if eval_gradient is True.
+        """
+        if df0 == np.inf:
+            if eval_gradient:
+                return scale0, np.zeros(dR.shape[-1])
+            return scale0
+
+        avg_y = cls.avg_y(y)
+        ny = cls.num_y(y)
+
+        if np.all(disp0 == 0):
+            invR_diff0 = cho_solve((chol, True), 2 * avg_y - basis @ center0)
+            mean_terms = - ny * center0 @ basis.T @ invR_diff0
+        else:
+            center = cls.compute_center(y=y, chol=chol, basis=basis, center0=center0, disp0=disp0)
+            disp = cls.compute_disp(y=y, chol=chol, basis=basis, disp0=disp0)
+            mean_terms = center0 @ inv(disp0) @ center0 - center @ inv(disp) @ center
+        if y.ndim == 1:
+            y = y[None, :]
+        invR_y = cho_solve((chol, True), y.T)
+        quad = np.sum(y @ invR_y, axis=-1)
+        df = cls.compute_df(y=y, df0=df0)
+        scale_sq = (df0 * scale0**2 + mean_terms + quad) / df
+
+        if eval_gradient:
+            if dR is None:
+                raise ValueError('dR must be given if eval_gradient is true')
+            d_scale_sq = - np.einsum('ij,jkp,ki->p', invR_y.T, dR, invR_y)
+
+            if np.all(disp0 == 0):
+                center = cls.compute_center(y=y, chol=chol, basis=basis, center0=center0, disp0=disp0)
+            invR_diff = cho_solve((chol, True), 2 * avg_y - basis @ center)
+            invR_basis_center = cho_solve((chol, True), basis) @ center
+            d_scale_sq += ny * np.einsum('i,ijp,j->p', invR_basis_center, dR, invR_diff)
+
+            d_scale_sq /= df
+            return scale_sq, d_scale_sq
+        return scale_sq
+
+    @classmethod
+    def compute_scale_sq(cls, y, chol, basis, center0, disp0, df0, scale0, eval_gradient=False, dR=None):
+        R"""The squared scale hyperparameter :math:`\tau^2` updated based on data.
+
+        Parameters
+        ----------
+        y : array, shape = (n_curves, n_samples)
+            The data to condition upon
+        chol : array, shape = (n_samples, n_samples)
+            The lower Cholesky decomposition of the correlation matrix
+        basis : array, shape = (n_samples, n_param)
+            The basis for the `p` regression coefficients `beta`
+        center0 : scalar or array, shape = (n_param)
+            The prior regression coefficients for the mean
+        disp0 : array, shape = (n_param, n_param)
+            The prior dispersion
+        df0 : scalar
+            The prior degrees of freedom hyperparameter
+        scale0 : scalar
+            The prior scale hyperparameter
+        eval_gradient : bool
+            Whether to return to the gradient with respect to kernel hyperparameters. Optional, defaults to False.
+        dR : array, shape = (n_samples, n_samples, n_kernel_params)
+            The gradient of the correlation matrix
+
+        Returns
+        -------
+        scale_sq : scalar
+            The updated scale hyperparameter squared
+        d_scale_sq : array, shape = (n_kernel_params,), optional
+            The gradient of scale^2 with respect to the kernel hyperparameters. Only returned if eval_gradient is True.
+        """
+        if df0 == np.inf:
+            if eval_gradient:
+                return scale0, np.zeros(dR.shape[-1])
+            return scale0
+
+        if y.ndim == 1:
+            y = y[None, :]
+        avg_y = cls.avg_y(y)
+        ny = cls.num_y(y)
+
+        y_centered = y - avg_y
+        invR_yc = cho_solve((chol, True), y_centered.T)
+        quad = np.sum(y_centered @ invR_yc, axis=-1)
+
+        avg_y_centered = avg_y - basis @ center0
+        disp = cls.compute_disp(y=y, chol=chol, basis=basis, disp0=disp0, eval_gradient=False)
+        mat = np.eye(chol.shape[0]) - ny * cho_solve((chol, True), basis) @ disp @ basis.T
+        mat_invR_avg_yc = ny * mat @ cho_solve((chol, True), avg_y_centered)
+        quad2 = avg_y_centered @ mat_invR_avg_yc
+
+        df = cls.compute_df(y=y, df0=df0)
+        scale_sq = (df0 * scale0 ** 2 + quad + quad2) / df
+
+        if eval_gradient:
+            if dR is None:
+                raise ValueError('dR must be given if eval_gradient is true')
+            d_scale_sq = - np.einsum('ji,jkp,ki->p', invR_yc, dR, invR_yc)
+            d_scale_sq -= np.einsum('i,ijp,j->p', mat_invR_avg_yc, dR, mat_invR_avg_yc) / ny
+            d_scale_sq /= df
+            return scale_sq, d_scale_sq
+        return scale_sq
+
+    # @classmethod
+    # def compute_std(cls, y, chol, basis, center0, disp0, df0, scale0):
+    #     """The mean value for the marginal standard deviation given y.
+    #
+    #     It turns out that for both the GP and TP, `sd**2` is the conversion factor to go
+    #     from the correlation matrix to the covariance matrix.
+    #
+    #     Note: if the correlation matrix does equal 1 when `X == Xp`, `sd` **will not**
+    #     be the standard deviation at `X`. Instead, one must look at `cov` directly.
+    #     """
+    #     std = scale0
+    #     if df0 != np.inf:
+    #         scale_sq = cls.compute_scale_sq(
+    #             y=y, chol=chol, basis=basis, center0=center0, disp0=disp0, df0=df0, scale0=scale0)
+    #         df = cls.compute_df(y=y, df0=df0)
+    #         std = np.sqrt(df * scale_sq / (df - 2))
+    #     return std
+
+    @staticmethod
+    def scale_sq_to_marginal_variance(scale_sq, df):
+        """Converts the squared scale hyperparameter :math:`\tau^2` to the marginal variance
+
+        The conversion is given by :math:`\sigma^2 = \nu \tau^2 / (\nu - 2)` for :math:`\nu > 2`
+
+        Warnings
+        --------
+        If the correlation matrix does equal 1 on the diagonal, :math:`\sigma^2` **will not**
+        be the marginal variance. Instead, one must look at the diagonal of the covariance directly.
+        """
+        var = scale_sq
+        if df != np.inf:
+            var = df * scale_sq / (df - 2)
+        return var
+
+    def center(self):
+        """The regression coefficient hyperparameters for the mean updated by the call to `fit`.
+        """
+        return self.compute_center(
+            y=self.y_train_, chol=self.corr_L_, basis=self.basis_train_, center0=self.center0, disp0=self.disp0)
+
+    def disp(self):
+        """The dispersion hyperparameter updated by the call to `fit`.
+        """
+        return self.compute_disp(y=self.y_train_, chol=self.corr_L_, basis=self.basis_train_, disp0=self.disp0)
+
+    def df(self):
+        """The degrees of freedom hyperparameter for the standard deviation updated by the call to `fit`
+        """
+        return self.compute_df(y=self.y_train_, df0=self.df0)
+
+    def scale(self):
+        """The scale hyperparameter for the standard deviation updated by the call to `fit`
+        """
+        scale_sq = self.compute_scale_sq(y=self.y_train_, chol=self.corr_L_, basis=self.basis_train_,
+                                         center0=self.center0, disp0=self.disp0, df0=self.df0, scale0=self.scale0)
+        return np.sqrt(scale_sq)
+
+    # def std(self):
+    #     """The mean value for the marginal standard deviation given y.
+    #
+    #     It turns out that for both the GP and TP, `sd**2` is the conversion factor to go
+    #     from the correlation matrix to the covariance matrix.
+    #
+    #     Note: if the correlation matrix does equal 1 when `X == Xp`, `sd` **will not**
+    #     be the standard deviation at `X`. Instead, one must look at `cov` directly.
+    #     """
+    #     return self.compute_std(y=self.y_train_, chol=self.corr_L_, basis=self.basis_train_,
+    #                             center0=self.center0, disp0=self.disp0, df0=self.df0, scale0=self.scale0)
+
+    def mean(self, X=None):
         """The MAP value for the mean of the process at inputs X with hyperparameters updated by y.
 
         This does not interpolate the y values. For that functionality, use `predict`.
         """
-        # m = np.atleast_1d(self.beta(y=y, corr_chol=corr_chol))[:, None]
-        # beta = np.atleast_1d(self.beta(X=X, y=y, corr_chol=corr_chol))[:, None]
-        beta = self.beta(X=Xfit, y=y, corr_chol=corr_chol)
-        basis = self.basis(X)
-        # return np.squeeze(beta @ basis.T)
-        return basis @ beta
+        if X is None:
+            return self.X_train_
+        return self.basis(X) @ self.center()
 
-    @default_attributes(X='X', Xfit='X', y='y', noise_sd='noise_sd', kwargs='kernel_kws')
-    def cov(self, X=None, Xp=None, Xfit=None, y=None, noise_sd=None, **kwargs):
+    def cov(self, X=None, Xp=None):
+        if X is None:
+            X = self.X_train_
         if Xp is None:
             Xp = X
-        corr = self.kernel(X, Xp, **kwargs)
-        corr_chol = self.cholesky(X=Xfit, noise_sd=noise_sd, **kwargs)  # use X from fit
-        sd = self.sd(X=Xfit, y=y, corr_chol=corr_chol)
-        return sd**2 * corr
-    
-    @default_attributes(X='X', noise_sd='noise_sd', kwargs='kernel_kws')
-    def cholesky(self, X=None, noise_sd=None, **kwargs):
-        # attr = '_corr_chol'
-        corr = self.kernel(X, X, **kwargs)
-        chol = np.linalg.cholesky(corr + noise_sd**2 * np.eye(len(X)))
-        return chol
-
-    @default_attributes(X='X', rcond='noise_sd', kwargs='kernel_kws')
-    def pinv(self, X=None, rcond=None, **kwargs):
-        corr = self.kernel(X, X, **kwargs)
-        return np.linalg.pinv(corr, rcond=rcond)
+        corr = self.kernel_(X, Xp)
+        return self.std()**2 * corr
     
     @staticmethod
     def num_y(y):
@@ -241,68 +509,118 @@ class ConjugateProcess:
         if y.ndim == 2:
             ny = y.shape[0]
         return ny
+
+    @staticmethod
+    def avg_y(y):
+        if y.ndim == 1:
+            return np.copy(y)
+        elif y.ndim == 2:
+            return np.average(y, axis=0)
+
+    def _calibrate_kernel(self):
+        if self.optimizer is not None and self.kernel_.n_dims > 0:
+            # Choose hyperparameters based on maximizing the log-marginal
+            # likelihood (potentially starting from several initial values)
+            def obj_func(theta, eval_gradient=True):
+                if eval_gradient:
+                    lml, grad = self.log_marginal_likelihood(
+                        theta, eval_gradient=True)
+                    return -lml, -grad
+                else:
+                    return -self.log_marginal_likelihood(theta)
+
+            # First optimize starting from theta specified in kernel
+            optima = [(self._constrained_optimization(obj_func,
+                                                      self.kernel_.theta,
+                                                      self.kernel_.bounds))]
+
+            # Additional runs are performed from log-uniform chosen initial
+            # theta
+            if self.n_restarts_optimizer > 0:
+                if not np.isfinite(self.kernel_.bounds).all():
+                    raise ValueError(
+                        "Multiple optimizer restarts (n_restarts_optimizer>0) "
+                        "requires that all bounds are finite.")
+                bounds = self.kernel_.bounds
+                for iteration in range(self.n_restarts_optimizer):
+                    theta_initial = \
+                        self._rng.uniform(bounds[:, 0], bounds[:, 1])
+                    optima.append(
+                        self._constrained_optimization(obj_func, theta_initial,
+                                                       bounds))
+            # Select result from run with minimal (negative) log-marginal
+            # likelihood
+            lml_values = list(map(itemgetter(1), optima))
+            self.kernel_.theta = optima[np.argmin(lml_values)][0]
+            self.log_marginal_likelihood_value_ = -np.min(lml_values)
+        else:
+            self.log_marginal_likelihood_value_ = \
+                self.log_marginal_likelihood(self.kernel_.theta)
     
-    def fit(self, X, y, noise_sd=1e-7, verbose=True):
-        R"""Fits the hyperparameters to the data (X, y).
+    def fit(self, X, y):
+        R"""Fits the hyperparameters to the data (X, y) and updates all hyperparameters.
 
         Parameters
         ----------
-        X : array
+        X : array, shape = (n_samples, n_features)
             The input variables where the response is observed
-        y : array
+        y : array, shape = (n_curves, n_samples)
             The response values
-        noise_sd : float
-            The standard deviation of the white noise nugget added to the diagonal of the
-            correlation matrix
-        # regularizer : float
-        #     A number that quantifies the amount of regularization. For method='nugget', this
-        #     is the standard deviation of the white noise nugget added to the diagonal of the
-        #     correlation matrix. For method='pinv', this is the `rcond` argument for the `pinv`
-        #     function.
-        # method : string
-        #     The regularization method. Currently supports nugget regularization ('nugget') and
-        #     pseudo-inverse regularization ('pinv')
-        verbose : bool
-            Whether to print info about the hyperparameter fitting.
+
         Returns
         -------
-        self
+        self : returns an instance of self.
         """
-        """Fits the GP, i.e., sets/updates all hyperparameters, given y(X)"""
-        self.X = X
-        self.y = y
-        self.noise_sd = noise_sd
-
-        if self.all_kernel_kws is None:
-            self.corr = self.kernel(X, **self.kernel_kws)
+        if self.kernel is None:  # Use an RBF kernel as default
+            self.kernel_ = C(1.0, constant_value_bounds='fixed') * RBF(1.0, length_scale_bounds='fixed')
         else:
-            corr_vec = np.array([self.kernel(X, X, **kws) for kws in self.all_kernel_kws])
-            log_like = self.likelihood(log=True, y=y, corr=corr_vec, noise_sd=noise_sd)
-            best_idx = np.argmax(log_like)
-            kernel_kws = self.all_kernel_kws[best_idx]
-            if verbose:
-                print('Setting kernel kwargs to {}'.format(kernel_kws))
-            self.corr = self.kernel(X=X, Xp=None, **kernel_kws)
-            self.kernel_kws = kernel_kws
-        self._corr_chol = self.cholesky()
+            self.kernel_ = clone(self.kernel)
+
+        self._rng = check_random_state(self.random_state)
+
+        X, y = check_X_y(X, y, multi_output=True, y_numeric=True)
+        self.X_train_ = np.copy(X) if self.copy_X_train else X
+        self.y_train_ = np.copy(y) if self.copy_X_train else y
+        self.basis_train_ = self.basis(self.X_train_)
+
+        # if self.optimize:
+        #     # corr_vec = np.array([self.kernel(X, X, **kws) for kws in self.all_kernel_kws])
+        #     # log_like = self.likelihood(log=True, y=y, corr=corr_vec, noise_sd=noise_sd)
+        #     log_like = np.array([self.likelihood(log=True, X=X, y=y, **kws) for kws in self.kernel_kws])
+        #     kernel_kws = self.kernel_kws[np.argmax(log_like)]
+        #     if self.verbose:
+        #         print('Setting kernel kwargs to {}'.format(kernel_kws))
+        #     self.kernel_kws_ = kernel_kws
+        # else:
+        #     self.kernel_kws_ = self.kernel_kws
+        self._calibrate_kernel()
+
+        # self.corr_ = self.kernel(X=X, Xp=None, **self.kernel_kws_)
+        self.corr_ = self.kernel_(X=X)
+        self.corr_L_ = cholesky(self.corr_ + self.nugget * np.eye(len(X)))
+
+        self.center_ = self.center()
+        self.disp_ = self.disp()
+        self.df_ = self.df()
+        self.scale_ = self.scale()
+        # self.std_ = self.std()
         return self
 
-    @default_attributes(X='X', y='y')
-    def predict(self, Xnew, return_std=False, return_cov=False, X=None, y=None, pred_noise=True):
-        """Returns the predictive GP at the points Xnew
+    def predict(self, X, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=True):
+        """Returns the predictive GP at the points X
 
         Parameters
         ----------
-        Xnew : (Nnew, d) array
+        X : array, shape = (n_samples, n_features)
             Locations at which to predict the new y values
         return_std : bool
             Whether the marginal standard deviation of the predictive process is to be returned
         return_cov : bool
             Whether the covariance matrix of the predictive process is to be returned
-        X : (N, d) array
+        Xc : array, shape = (n_conditional_samples, n_features)
             Locations at which to condition. Defaults to `X` used in fit. This *does not*
             affect the `X` used to update hyperparameters.
-        y : (n, N) array
+        y : array, shape = (n_curves, n_conditional_samples)
             Points upon which to condition. Defaults to the `y` used in `fit`. This *does not*
             affect the `y` used to update hyperparameters.
         pred_noise : bool
@@ -310,31 +628,47 @@ class ConjugateProcess:
 
         Returns
         -------
-        mean, (mean, std), or (mean, cov), depending on `return_std` and `return_cov`
+        y_mean : array, shape = (n_curves, n_samples)
+            Mean of predictive distribution at query points
+        y_std : array, shape = (n_samples,), optional
+            Standard deviation of predictive distribution at query points.
+            Only returned when return_std is True.
+        y_cov : array, shape = (n_samples, n_samples), optional
+            Covariance of joint predictive distribution at query points.
+            Only returned when return_cov is True.
         """
-        kwargs = self.kernel_kws
-        corr_chol = self._corr_chol
+        if return_std and return_cov:
+            raise RuntimeError('Only one of return_std or return_cov may be True')
+
+        kwargs = self.kernel_kws_
+        if Xc is None:
+            Xc = self.X_train_
+            corr_chol = self.corr_L_
+        else:
+            corr_chol = cholesky(self.kernel(Xc, Xc, **kwargs) + self.nugget * np.eye(len(Xc)))
+        if y is None:
+            y = self.y_train_
+
         # Use X and y from fit for hyperparameters
-        m_old = self.mean(X=X, Xfit=self.X, y=self.y, corr_chol=corr_chol)
-        m_new = self.mean(Xnew, Xfit=self.X, y=self.y, corr_chol=corr_chol)
+        m_old = self.mean(Xc)
+        m_new = self.mean(X)
 
         # Now use X and y from arguments for conditioning/predictions
-        R_on = self.kernel(X, Xnew, **kwargs)
+        R_on = self.kernel(Xc, X, **kwargs)
         R_no = R_on.T
-        R_nn = self.kernel(Xnew, Xnew, **kwargs)
+        R_nn = self.kernel(X, X, **kwargs)
 
         # Use given y for prediction
         alpha = cho_solve((corr_chol, True), (y - m_old).T)
-        mfilter = (R_no @ alpha).T
-        m_pred = m_new + mfilter
+        m_pred = m_new + (R_no @ alpha).T
         if return_std or return_cov:
             half_quad = solve_triangular(corr_chol, R_on, lower=True)
             R_pred = R_nn - np.dot(half_quad.T, half_quad)
             if pred_noise:
-                R_pred += self.noise_sd**2 * np.eye(len(Xnew))
+                R_pred += self.noise_sd**2 * np.eye(len(X))
             # Use y from fit for hyperparameters
-            sd = self.sd(y=self.y, corr_chol=corr_chol)
-            K_pred = np.squeeze(sd**2 * R_pred)
+            std = self.std()
+            K_pred = np.squeeze(std**2 * R_pred)
             if return_std:
                 return m_pred, np.sqrt(np.diag(K_pred))
             return m_pred, K_pred
@@ -354,77 +688,185 @@ class ConjugateProcess:
                  for i in range(y_mean.shape[1])]
             y_samples = np.hstack(y_samples)
         return y_samples
-    
-    @default_attributes(X='X', y='y')
-    def likelihood(self, log=True, X=None, y=None, corr=None, noise_sd=1e-7):
+
+    def log_marginal_likelihood(self, theta=None, eval_gradient=False):
         raise NotImplementedError
 
-    def ratio_likelihood(self, ratio, y, corr_chol, orders=None):
-        if y.ndim < 2:
-            raise ValueError('y must be at least 2d, not {}'.format(y.shape))
-        if orders is None:
-            orders = np.arange(y.shape[0])
-        ys = y / ratio[:, None, ...] ** orders[:, None]
-        log_likes = np.array([self.likelihood(log=True, y=yi, corr_chol=corr_chol) for yi in ys])
-        log_likes -= np.sum(orders) * np.sum(np.log(ratio), axis=-1)[:, None]
-        return log_likes
+    def likelihood(self, log=True, X=None, y=None, **kernel_kws):
+        raise NotImplementedError
+
+    # def ratio_likelihood(self, ratio, y, corr_chol, orders=None):
+    #     if y.ndim < 2:
+    #         raise ValueError('y must be at least 2d, not {}'.format(y.shape))
+    #     if orders is None:
+    #         orders = np.arange(y.shape[0])
+    #     ys = y / ratio[:, None, ...] ** orders[:, None]
+    #     log_likes = np.array([self.likelihood(log=True, y=yi, corr_chol=corr_chol) for yi in ys])
+    #     log_likes -= np.sum(orders) * np.sum(np.log(ratio), axis=-1)[:, None]
+    #     return log_likes
+
+    def _constrained_optimization(self, obj_func, initial_theta, bounds):
+        if self.optimizer == "fmin_l_bfgs_b":
+            theta_opt, func_min, convergence_dict = \
+                fmin_l_bfgs_b(obj_func, initial_theta, bounds=bounds)
+            if convergence_dict["warnflag"] != 0:
+                warnings.warn("fmin_l_bfgs_b terminated abnormally with the "
+                              " state: %s" % convergence_dict,
+                              ConvergenceWarning)
+        elif callable(self.optimizer):
+            theta_opt, func_min = \
+                self.optimizer(obj_func, initial_theta, bounds=bounds)
+        else:
+            raise ValueError("Unknown optimizer %s." % self.optimizer)
+
+        return theta_opt, func_min
 
         
 class ConjugateGaussianProcess(ConjugateProcess):
 
     def log_marginal_likelihood(self, theta=None, eval_gradient=False):
-        pass
-    
-    @default_attributes(X='X', y='y')
-    def likelihood(self, log=True, X=None, y=None, corr=None, noise_sd=1e-7):
-        # Multiple corr_chols can be passed to quickly get likelihoods for many correlation parameters
-        if corr is None:
-            corr = self.kernel(X, **self.kernel_kws)
+        """Returns log-marginal likelihood of theta for training data.
+        Parameters
+        ----------
+        theta : array-like, shape = (n_kernel_params,) or None
+            Kernel hyperparameters for which the log-marginal likelihood is
+            evaluated. If None, the precomputed log_marginal_likelihood
+            of ``self.kernel_.theta`` is returned.
+        eval_gradient : bool, default: False
+            If True, the gradient of the log-marginal likelihood with respect
+            to the kernel hyperparameters at position theta is returned
+            additionally. If True, theta must not be None.
+        Returns
+        -------
+        log_likelihood : float
+            Log-marginal likelihood of theta for training data.
+        log_likelihood_gradient : array, shape = (n_kernel_params,), optional
+            Gradient of the log-marginal likelihood with respect to the kernel
+            hyperparameters at position theta.
+            Only returned when eval_gradient is True.
+        """
+        if theta is None:
+            if eval_gradient:
+                raise ValueError(
+                    "Gradient can only be evaluated for theta!=None")
+            return self.log_marginal_likelihood_value_
 
-        if corr.ndim == 2:
-            corr = corr[None, :, :]
-        n = corr.shape[0]
-        corr = corr + noise_sd**2 * np.eye(corr.shape[-1])
-        corr_chol = np.linalg.cholesky(corr)
+        kernel = self.kernel_.clone_with_theta(theta)
+
+        if eval_gradient:
+            R, R_gradient = kernel(self.X_train_, eval_gradient=True)
+        else:
+            R = kernel(self.X_train_)
+
+        R[np.diag_indices_from(R)] += self.nugget
+        try:
+            corr_L = cholesky(R)  # Line 2
+        except np.linalg.LinAlgError:
+            return (-np.inf, np.zeros_like(theta)) \
+                if eval_gradient else -np.inf
+
+        # Support multi-dimensional output of self.y_train_
+        y_train = self.y_train_
+        X = self.X_train_
+        if y_train.ndim == 1:
+            y_train = y_train[:, np.newaxis]
+
+        center0, disp0, df0, scale0 = self.center0, self.disp0, self.df0, self.scale0
+        df = self.compute_df(y=y_train, df0=df0, eval_gradient=False)
+        basis = self.basis(X)
+        if eval_gradient:
+            center, dcenter = self.compute_center(y_train, corr_L, basis, center0=center0, disp0=disp0,
+                                                  eval_gradient=eval_gradient, dR=R_gradient)
+            scale2, dscale2 = self.compute_scale_sq(
+                y=y_train, chol=corr_L, basis=basis, center0=center0, disp0=disp0,
+                df0=df0, scale0=scale0, eval_gradient=eval_gradient, dR=R_gradient)
+            dvar = self.scale_sq_to_marginal_variance(scale_sq=dscale2, df=df)
+            dmean = basis @ dcenter
+        else:
+            center = self.compute_center(y_train, corr_L, basis, center0=center0, disp0=disp0)
+            scale2, dscale2 = self.compute_scale_sq(
+                y=y_train, chol=corr_L, basis=basis, center0=center0, disp0=disp0,
+                df0=df0, scale0=scale0)
+        mean = basis @ center
+        var = self.scale_sq_to_marginal_variance(scale_sq=scale2, df=df)
+
+        # Convert from correlation matrix to covariance and subtract mean
+        # to make all calculations below identical to scikit learn implementation
+        L = np.sqrt(var) * corr_L
+        K = var * R
+        if eval_gradient:
+            # R_gradient *= std**2
+            K_gradient = var * R_gradient + dvar * R[:, :, None]
+        y_train = y_train - mean[:, None]
+
+        alpha = cho_solve((L, True), y_train)  # Line 3
+
+        # Compute log-likelihood (compare line 7)
+        log_likelihood_dims = -0.5 * np.einsum("ik,ik->k", y_train, alpha)
+        log_likelihood_dims -= np.log(np.diag(L)).sum()
+        log_likelihood_dims -= K.shape[0] / 2 * np.log(2 * np.pi)
+        log_likelihood = log_likelihood_dims.sum(-1)  # sum over dimensions
+
+        if eval_gradient:  # compare Equation 5.9 from GPML
+            tmp = np.einsum("ik,jk->ijk", alpha, alpha)  # k: output-dimension
+            tmp -= cho_solve((L, True), np.eye(K.shape[0]))[:, :, np.newaxis]
+            # Compute "0.5 * trace(tmp.dot(K_gradient))" without
+            # constructing the full matrix tmp.dot(K_gradient) since only
+            # its diagonal is required
+            log_likelihood_gradient_dims = \
+                0.5 * np.einsum("ijl,ijk->kl", tmp, K_gradient)
+
+            # Add gradient wrt mean
+            log_likelihood_gradient_dims -= dmean.T @ alpha
+
+            # Sum over output dimension
+            log_likelihood_gradient = log_likelihood_gradient_dims.sum(-1)
+
+        if eval_gradient:
+            return log_likelihood, log_likelihood_gradient
+        else:
+            return log_likelihood
+
+    def likelihood(self, log=True, X=None, y=None, **kernel_kws):
+        # Multiple corr can be passed to quickly get likelihoods for many correlation parameters
+        if X is None:
+            X = self.X_train_
+        if y is None:
+            y = self.y_train_
+
+        corr = self.kernel(X, **self.kernel_kws)
+        corr = corr + self.nugget * np.eye(corr.shape[-1])
+        corr_chol = cholesky(corr)
         
         # Setup best guesses for mean and cov
-        means = np.array([self.mean(X=X, y=y, Xfit=X, corr_chol=chol) for chol in corr_chol])
-        sds = np.array([self.sd(X=X, y=y, corr_chol=chol) for chol in corr_chol])[:, None, None]
-        covs = sds**2 * corr
-
-        log_likes = np.zeros(n)
-        for i in range(n):
-            dist = st.multivariate_normal(mean=means[i], cov=covs[i])
-            log_likes[i] = np.sum(dist.logpdf(y))
-        log_likes = np.squeeze(log_likes)
+        beta0, disp0, df0, scale0 = self.beta0, self.disp0, self.df0, self.scale0
+        basis = self.basis(X)
+        mean = basis @ self.compute_beta(y, corr_chol, basis, beta0=beta0, disp0=disp0)
+        sd = self.compute_std(y=y, chol=corr_chol, basis=basis, beta0=beta0, disp0=disp0, df0=df0, scale0=scale0)
+        cov = sd ** 2 * corr
+        dist = st.multivariate_normal(mean=mean, cov=cov)
+        log_like = np.sum(dist.logpdf(y))
         if log:
-            return log_likes
-        return np.exp(log_likes)
+            return log_like
+        return np.exp(log_like)
 
     
 class ConjugateStudentProcess(ConjugateProcess):
 
-    @default_attributes(X='X', Xfit='X', y='y', noise_sd='noise_sd', kwargs='kernel_kws')
-    def cov(self, X=None, Xp=None, Xfit=None, y=None, noise_sd=None, **kwargs):
+    def cov(self, X=None, Xp=None):
+        if X is None:
+            X = self.X_train_
         if Xp is None:
             Xp = X
-        corr = self.kernel(X, Xp, **kwargs)
-        corr_chol = self.cholesky(X=Xfit, noise_sd=noise_sd, **kwargs)  # use X from fit
-        sd = self.sd(X=Xfit, y=y, corr_chol=corr_chol)
+        corr = self.kernel(X, Xp, **self.kernel_kws)
+        return self.std()**2 * (corr + self.basis(X) @ self.disp() @ self.basis(Xp).T)
+
+    def predict(self, X, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=True):
+        pred = super(ConjugateStudentProcess, self).predict(
+            X=X, return_std=return_std, return_cov=return_cov, Xc=Xc, y=y, pred_noise=pred_noise)
 
         basis = self.basis(X)
-        disp = self.disp(X=Xfit, y=y, corr_chol=corr_chol)
-        return sd**2 * (corr + basis @ disp @ basis.T)
-
-    @default_attributes(X='X', y='y')
-    def predict(self, Xnew, return_std=False, return_cov=False, X=None, y=None, pred_noise=True):
-        pred = super(ConjugateStudentProcess, self).predict(
-            Xnew=Xnew, return_std=return_std, return_cov=return_cov, X=X, y=y, pred_noise=pred_noise)
-
-        basis = self.basis(Xnew)
-        disp = self.disp(X=self.X, y=self.y, corr_chol=self._corr_chol)
-        sd = self.sd(X=self.X, y=self.y, corr_chol=self._corr_chol)
-        mean_cov = sd**2 * (basis @ disp @ basis.T)
+        mean_cov = self.std()**2 * (basis @ self.disp() @ basis.T)
         if return_std:
             mean, std = pred
             std += np.sqrt(np.diag(mean_cov))
@@ -434,23 +876,31 @@ class ConjugateStudentProcess(ConjugateProcess):
             cov += mean_cov
             return mean, cov
         return pred
-    
-    @default_attributes(X='X', y='y')
-    def likelihood(self, log=True, X=None, y=None, corr=None, noise_sd=1e-7):
-        if corr.ndim == 2:
-            corr = corr[None, :, :]
+
+    def likelihood(self, log=True, X=None, y=None, **kernel_kws):
+        if X is None:
+            X = self.X_train_
+        if y is None:
+            y = self.y_train_
+        # if corr.ndim == 2:
+        #     corr = corr[None, :, :]
 
         ny = self.num_y(y)
-        corr = corr + noise_sd**2 * np.eye(corr.shape[-1])
-        corr_chols = np.linalg.cholesky(corr)
+        # corr = corr + noise_sd**2 * np.eye(corr.shape[-1])
+        # corr_chol_vec = np.linalg.cholesky(corr)
+        corr = self.kernel(X, X, **kernel_kws)
+        corr_chol = cholesky(corr + self.nugget * np.eye(corr.shape[-1]))
 
-        disp_0 = self.disp_0
-        disps = [self.disp(X=X, y=y, corr_chol=chol) for chol in corr_chols]
-        df_0, df = self.df_0, self.df(y=y)
-        scale_0 = self.scale_0
-        scales = [self.scale(X=X, y=y, corr_chol=chol) for chol in corr_chols]
+        beta0, disp0, df0, scale0 = self.beta0, self.disp0, self.df0, self.scale0
+        df = self.compute_df(y=y, df0=df0)
+        basis = self.basis(X)
+        # disp_vec = [self.compute_disp(y=y, chol=chol, basis=basis, disp0=disp0) for chol in corr_chol_vec]
+        # scale_vec = [self.compute_scale(y=y, chol=chol, basis=basis, beta0=beta0, disp0=disp0, df0=df0, scale0=scale0)
+        #              for chol in corr_chol_vec]
+        disp = self.compute_disp(y=y, chol=corr_chol, basis=basis, disp0=disp0)
+        scale = self.compute_scale(y=y, chol=corr_chol, basis=basis, beta0=beta0, disp0=disp0, df0=df0, scale0=scale0)
 
-        def log_ninvchi2_norm(df_, scale_, disp_):
+        def log_norm(df_, scale_, disp_):
             """Normalization constant of the normal scaled inverse chi squared distribution"""
             norm = loggamma(df_ / 2.) - df_ / 2. * np.log(df_ * scale_ / 2.)
             log_det = np.linalg.slogdet(2 * np.pi * disp_)[1]
@@ -458,9 +908,12 @@ class ConjugateStudentProcess(ConjugateProcess):
                 norm += 0.5 * log_det
             return norm
 
-        log_like = np.array([log_ninvchi2_norm(df, scale, disp) for scale, disp in zip(scales, disps)])
-        log_det_corr = 2 * np.sum(np.log(2 * np.pi * np.diagonal(corr_chols, axis1=-2, axis2=-1)), axis=-1)
-        log_like -= ny / 2. * log_det_corr + log_ninvchi2_norm(df_0, scale_0, disp_0)
+        log_det_corr = 2 * np.sum(np.log(2 * np.pi * np.diagonal(corr_chol)))
+        log_like = log_norm(df, scale, disp) - log_norm(df0, scale0, disp0) - ny / 2. * log_det_corr
+
+        # log_like = np.array([log_norm(df, scale, disp) for scale, disp in zip(scale_vec, disp_vec)])
+        # log_det_corr = 2 * np.sum(np.log(2 * np.pi * np.diagonal(corr_chol_vec, axis1=-2, axis2=-1)), axis=-1)
+        # log_like -= ny / 2. * log_det_corr + log_norm(df0, scale0, disp0)
 
         if log:
             return log_like
@@ -469,7 +922,24 @@ class ConjugateStudentProcess(ConjugateProcess):
 
 class TruncationProcess:
 
-    def __init__(self, kernel, ref, ratio, ratio_kws=None, kernel_kws=None, **kwargs):
+    def __init__(self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, kernel_kws=None,
+                 nugget=1e-10, verbose=True, **kwargs):
+        R"""
+
+        Parameters
+        ----------
+        kernel
+        ratio
+        ref
+        excluded : 1d array
+            The set of orders to ignore when constructing process for y_order and dy_order, i.e., the geometric sum
+            will not include these values
+        ratio_kws
+        kernel_kws
+        nugget
+        verbose
+        kwargs
+        """
         if not callable(ref):
             self.ref = lambda X, *args, **kws: ref * np.ones(X.shape[0])
         else:
@@ -480,21 +950,24 @@ class TruncationProcess:
         else:
             self.ratio = ratio
 
-        # self.coeffs_process = ConjugateProcess(**kwargs)
+        kwargs['nugget'] = nugget
+        kwargs['verbose'] = False  # Handled by this class
         self.coeffs_process_class = ConjugateProcess
         self.coeffs_process_kwargs = kwargs
+        self.coeffs_process = ConjugateProcess()
         self.kernel = kernel
-        self.coeffs_process = None
         self._log_like = None
 
-        self.X = None
-        self.y = None
+        self.X_train_ = None
+        self.y_train_ = None
         self.coeffs = None
         self.orders = None
         self.excluded = None
-        self.Xt = None
+        self.dX = None
         self.dy = None
-        self.noise_sd = None
+        self.excluded = excluded
+        self.nugget = nugget
+        self.verbose = verbose
 
         self.all_kernel_kws = None
         if kernel_kws is None:
@@ -517,7 +990,7 @@ class TruncationProcess:
             raise ValueError('ratio_kws must be a list or dict')
 
     @staticmethod
-    def geometric_sum(x, start, end, exclude=None):
+    def geometric_sum(x, start, end, excluded=None):
         """The geometric sum of x from `i=start` to `i=end` (inclusive)
 
         .. math::
@@ -527,61 +1000,56 @@ class TruncationProcess:
 
         Parameters
         ----------
-        x : ndarray
+        x : array
             The value to be summed
         start : int
             The start index of the sum
         end : int
             The end index of the sum (inclusive)
-        exclude : int or 1d array-like of ints
+        excluded : int or 1d array-like of ints
             The indices to exclude from the sum
 
         Returns
         -------
-        S : ndarray
+        S : array
             The geometric sum
         """
         if end < start:
             raise ValueError('end must be greater than or equal to start')
 
         s = (x**start - x**(end+1)) / (1 - x)
-        if exclude is not None:
-            exclude = np.atleast_1d(exclude)
-            # if np.any((exclude < start) | (exclude > end)):
-            #     raise ValueError('exclude must be within the range of the geometric sum')
-            for n in exclude:
+        if excluded is not None:
+            excluded = np.atleast_1d(excluded)
+            for n in excluded:
                 if (n >= start) and (n <= end):
                     s -= x**n
         return s
 
-    def mean(self, X, start, end, excluded=None, Xfit=None, y=None, corr_chol=None):
-        cn_mean = self.coeffs_process.mean(X=X, Xfit=Xfit, y=y, corr_chol=corr_chol)
-        ratio_sum = self.geometric_sum(x=self.ratio(X), start=start, end=end, exclude=excluded)
-        return self.ref(X) * ratio_sum * cn_mean
+    def mean(self, X, start=0, end=np.inf):
+        coeff_mean = self.coeffs_process.mean(X=X)
+        ratio_sum = self.geometric_sum(x=self.ratio(X), start=start, end=end, excluded=self.excluded)
+        return self.ref(X) * ratio_sum * coeff_mean
 
-    def cov(self, start, end, excluded=None, X=None, Xp=None, Xfit=None, y=None, noise_sd=None, **kwargs):
-        if Xp is None:
-            Xp = X
-        cn_cov = self.coeffs_process.cov(X=X, Xp=Xp, Xfit=Xfit, y=y, noise_sd=noise_sd, **kwargs)
+    def cov(self, X, Xp=None, start=0, end=np.inf):
+        Xp = X if Xp is None else Xp
+        coeff_cov = self.coeffs_process.cov(X=X, Xp=Xp)
         ratio_mat = self.ratio(X)[:, None] * self.ratio(Xp)
-        ratio_sum = self.geometric_sum(x=ratio_mat, start=start, end=end, exclude=excluded)
+        ratio_sum = self.geometric_sum(x=ratio_mat, start=start, end=end, excluded=self.excluded)
         ref_mat = self.ref(X)[:, None] * self.ref(Xp)
-        return ref_mat * ratio_sum * cn_cov
+        return ref_mat * ratio_sum * coeff_cov
 
-    def basis(self, start, end, excluded=None, X=None):
+    def basis(self, X, start=0, end=np.inf):
         cn_basis = self.coeffs_process.basis(X=X)
-        ratio_sum = self.geometric_sum(x=self.ratio(X)[:, None], start=start, end=end, exclude=excluded)
+        ratio_sum = self.geometric_sum(x=self.ratio(X)[:, None], start=start, end=end, excluded=self.excluded)
         return self.ref(X)[:, None] * ratio_sum * cn_basis
 
-    def fit(self, X, y, orders, excluded=None, Xt=None, dy=None, noise_sd=1e-7, verbose=True):
-        self.X = X
-        self.y = y
+    def fit(self, X, y, orders, dX=None, dy=None):
+        self.X_train_ = X
+        self.y_train_ = y
         self.orders = orders
-        self.excluded = excluded
-        self.noise_sd = noise_sd
-        orders_mask = ~ np.in1d(orders, excluded)
+        orders_mask = ~ np.isin(orders, self.excluded)
 
-        self.Xt = Xt
+        self.dX = dX
         self.dy = dy
 
         # Find best kernel_kws and ratio_kws, if necessary
@@ -603,15 +1071,15 @@ class TruncationProcess:
             self.coeffs_process = self.coeffs_process_class(
                 kernel=self.kernel, kernel_kws=placeholder_kernel_kws, **self.coeffs_process_kwargs)
             log_like = self.likelihood(
-                log=True, X=X, y=y, corr=corr_vec, orders=orders, excluded=excluded,
-                ratio=ratios, ref=self.ref(X), noise_sd=noise_sd)
+                log=True, X=X, y=y, corr=corr_vec, orders=orders,
+                ratio=ratios, ref=self.ref(X))
             self._log_like = log_like
 
             # Pick the best values by maximizing the likelihood
             best_idx = np.unravel_index(np.argmax(log_like), (len(ratios), len(corr_vec)))
             ratio_kws = self.ratio_kws if (self.all_ratio_kws is None) else self.all_ratio_kws[best_idx[0]]
             kernel_kws = self.kernel_kws if (self.all_kernel_kws is None) else self.all_kernel_kws[best_idx[1]]
-            if verbose:
+            if self.verbose:
                 print('Setting kernel kwargs to {}'.format(kernel_kws))
                 print('Setting ratio kwargs to {}'.format(ratio_kws))
             self.kernel_kws = kernel_kws
@@ -622,27 +1090,23 @@ class TruncationProcess:
                                    ref=self.ref(X), orders=orders)[orders_mask]
         self.coeffs_process = self.coeffs_process_class(
             kernel=self.kernel, kernel_kws=self.kernel_kws, **self.coeffs_process_kwargs)
-        self.coeffs_process.fit(X=X, y=self.coeffs, noise_sd=noise_sd, verbose=verbose)
+        self.coeffs_process.fit(X=X, y=self.coeffs)
         return self
 
-    @default_attributes(X='X')
-    def predict(self, Xnew, order, excluded=None, return_std=False, return_cov=False, X=None, y=None, pred_noise=True):
-        """Returns the predictive GP at the points Xnew
+    def predict(self, X, order, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=True):
+        """Returns the predictive GP at the points X
 
         Parameters
         ----------
-        Xnew : (Nnew, d) array
+        X : (M, d) array
             Locations at which to predict the new y values
         order : int
             The order of the GP to predict
-        excluded : array_like
-            The set of orders to ignore when constructing process for y_order and dy_order, i.e., the geometric sum
-            will not include these values
         return_std : bool
             Whether the marginal standard deviation of the predictive process is to be returned
         return_cov : bool
             Whether the covariance matrix of the predictive process is to be returned
-        X : (N, d) array
+        Xc : (N, d) array
             Locations at which to condition. Defaults to `X` used in fit. This *does not*
             affect the `X` used to update hyperparameters.
         y : (n, N) array
@@ -656,27 +1120,23 @@ class TruncationProcess:
         mean, (mean, std), or (mean, cov), depending on `return_std` and `return_cov`
         """
 
+        if Xc is None:
+            Xc = self.X_train_
         if y is None:
-            y = np.squeeze(self.y[self.orders == order])
-
-        kwargs = self.coeffs_process.kernel_kws
-        corr_chol = self.coeffs_process._corr_chol
+            y = np.squeeze(self.y_train_[self.orders == order])
 
         # ----------------------------------------------------
         # Get mean & cov for (interpolating) prediction y_order
         #
         # Use X and y from fit for hyperparameters
-        m_old = self.mean(X=X, start=0, end=order, excluded=excluded, Xfit=self.X, y=self.coeffs, corr_chol=corr_chol)
-        m_new = self.mean(Xnew, start=0, end=order, excluded=excluded, Xfit=self.X, y=self.coeffs, corr_chol=corr_chol)
+        m_old = self.mean(X=Xc, start=0, end=order)
+        m_new = self.mean(X=X, start=0, end=order)
 
         # Use X and y from arguments for conditioning/predictions
-        K_oo = self.cov(start=0, end=order, excluded=excluded, X=X, Xp=X,
-                        Xfit=self.X, y=self.coeffs, noise_sd=self.noise_sd, **kwargs)
-        K_on = self.cov(start=0, end=order, excluded=excluded, X=X, Xp=Xnew,
-                        Xfit=self.X, y=self.coeffs, noise_sd=self.noise_sd, **kwargs)
+        K_oo = self.cov(start=0, end=order, X=Xc, Xp=Xc)
+        K_on = self.cov(start=0, end=order, X=Xc, Xp=X)
         K_no = K_on.T
-        K_nn = self.cov(start=0, end=order, excluded=excluded, X=Xnew, Xp=Xnew,
-                        Xfit=self.X, y=self.coeffs, noise_sd=self.noise_sd, **kwargs)
+        K_nn = self.cov(start=0, end=order, X=X, Xp=X)
 
         # Use given y for prediction
         alpha = solve(K_oo, (y - m_old).T)
@@ -690,18 +1150,14 @@ class TruncationProcess:
         # ----------------------------------------------------
         # Get the mean & cov for truncation error
         #
-        m_new_trunc = self.mean(Xnew, start=order + 1, end=np.inf, excluded=excluded, Xfit=self.X, y=self.coeffs,
-                                corr_chol=corr_chol)
-        K_nn_trunc = self.cov(start=order + 1, end=np.inf, excluded=excluded, X=Xnew, Xp=Xnew,
-                              Xfit=self.X, y=self.coeffs, noise_sd=self.noise_sd, **kwargs)
+        m_new_trunc = self.mean(X=X, start=order + 1, end=np.inf)
+        K_nn_trunc = self.cov(start=order + 1, end=np.inf, X=X, Xp=X)
 
-        if self.Xt is not None:  # truncation error is constrained
-            m_old_trunc = self.mean(X=self.Xt, start=order+1, end=np.inf, excluded=excluded, Xfit=self.X,
-                                    y=self.coeffs, corr_chol=corr_chol)
-            K_oo_trunc = self.cov(start=order+1, end=np.inf, excluded=excluded, X=self.Xt, Xp=self.Xt,
-                                  Xfit=self.X, y=self.coeffs, noise_sd=self.noise_sd, **kwargs)
-            K_on_trunc = self.cov(start=order+1, end=np.inf, excluded=excluded, X=self.Xt, Xp=Xnew,
-                                  Xfit=self.X, y=self.coeffs, noise_sd=self.noise_sd, **kwargs)
+        X_trunc = self.dX
+        if X_trunc is not None:  # truncation error is constrained
+            m_old_trunc = self.mean(X=X_trunc, start=order+1, end=np.inf)
+            K_oo_trunc = self.cov(X=X_trunc, Xp=X_trunc, start=order+1, end=np.inf)
+            K_on_trunc = self.cov(X=X_trunc, Xp=X, start=order+1, end=np.inf)
             K_no_trunc = K_on_trunc.T
 
             alpha_trunc = solve(K_oo_trunc, (self.dy - m_old_trunc))
@@ -719,35 +1175,54 @@ class TruncationProcess:
             return m_pred, np.sqrt(np.diag(K_pred))
         return m_pred
 
-    @default_attributes(X='X', y='y', orders='orders', excluded='excluded', ratio='ratio', ref='ref', noise_sd='noise_sd')
-    def likelihood(self, log=True, X=None, y=None, corr=None, orders=None, excluded=None, ratio=None, ref=None, noise_sd=None):
-        if corr is None:
-            corr = np.array([self.kernel(X, X, **kws) for kws in self.all_kernel_kws])
+    def likelihood(self, log=True, X=None, y=None, orders=None, ratio_kws=None, **kernel_kws):
+        X = self.X_train_ if X is None else X
+        y = self.y_train_ if y is None else y
+        orders = self.orders if orders is None else orders
+        ratio_kws = {} if ratio_kws is None else ratio_kws
 
-        if callable(ref):
-            ref = ref(X)
-        if callable(ratio):
-            ratio = ratio(X)
+        for v in [X, y, orders]:
+            if v is None:
+                raise ValueError('All of X, y, and orders must be given if model is not fit')
 
-        if ratio.ndim == 1:
-            ratio = ratio[None, :]
-        if ref.ndim == 1:
-            ref = ref[None, :]
+        ref = self.ref(X)
+        ratio = self.ratio(X, **ratio_kws)
 
-        # Ensure each can be looped over below
-        ratio, ref = np.broadcast_arrays(ratio, ref)
+        orders_mask = ~ np.isin(orders, self.excluded)
+        coeffs = coefficients(partials=y, ratio=ratio, X=X, ref=ref, orders=orders)[orders_mask]
+        coeff_log_like = self.coeffs_process.likelihood(log=True, X=X, y=coeffs, **kernel_kws)
 
-        # Compute pr(c | \ell) for each set of coefficients determined by ref, ratio
-        orders_mask = orders != excluded
-        coeffs = [coefficients(partials=y, ratio=ratio_, X=X, ref=ref_, orders=orders)[orders_mask]
-                  for ratio_, ref_ in zip(ratio, ref)]
-        coeff_log_like = np.array([self.coeffs_process.likelihood(log=True, X=X, y=c, corr=corr, noise_sd=noise_sd)
-                                  for c in coeffs])
-
-        # Now convert to pr(y | \ell, ratio) with determinant factor
         orders = orders[orders_mask]
         det_factor = np.sum(len(orders) * np.log(np.abs(ref)) + np.sum(orders) * np.log(np.abs(ratio)), axis=-1)
-        y_log_like = (coeff_log_like.T - det_factor).T  # Transpose handles possible kernel kw dimension
+        y_log_like = coeff_log_like - det_factor
+
+        # if corr is None:
+        #     corr = np.array([self.kernel(X, X, **kws) for kws in self.all_kernel_kws])
+
+        # if callable(ref):
+        #     ref = ref(X)
+        # if callable(ratio):
+        #     ratio = ratio(X)
+
+        # if ratio.ndim == 1:
+        #     ratio = ratio[None, :]
+        # if ref.ndim == 1:
+        #     ref = ref[None, :]
+
+        # Ensure each can be looped over below
+        # ratio, ref = np.broadcast_arrays(ratio, ref)
+        #
+        # # Compute pr(c | \ell) for each set of coefficients determined by ref, ratio
+        # orders_mask = orders != excluded
+        # coeffs = [coefficients(partials=y, ratio=ratio_, X=X, ref=ref_, orders=orders)[orders_mask]
+        #           for ratio_, ref_ in zip(ratio, ref)]
+        # coeff_log_like = np.array([self.coeffs_process.likelihood(log=True, X=X, y=c, corr=corr, noise_sd=noise_sd)
+        #                           for c in coeffs])
+        #
+        # # Now convert to pr(y | \ell, ratio) with determinant factor
+        # orders = orders[orders_mask]
+        # det_factor = np.sum(len(orders) * np.log(np.abs(ref)) + np.sum(orders) * np.log(np.abs(ratio)), axis=-1)
+        # y_log_like = (coeff_log_like.T - det_factor).T  # Transpose handles possible kernel kw dimension
 
         if log:
             return y_log_like
@@ -757,54 +1232,51 @@ class TruncationProcess:
 class TruncationGP(TruncationProcess):
 
     def __init__(self, kernel, ref, ratio, ratio_kws=None, kernel_kws=None, **kwargs):
-        # print(self)
-        # super(TruncationGP, self).__init__(
-        #     kernel=kernel, ref=ref, ratio=ratio, ratio_kws=ratio_kws, kernel_kws=kernel_kws, **kwargs)
         super().__init__(
             kernel=kernel, ref=ref, ratio=ratio, ratio_kws=ratio_kws, kernel_kws=kernel_kws, **kwargs)
         self.coeffs_process_class = ConjugateGaussianProcess
+        self.coeffs_process = ConjugateGaussianProcess()
 
 
 class TruncationTP(TruncationProcess):
 
-    def __init__(self, kernel, ref, ratio, ratio_kws=None, kernel_kws=None, **kwargs):
-        super(TruncationTP, self).__init__(
-            kernel=kernel, ref=ref, ratio=ratio, ratio_kws=ratio_kws, kernel_kws=kernel_kws, **kwargs)
+    def __init__(self, kernel=None, ratio=0.5, ref=1, ratio_kws=None, kernel_kws=None, **kwargs):
+        super().__init__(
+            kernel=kernel, ratio=ratio, ref=ref, ratio_kws=ratio_kws, kernel_kws=kernel_kws, **kwargs)
         self.coeffs_process_class = ConjugateStudentProcess
+        self.coeffs_process = ConjugateStudentProcess()
 
-    def predict(self, Xnew, order, excluded=None, return_std=False, return_cov=False, X=None, y=None, pred_noise=True):
+    def predict(self, X, order, excluded=None, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=True):
         pred = super(TruncationTP, self).predict(
-            Xnew, order, excluded=excluded, return_std=return_std, return_cov=return_cov,
-            X=X, y=y, pred_noise=pred_noise
+            X=X, order=order, return_std=return_std, return_cov=return_cov,
+            Xc=Xc, y=y, pred_noise=pred_noise
         )
 
         if not return_std and not return_cov:
             return pred
 
-        # Use X from argument to define old points
-        kwargs = self.coeffs_process.kernel_kws
-        K_oo = self.cov(start=0, end=order, excluded=excluded, X=X, Xp=X,
-                        Xfit=self.X, y=self.coeffs, noise_sd=self.noise_sd, **kwargs)
-        K_no = self.cov(start=0, end=order, excluded=excluded, X=Xnew, Xp=X,
-                        Xfit=self.X, y=self.coeffs, noise_sd=self.noise_sd, **kwargs)
+        if Xc is None:
+            Xc = self.X_train_
 
-        basis_lower_old = self.basis(start=0, end=order, excluded=excluded, X=X)
-        basis_lower_new = self.basis(start=0, end=order, excluded=excluded, X=Xnew)
+        # Use Xc from argument to define old points
+        K_oo = self.cov(start=0, end=order, excluded=excluded, X=Xc, Xp=Xc)
+        K_no = self.cov(start=0, end=order, excluded=excluded, X=X, Xp=Xc)
+
+        basis_lower_old = self.basis(start=0, end=order, excluded=excluded, X=Xc)
+        basis_lower_new = self.basis(start=0, end=order, excluded=excluded, X=X)
         basis_lower = basis_lower_new - K_no @ solve(K_oo, basis_lower_old)
 
         if self.Xt is not None:  # truncation error is constrained
-            K_oo_trunc = self.cov(start=order+1, end=np.inf, excluded=excluded, X=self.Xt, Xp=self.Xt,
-                                  Xfit=self.X, y=self.coeffs, noise_sd=self.noise_sd, **kwargs)
-            K_no_trunc = self.cov(start=order+1, end=np.inf, excluded=excluded, X=Xnew, Xp=self.Xt,
-                                  Xfit=self.X, y=self.coeffs, noise_sd=self.noise_sd, **kwargs)
+            K_oo_trunc = self.cov(start=order+1, end=np.inf, excluded=excluded, X=self.Xt, Xp=self.Xt)
+            K_no_trunc = self.cov(start=order+1, end=np.inf, excluded=excluded, X=X, Xp=self.Xt)
 
             basis_trunc_old = self.basis(start=order+1, end=np.inf, excluded=excluded, X=self.Xt)
-            basis_trunc_new = self.basis(start=order+1, end=np.inf, excluded=excluded, X=Xnew)
+            basis_trunc_new = self.basis(start=order+1, end=np.inf, excluded=excluded, X=X)
             basis_trunc = basis_trunc_new - K_no_trunc @ solve(K_oo_trunc, basis_trunc_old)
         else:  # not constrained
-            basis_trunc = self.basis(start=order + 1, end=np.inf, excluded=excluded, X=Xnew)
+            basis_trunc = self.basis(start=order + 1, end=np.inf, excluded=excluded, X=X)
         mean_cov = (basis_lower + basis_trunc) @ self.coeffs_process.disp() @ (basis_lower + basis_trunc).T
-        mean_cov *= self.coeffs_process.sd() ** 2
+        mean_cov *= self.coeffs_process.std() ** 2
 
         if return_std:
             mean, std = pred
@@ -819,432 +1291,6 @@ class TruncationPointwise:
     def __init__(self):
         pass
 
-
-class Diagnostic:
-    R"""A class for quickly testing model checking methods discussed in Bastos & O'Hagan.
-    
-    """
-    
-    def __init__(self, mean, cov, df=None, random_state=1):
-        self.mean = mean
-        self.cov = cov
-        self.sd = sd = np.sqrt(np.diag(cov))
-        if df is None:
-            self.dist = st.multivariate_normal(mean=mean, cov=cov)
-            self.udist = st.norm(loc=mean, scale=sd)
-            self.std_udist = st.norm(loc=0., scale=1.)
-        else:
-            sigma = cov * (df - 2) / df
-            self.dist = MVT(mean=mean, sigma=sigma, df=df)
-            self.udist = st.t(loc=mean, scale=sd, df=df)
-            self.std_udist = st.t(loc=0., scale=1., df=df)
-        self.dist.random_state = random_state
-        self.udist.random_state = random_state
-        self.std_udist.random_state = random_state
-        
-    @lazy_property
-    def chol(self):
-        """Returns the lower Cholesky matrix G where cov = G.G^T"""
-        return np.linalg.cholesky(self.cov)
-    
-    @lazy_property
-    def pivoted_chol(self):
-        """Returns the pivoted Cholesky matrix G where cov = G.G^T"""
-        return pivoted_cholesky(self.cov)
-    
-    @lazy_property
-    def eig(self):
-        """Returns the eigendecomposition matrix G where cov = G.G^T"""
-        e, v = np.linalg.eigh(self.cov)
-        ee = np.diag(np.sqrt(e))
-        return np.dot(v, ee)
-
-    def samples(self, n):
-        return self.dist.rvs(n)
-    
-    def individual_errors(self, y):
-        return (y - self.mean) / np.sqrt(np.diag(self.cov))
-    
-    def cholesky_errors(self, y):
-        return cholesky_errors(y, self.mean, self.chol)
-    
-    def pivoted_cholesky_errors(self, y):
-        return solve(self.pivoted_chol, (y - self.mean).T).T
-    
-    def eigen_errors(self, y):
-        return solve(self.eig, (y - self.mean).T).T
-    
-    def chi2(self, y):
-        return np.sum(self.individual_errors(y), axis=-1)
-
-    def md(self, y):
-        R"""The Mahalanobis distance"""
-        return mahalanobis(y, self.mean, self.chol)
-
-    def kl(self, mean, cov):
-        R"""The Kullbeck-Leibler divergence"""
-        m1, c1, chol1 = self.mean, self.cov, self.chol
-        m0, c0 = mean, cov
-        tr = np.trace(cho_solve((chol1, True), c0))
-        dist = self.md(m0) ** 2
-        k = c1.shape[-1]
-        logs = 2*np.sum(np.log(np.diag(c1))) - np.linalg.slogdet(c0)[-1]
-        return 0.5 * (tr + dist - k + logs)
-    
-    def credible_interval(self, y, intervals):
-        """The credible interval diagnostic.
-        
-        Parameters
-        ----------
-        y : (n_c, d) shaped array
-        intervals : 1d array
-            The credible intervals at which to perform the test
-        """
-        lower, upper = self.udist.interval(np.atleast_2d(intervals).T)
-        
-        def diagnostic(data, lower, upper):
-            indicator = (lower < data) & (data < upper)  # 1 if in, 0 if out
-            return np.average(indicator, axis=1)   # The diagnostic
-
-        dci = np.apply_along_axis(
-                diagnostic, axis=1, arr=np.atleast_2d(y), lower=lower,
-                upper=upper)
-        dci = np.squeeze(dci)
-        return dci
-
-    def variogram(self, X, y, bin_bounds):
-        v = VariogramFourthRoot(X, y, bin_bounds)
-        bin_locations = v.bin_locations
-        gamma, lower, upper = v.compute(rt_scale=False)
-        return v, bin_locations, gamma, lower, upper
-
-
-class GraphicalDiagnostic:
-    
-    def __init__(self, diagnostic, data, nref=1000, colors=None, markers=None):
-        self.diagnostic = diagnostic
-        self.data = data
-        self.samples = self.diagnostic.samples(nref)
-        prop_list = list(mpl.rcParams['axes.prop_cycle'])
-        if colors is None:
-            # The standard Matplotlib 2.0 colors, or whatever they've been updated to be.
-            colors = [c['color'] for c in prop_list]
-        if markers is None:
-            markers = ['o' for c in prop_list]
-        self.markers = markers
-        self.marker_cycle = cycler('marker', colors)
-        self.colors = colors
-        self.color_cycle = cycler('color', colors)
-    
-    def error_plot(self, err, title=None, ylabel=None, ax=None):
-        if ax is None:
-            ax = plt.gca()
-        ax.axhline(0, 0, 1, linestyle='-', color='k', lw=1, zorder=0)
-        # The standardized 2 sigma bands since the sd has been divided out.
-        sd = self.diagnostic.std_udist.std()
-        ax.axhline(-2*sd, 0, 1, linestyle='--', color='gray', label=r'$2\sigma$', zorder=0)
-        ax.axhline(2*sd, 0, 1, linestyle='--', color='gray', zorder=0)
-        ax.set_prop_cycle(color=self.colors, marker=self.markers)
-        index = np.arange(self.data.shape[-1])
-        # print(np.arange(self.data.shape[-1]).shape, err.T.shape)
-        for error in err:
-            ax.plot(index, error, ls='')
-        ax.set_xlabel('Index')
-        if ylabel is not None:
-            ax.set_ylabel(ylabel)
-        if title is not None:
-            ax.set_title(title)
-        return ax
-    
-    def individual_errors(self, ax=None):
-        err = self.diagnostic.individual_errors(self.data)
-        return self.error_plot(err, title='Individual Errors', ax=ax)
-    
-    def individual_errors_qq(self, ax=None):
-        return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.individual_errors,
-                       title='Individual QQ Plot', ax=ax)
-    
-    def cholesky_errors(self, ax=None):
-        err = self.diagnostic.cholesky_errors(self.data)
-        return self.error_plot(err, title='Cholesky Decomposed Errors', ax=ax)
-
-    def cholesky_errors_qq(self, ax=None):
-        return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.cholesky_errors,
-                       title='Cholesky QQ Plot', ax=ax)
-    
-    def pivoted_cholesky_errors(self, ax=None):
-        err = self.diagnostic.pivoted_cholesky_errors(self.data)
-        return self.error_plot(err, title='Pivoted Cholesky Decomposed Errors', ax=ax)
-    
-    def pivoted_cholesky_errors_qq(self, ax=None):
-        return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.pivoted_cholesky_errors,
-                       title='Pivoted Cholesky QQ Plot', ax=ax)
-    
-    def eigen_errors(self, ax=None):
-        err = self.diagnostic.eigen_errors(self.data)
-        return self.error_plot(err, title='Eigen Decomposed Errors', ax=ax)
-    
-    def eigen_errors_qq(self, ax=None):
-        return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.eigen_errors,
-                       title='Eigen QQ Plot', ax=ax)
-    
-    def hist(self, data, ref, title=None, xlabel=None, ylabel=None, vlines=True, ax=None):
-        ref_stats = st.describe(ref)
-        ref_sd = np.sqrt(ref_stats.variance)
-        ref_mean = ref_stats.mean
-
-        if ax is None:
-            ax = plt.gca()
-        ax.hist(ref, density=1, label='ref', histtype='step', color='k')
-        # ax.vlines([ref_mean - ref_sd, ref_mean + ref_sd], 0, 1, color='gray',
-        #           linestyle='--', transform=ax.get_xaxis_transform(), label='68%')
-        ax.axvline(ref_mean - 2*ref_sd, 0, 1, color='gray', linestyle='--', label=r'$2\sigma$')
-        ax.axvline(ref_mean + 2*ref_sd, 0, 1, color='gray', linestyle='--')
-        if vlines:
-            for c, d in zip(cycle(self.color_cycle), np.atleast_1d(data)):
-                ax.axvline(d, 0, 1, zorder=50, **c)
-        else:
-            ax.hist(data, density=1, label='data', histtype='step')
-        ax.legend()
-        if title is not None:
-            ax.set_title(title)
-        if xlabel is not None:
-            ax.set_xlabel(xlabel)
-        if ylabel is not None:
-            ax.set_ylabel(ylabel)
-        return ax
-
-    def violin(self, data, ref, title=None, xlabel=None, ylabel=None, vlines=True, ax=None):
-        import seaborn as sns
-        import pandas as pd
-        if ax is None:
-            ax = plt.gca()
-        n = len(data)
-        nref = len(ref)
-        orders = np.arange(n)
-        zero = np.zeros(len(data), dtype=int)
-        nans = np.nan * np.ones(nref)
-        fake = np.hstack((np.ones(nref, dtype=bool), np.zeros(nref, dtype=bool)))
-        fake_ref = np.hstack((fake[:, None], np.hstack((ref, nans))[:, None]))
-        ref_df = pd.DataFrame(fake_ref, columns=['fake', title])
-        tidy_data = np.hstack((orders[:, None], data[:, None]))
-        print(tidy_data.shape, tidy_data)
-        data_df = pd.DataFrame(tidy_data, columns=['orders', title])
-        sns.violinplot(x=np.zeros(2*nref, dtype=int), y=title, data=ref_df,
-                       color='lightgrey', hue='fake', split=True, inner='box', ax=ax)
-        sns.set_palette(self.colors)
-        sns.swarmplot(x=zero, y=title, data=data_df, hue='orders', ax=ax)
-        ax.set_xlabel('Density')
-        ax.set_xlim(-0.05, 0.5)
-        return ax
-
-    def box(self, data, ref, title=None, xlabel=None, ylabel=None, vlines=True, trim=True, size=5, ax=None):
-        import seaborn as sns
-        import pandas as pd
-        if ax is None:
-            ax = plt.gca()
-        n = len(data)
-        nref = len(ref)
-        orders = np.array([r'$c_{{{}}}$'.format(i) for i in range(n)])
-        zero = np.zeros(len(data), dtype=int)
-        # nans = np.nan * np.ones(nref)
-        # fake = np.hstack((np.ones(nref, dtype=bool), np.zeros(nref, dtype=bool)))
-        # fake_ref = np.hstack((fake[:, None], np.hstack((ref, nans))[:, None]))
-        ref_df = pd.DataFrame(ref, columns=[title])
-        tidy_data = np.array([orders, data], dtype=np.object).T
-        # print(tidy_data)
-        data_df = pd.DataFrame(tidy_data, columns=['orders', title])
-        sns.boxplot(x=np.zeros(nref, dtype=int), y=title, data=ref_df,
-                    color='lightgrey', ax=ax,
-                    fliersize=0,
-                    sym='',
-                    whis=[2.5, 97.5],
-                    bootstrap=None,
-                    )
-        sns.set_palette(self.colors)
-        sns.swarmplot(x=zero, y=title, data=data_df, hue='orders', ax=ax, size=size)
-        ax.set_xticks([])
-        ax.legend(title=None)
-        # ax.set_xticklabels([''])
-        # ax.set_xlabel('Density')
-        # ax.set_xlim(-0.05, 0.5)
-        sns.despine(offset=0, trim=trim, bottom=True, ax=ax)
-        return ax
-
-    def qq(self, data, ref, band_perc, func, title=None, ax=None):
-        data = np.sort(func(data.copy()), axis=-1)
-        ref = np.sort(func(ref.copy()), axis=-1)
-        bands = np.array([np.percentile(ref, [100*(1.-bi)/2, 100*(1.+bi)/2], axis=0)
-                          for bi in band_perc])
-        n = data.shape[-1]
-        quants = (np.arange(1, n+1) - 0.5) / n
-        q_theory = self.diagnostic.std_udist.ppf(quants)
-        
-        if ax is None:
-            ax = plt.gca()
-        ax.set_prop_cycle(self.color_cycle)
-        
-        for i in range(len(band_perc)-1, -1, -1):
-            ax.fill_between(q_theory, bands[i, 0], bands[i, 1], alpha=0.5, color='gray')
-
-        ax.plot(q_theory, data.T)
-        yl, yu = ax.get_ylim()
-        xl, xu = ax.get_xlim()
-        ax.plot([xl, xu], [xl, xu], c='k')
-        ax.set_ylim([yl, yu])
-        ax.set_xlim([xl, xu])
-        if title is not None:
-            ax.set_title(title)
-        ax.set_xlabel('Theoretical Quantiles')
-        ax.set_ylabel('Empirical Quantiles')
-        return ax
-    
-    def md(self, ax=None, type='hist', **kwargs):
-        if ax is None:
-            ax = plt.gca()
-        md_data = self.diagnostic.md(self.data)
-        md_ref = self.diagnostic.md(self.samples)
-        if type == 'violin':
-            return self.violin(
-                md_data, md_ref, title='Mahalanobis Distance',
-                xlabel='MD', ylabel='density', ax=ax)
-        elif type == 'hist':
-            return self.hist(md_data, md_ref, title='Mahalanobis Distance',
-                             xlabel='MD', ylabel='density', ax=ax, **kwargs)
-        elif type == 'box':
-            return self.box(
-                md_data, md_ref, title='Mahalanobis Distance',
-                xlabel='MD', ylabel='density', ax=ax, **kwargs)
-    
-    def kl(self, X, gp, predict=False, vlines=True, ax=None):
-        if ax is None:
-            ax = plt.gca()
-        ref_means = []
-        ref_covs = []
-        for i, sample in enumerate(self.samples):
-            gp.fit(X, sample)
-            if predict:
-                mean, cov = gp.predict(X, return_cov=True)
-            else:
-                mean, cov = gp.mean(X), gp.cov(X)
-            ref_means.append(mean)
-            ref_covs.append(cov)
-            
-        data_means = []
-        data_covs = []
-        for i, data in enumerate(np.atleast_2d(self.data)):
-            gp.fit(X, data)
-            if predict:
-                mean, cov = gp.predict(X, return_cov=True)
-            else:
-                mean, cov = gp.mean(X), gp.cov(X)
-            data_means.append(mean)
-            data_covs.append(cov)
-        
-        kl_ref = [self.diagnostic.kl(mean, cov) for mean, cov in zip(ref_means, ref_covs)]
-        kl_data = [self.diagnostic.kl(mean, cov) for mean, cov in zip(data_means, data_covs)]
-        return self.hist(kl_data, kl_ref, title='KL Divergence',
-                         xlabel='KL', ylabel='density', vlines=vlines, ax=ax)
-    
-    def credible_interval(self, intervals, band_perc, ax=None):
-        dci_data = self.diagnostic.credible_interval(self.data, intervals)
-        dci_ref = self.diagnostic.credible_interval(self.samples, intervals)
-        bands = np.array([np.percentile(dci_ref, [100*(1.-bi)/2, 100*(1.+bi)/2], axis=0)
-                          for bi in band_perc])
-        greys = mpl.cm.get_cmap('Greys')
-        if ax is None:
-            ax = plt.gca()
-        # for i in range(len(band_perc)-1, -1, -1):
-        #     ax.fill_between(intervals, bands[i, 0], bands[i, 1], alpha=1., color=greys((i+1)/(len(band_perc)+1)))
-        band_perc = np.sort(band_perc)
-        for i, perc in enumerate(band_perc):
-            ax.fill_between(intervals, bands[i, 0], bands[i, 1], alpha=1.,
-                            color=greys((len(band_perc) - i) / (len(band_perc) + 2.5)),
-                            zorder=-perc)
-        
-        ax.plot([0, 1], [0, 1], c='k')
-        ax.set_prop_cycle(self.color_cycle)
-        ax.plot(intervals, dci_data.T)
-        ax.set_xlim([0, 1])
-        ax.set_ylim([0, 1])
-        ax.set_ylabel('Empirical Coverage')
-        ax.set_xlabel('Credible Interval')
-        ax.set_title('Credible Interval Diagnostic')
-        return ax
-
-    def variogram(self, X, ax=None):
-        y = self.data
-        N = len(X)
-        nbins = np.ceil((N*(N-1)/2.)**(1./3))
-        bin_bounds = np.linspace(0, np.max(np.linalg.norm(X, axis=-1)), nbins)
-        v, loc, gamma, lower, upper = self.diagnostic.variogram(X, y, bin_bounds)
-
-        if ax is None:
-            ax = plt.gca()
-
-        ax.set_title('Variogram')
-        ax.set_xlabel(r"$|x-x'|$")
-        for i in range(y.shape[0]):
-            ax.plot(loc, gamma[:, i], ls='', marker='o', c=self.colors[i])
-            ax.plot(loc, lower[:, i], lw=0.5, c=self.colors[i])
-            ax.plot(loc, upper[:, i], lw=0.5, c=self.colors[i])
-        return ax
-
-    def plotzilla(self, X, gp=None, predict=False, vlines=True):
-        if gp is None:
-            pass
-        fig, axes = plt.subplots(4, 3, figsize=(12, 12))
-        self.md(vlines=vlines, ax=axes[0, 0])
-        self.kl(X, gp, predict, vlines=vlines, ax=axes[0, 1])
-        self.credible_interval(np.linspace(0, 1, 101), [0.68, 0.95], axes[0, 2])
-        self.individual_errors(axes[1, 0])
-        self.individual_errors_qq(axes[2, 0])
-        self.cholesky_errors(axes[1, 1])
-        self.cholesky_errors_qq(axes[2, 1])
-        self.eigen_errors(axes[1, 2])
-        self.eigen_errors_qq(axes[2, 2])
-        self.pivoted_cholesky_errors(axes[3, 0])
-        self.pivoted_cholesky_errors_qq(axes[3, 1])
-        # self.variogram(X, axes[3, 2])
-        fig.tight_layout()
-        return fig, axes
-
-    def essentials(self, vlines=True, bare=False):
-        if bare:
-            fig, axes = plt.subplots(1, 3, figsize=(7, 3))
-            self.md(vlines=vlines, ax=axes[0])
-            self.pivoted_cholesky_errors(axes[1])
-            self.credible_interval(np.linspace(0, 1, 101), [0.68, 0.95], axes[2])
-            axes[0].set_title('')
-            axes[0].legend(title=r'$\mathrm{D}_{\mathrm{MD}}$')
-            axes[0].set_ylabel('')
-            axes[0].set_yticks([])
-            axes[1].set_yticks([])
-            axes[1].legend(title=r'$\mathrm{D}_{\mathrm{PC}}$')
-            axes[1].set_title('')
-            axes[1].set_ylabel('')
-            axes[2].set_title('')
-            axes[2].set_ylabel('')
-            # axes[2].set_yticks([])
-            axes[2].set_xticks([0, 0.5, 1])
-            axes[2].set_xticklabels(['0', '0.5', '1'])
-            axes[2].yaxis.tick_right()
-            axes[2].text(0.05, 0.94, r'$\mathrm{D}_{\mathrm{CI}}$', transform=axes[2].transAxes,
-                         verticalalignment='top',
-                         bbox=dict(boxstyle='round', facecolor='white', alpha=0.5, ec='grey'))
-            # axes[2].legend(title=r'$\mathrm{D}_{\mathrm{CI}}$')
-            # plt.tight
-            fig.tight_layout(h_pad=0.01, w_pad=0.1)
-        else:
-            fig, axes = plt.subplots(2, 3, figsize=(12, 6))
-            self.md(vlines=vlines, ax=axes[0, 0])
-            self.credible_interval(np.linspace(0, 1, 101), [0.68, 0.95], axes[1, 0])
-            self.eigen_errors(axes[0, 1])
-            self.eigen_errors_qq(axes[1, 1])
-            self.pivoted_cholesky_errors(axes[0, 2])
-            self.pivoted_cholesky_errors_qq(axes[1, 2])
-            fig.tight_layout()
-        return fig, axes
 
 
 
