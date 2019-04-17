@@ -1,7 +1,4 @@
 from __future__ import division
-import pymc3 as pm
-import theano
-import theano.tensor as tt
 from math import gamma
 import numpy as np
 import scipy as sp
@@ -12,7 +9,7 @@ import inspect
 
 
 __all__ = [
-    'cartesian', 'toy_data', 'coefficients', 'partials', 'stabilize',
+    'cartesian', 'toy_data', 'coefficients', 'partials', 'stabilize', 'geometric_sum',
     'predictions', 'gaussian', 'HPD', 'KL_Gauss', 'rbf', 'default_attributes',
     'cholesky_errors', 'mahalanobis', 'VariogramFourthRoot'
 ]
@@ -89,49 +86,35 @@ def generate_coefficients(X, size=1, basis=None, corr=None, beta=0, sd=1,
     return np.random.multivariate_normal(mean, K, size=size)
 
 
-def coefficients(partials, ratio, X=None, ref=1, orders=None, **ratio_kwargs):
+def coefficients(y, ratio, ref=1, orders=None):
     """Returns the coefficients of a power series
 
     Parameters
     ----------
-    partials : 2d array
-    ratio : 1d array, scalar, or callable
-    X : 2d array (optional)
-    ref : 1d array or scalar (optional)
-    orders : 1d array (optional)
-    rm_orders : 1d array (optional)
+    y : array, shape = ([n_samples], n_curves)
+    ratio : scalar or array, shape = (n_samples,)
+    ref : scalar or array, shape = (n_samples,)
+    orders : 1d array, optional
+        The orders at which y was computed. Defaults to 0, 1, ..., n_curves-1
 
     Returns
     -------
-    tuple
-    An (n, N) array of the extracted coefficients and a (n,) array of their
-    corresponding orders
+    An ([n_samples], n_curves) array of the extracted coefficients
     """
-    if not callable(ratio):
-        ratio_vals = ratio
-    else:
-        ratio_vals = ratio(X, **ratio_kwargs)
-
     if orders is None:
-        orders = np.asarray(list(range(len(partials))))
-    # if rm_orders is None:
-    #     rm_orders = []
-
-    if len(orders) != len(partials):
+        orders = np.arange(y.shape[-1])
+    if len(orders) != y.shape[-1]:
         raise ValueError('partials and orders must have the same length')
 
-    # Make coefficients
-    # Find differences but keep leading term
-    coeffs = np.diff(partials, axis=0)
-    coeffs = np.insert(coeffs, 0, partials[0], axis=0)
-    # Scale each order appropriately
-    ordervec = np.atleast_2d(orders).T
-    coeffs = coeffs / (ref * ratio_vals**ordervec)
+    ref, ratio, orders = np.atleast_1d(ref, ratio, orders)
+    if y.ndim == 2:
+        ref = ref[:, None]
+        ratio = ratio[:, None]
 
-    # Remove unwanted orders
-    # keepers = np.logical_not(np.isin(orders, rm_orders))
-    # coeffs = coeffs[keepers]
-    # orders = orders[keepers]
+    # Make coefficients
+    coeffs = np.diff(y, axis=-1)                       # Find differences
+    coeffs = np.insert(coeffs, 0, y[..., 0], axis=-1)  # But keep leading term
+    coeffs = coeffs / (ref * ratio**orders)            # Scale each order appropriately
     return coeffs
 
 
@@ -168,20 +151,56 @@ def partials(coeffs, ratio, X=None, ref=1, orders=None, **ratio_kwargs):
     (n, N) array
         The partial sums
     """
-    if callable(ratio):
-        ratio_vals = ratio(X, **ratio_kwargs)
-    else:
-        ratio_vals = ratio
+    # if callable(ratio):
+    #     ratio_vals = ratio(X, **ratio_kwargs)
+    # else:
+    #     ratio_vals = ratio
 
     if orders is None:
-        orders = np.asarray(list(range(len(coeffs))))
+        # orders = np.asarray(list(range(len(coeffs))))
+        orders = np.arange(coeffs.shape[-1])
 
     # Convert coefficients to partial sums
-    ordervec = np.atleast_2d(orders).T
-    terms = ref * coeffs * ratio_vals**(ordervec)
-    partials = np.cumsum(terms, axis=0)
+    # ordervec = np.atleast_2d(orders).T
+    terms = ref * coeffs * ratio**orders
+    partials = np.cumsum(terms, axis=-1)
     return partials
 
+
+def geometric_sum(x, start, end, excluded=None):
+    R"""The geometric sum of x from `i=start` to `i=end` (inclusive)
+
+    .. math::
+        S = \sum_{i=start}^{end} x^i
+
+    with the i in `exclude` excluded from the sum.
+
+    Parameters
+    ----------
+    x : array
+        The value to be summed
+    start : int
+        The start index of the sum
+    end : int
+        The end index of the sum (inclusive)
+    excluded : int or 1d array-like of ints
+        The indices to exclude from the sum
+
+    Returns
+    -------
+    S : array
+        The geometric sum
+    """
+    if end < start:
+        raise ValueError('end must be greater than or equal to start')
+
+    s = (x ** start - x ** (end + 1)) / (1 - x)
+    if excluded is not None:
+        excluded = np.atleast_1d(excluded)
+        for n in excluded:
+            if (n >= start) and (n <= end):
+                s -= x ** n
+    return s
 
 def stabilize(M):
     return M + 1e-5 * np.eye(*M.shape)
@@ -527,7 +546,7 @@ class VariogramFourthRoot:
     ----------
     X : 2d array
         The (N, d) shaped input locations of the observed function.
-    y : 1d or 2d array
+    z : 1d or 2d array
         The (N,) or (N, Ncurve) shaped function values
     bin_bounds : 1d array
         The boundaries of the bins for the distances between the inputs. The
