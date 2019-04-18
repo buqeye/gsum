@@ -1011,8 +1011,7 @@ class ConjugateStudentProcess(ConjugateProcess):
 
 class TruncationProcess:
 
-    def __init__(self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None,
-                 nugget=1e-10, **kwargs):
+    def __init__(self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs):
         R"""
 
         Parameters
@@ -1039,25 +1038,23 @@ class TruncationProcess:
         else:
             self.ratio = ratio
 
-        kwargs['nugget'] = nugget
-        kwargs['verbose'] = False  # Handled by this class
-        self.coeffs_process_class = ConjugateProcess
-        self.coeffs_process_kwargs = kwargs
-        self.coeffs_process = ConjugateProcess()
+        # self.coeffs_process_class = ConjugateProcess
+        # self.coeffs_process = self.coeffs_process_class(kernel=kernel, **kwargs)
+        self.coeffs_process = ConjugateProcess(kernel=kernel, **kwargs)
         self.kernel = kernel
         self._log_like = None
 
         self.excluded = excluded
-        self.nugget = nugget
-        self.ratio_kws = ratio_kws
+        self.ratio_kws = {} if ratio_kws is None else ratio_kws
 
+        self._fit = False
         self.X_train_ = None
         self.y_train_ = None
         self.orders_ = None
         self.dX_ = None
         self.dy_ = None
         self.coeffs_ = None
-        self.coeffs_process_ = None
+        # self.coeffs_process_ = None
 
     def mean(self, X, start=0, end=np.inf):
         coeff_mean = self.coeffs_process.mean(X=X)
@@ -1077,6 +1074,17 @@ class TruncationProcess:
         ratio_sum = geometric_sum(x=self.ratio(X)[:, None], start=start, end=end, excluded=self.excluded)
         return self.ref(X)[:, None] * ratio_sum * cn_basis
 
+    def underlying_properties(self, X, order, return_std=False, return_cov=False):
+        y_mean = self.mean(X, start=order+1)
+        if return_cov:
+            y_cov = self.cov(X, start=order+1)
+            return y_mean, y_cov
+        elif return_std:
+            y_std = np.sqrt(np.diag(self.cov(X, start=order+1)))
+            return y_mean, y_std
+        else:
+            return y_mean
+
     def fit(self, X, y, orders, dX=None, dy=None):
         self.X_train_ = X
         self.y_train_ = y
@@ -1088,12 +1096,13 @@ class TruncationProcess:
 
         # Extract the coefficients based on best ratio value and setup/fit the iid coefficient process
         ratio = self.ratio(X, **self.ratio_kws)
-        self.coeffs_ = coefficients(y=y, ratio=ratio, ref=self.ref(X), orders=orders)[orders_mask]
-        self.coeffs_process_ = self.coeffs_process_class(kernel=self.kernel, **self.coeffs_process_kwargs)
-        self.coeffs_process_.fit(X=X, y=self.coeffs_)
+        self.coeffs_ = coefficients(y=y, ratio=ratio, ref=self.ref(X), orders=orders)[:, orders_mask]
+        # self.coeffs_process_ = self.coeffs_process_class(kernel=self.kernel, **self.coeffs_process_kwargs)
+        self.coeffs_process.fit(X=X, y=self.coeffs_)
+        self._fit = True
         return self
 
-    def predict(self, X, order, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False):
+    def predict(self, X, order, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False, kind='both'):
         """Returns the predictive GP at the points X
 
         Parameters
@@ -1114,60 +1123,74 @@ class TruncationProcess:
             affect the `y` used to update hyperparameters.
         pred_noise : bool
             Adds `noise_sd` to the diagonal of the covariance matrix if `return_cov == True`.
+        kind : str
 
         Returns
         -------
         mean, (mean, std), or (mean, cov), depending on `return_std` and `return_cov`
         """
 
+        if not self._fit:
+            return self.underlying_properties(X, order, return_cov=return_cov, return_std=return_std)
+
         if Xc is None:
             Xc = self.X_train_
         if y is None:
-            y = np.squeeze(self.y_train_[self.orders_ == order])
+            if order not in self.orders_:
+                raise ValueError('order must be in orders passed to `fit`')
+            if self.y_train_.ndim == 1:
+                y = self.y_train_
+            else:
+                y = np.squeeze(self.y_train_[:, self.orders_ == order])
 
-        # ----------------------------------------------------
-        # Get mean & cov for (interpolating) prediction y_order
-        #
-        # Use X and y from fit for hyperparameters
-        m_old = self.mean(X=Xc, start=0, end=order)
-        m_new = self.mean(X=X, start=0, end=order)
+        if kind not in ['both', 'interp', 'trunc']:
+            raise ValueError('kind must be one of "both", "interp" or "trunc"')
 
-        # Use X and y from arguments for conditioning/predictions
-        K_oo = self.cov(start=0, end=order, X=Xc, Xp=Xc)
-        K_on = self.cov(start=0, end=order, X=Xc, Xp=X)
-        K_no = K_on.T
-        K_nn = self.cov(start=0, end=order, X=X, Xp=X)
+        m_pred, K_pred = 0, 0
+        if kind == 'both' or kind == 'interp':
+            # ----------------------------------------------------
+            # Get mean & cov for (interpolating) prediction y_order
+            #
+            # Use X and y from fit for hyperparameters
+            m_old = self.mean(X=Xc, start=0, end=order)
+            m_new = self.mean(X=X, start=0, end=order)
 
-        # Use given y for prediction
-        alpha = solve(K_oo, y - m_old)
-        m_pred = m_new + K_no @ alpha
-        K_pred = None
-        if return_std or return_cov:
-            K_pred = K_nn - K_no @ solve(K_oo, K_on)
-        #
-        # ----------------------------------------------------
+            # Use X and y from arguments for conditioning/predictions
+            K_oo = self.cov(start=0, end=order, X=Xc, Xp=Xc)
+            K_on = self.cov(start=0, end=order, X=Xc, Xp=X)
+            K_no = K_on.T
+            K_nn = self.cov(start=0, end=order, X=X, Xp=X)
 
-        # ----------------------------------------------------
-        # Get the mean & cov for truncation error
-        #
-        m_new_trunc = self.mean(X=X, start=order + 1, end=np.inf)
-        K_nn_trunc = self.cov(X=X, Xp=X, start=order + 1, end=np.inf)
-
-        X_trunc = self.dX_
-        if X_trunc is not None:  # truncation error is constrained
-            m_old_trunc = self.mean(X=X_trunc, start=order+1, end=np.inf)
-            K_oo_trunc = self.cov(X=X_trunc, Xp=X_trunc, start=order+1, end=np.inf)
-            K_on_trunc = self.cov(X=X_trunc, Xp=X, start=order+1, end=np.inf)
-            K_no_trunc = K_on_trunc.T
-
-            alpha_trunc = solve(K_oo_trunc, (self.dy_ - m_old_trunc))
-            m_pred += m_new_trunc + K_no_trunc @ alpha_trunc
+            # Use given y for prediction
+            alpha = solve(K_oo, y - m_old)
+            m_pred += m_new + K_no @ alpha
             if return_std or return_cov:
-                K_pred += K_nn_trunc - K_no_trunc @ solve(K_oo_trunc, K_on_trunc)
-        else:  # truncation is not constrained
-            m_pred += m_new_trunc
-            if return_std or return_cov:
-                K_pred += K_nn_trunc
+                K_pred += K_nn - K_no @ solve(K_oo, K_on)
+            #
+            # ----------------------------------------------------
+
+        if kind == 'both' or kind == 'trunc':
+            # ----------------------------------------------------
+            # Get the mean & cov for truncation error
+            #
+            m_new_trunc = self.mean(X=X, start=order + 1, end=np.inf)
+            K_nn_trunc = self.cov(X=X, Xp=X, start=order + 1, end=np.inf)
+
+            X_trunc = self.dX_
+            if X_trunc is not None:  # truncation error is constrained
+                m_old_trunc = self.mean(X=X_trunc, start=order+1, end=np.inf)
+                K_oo_trunc = self.cov(X=X_trunc, Xp=X_trunc, start=order+1, end=np.inf)
+                K_on_trunc = self.cov(X=X_trunc, Xp=X, start=order+1, end=np.inf)
+                K_no_trunc = K_on_trunc.T
+
+                alpha_trunc = solve(K_oo_trunc, (self.dy_ - m_old_trunc))
+                m_pred += m_new_trunc + K_no_trunc @ alpha_trunc
+                if return_std or return_cov:
+                    K_pred += K_nn_trunc - K_no_trunc @ solve(K_oo_trunc, K_on_trunc)
+            else:  # truncation is not constrained
+                m_pred += m_new_trunc
+                if return_std or return_cov:
+                    K_pred += K_nn_trunc
 
         if return_cov:
             return m_pred, K_pred
@@ -1196,50 +1219,23 @@ class TruncationProcess:
         y_log_like = coeff_log_like - det_factor
         return y_log_like
 
-    # def likelihood(self, log=True, X=None, y=None, orders=None, ratio_kws=None, **kernel_kws):
-    #     X = self.X_train_ if X is None else X
-    #     y = self.y_train_ if y is None else y
-    #     orders = self.orders_ if orders is None else orders
-    #     ratio_kws = {} if ratio_kws is None else ratio_kws
-    #
-    #     for v in [X, y, orders]:
-    #         if v is None:
-    #             raise ValueError('All of X, y, and orders must be given if model is not fit')
-    #
-    #     ref = self.ref(X)
-    #     ratio = self.ratio(X, **ratio_kws)
-    #
-    #     orders_mask = ~ np.isin(orders, self.excluded)
-    #     coeffs = coefficients(y=y, ratio=ratio, ref=ref, orders=orders)[orders_mask]
-    #     coeff_log_like = self.coeffs_process.likelihood(log=True, X=X, y=coeffs, **kernel_kws)
-    #
-    #     orders = orders[orders_mask]
-    #     det_factor = np.sum(len(orders) * np.log(np.abs(ref)) + np.sum(orders) * np.log(np.abs(ratio)), axis=-1)
-    #     y_log_like = coeff_log_like - det_factor
-    #
-    #     if log:
-    #         return y_log_like
-    #     return np.exp(y_log_like)
-
 
 class TruncationGP(TruncationProcess):
 
-    def __init__(self, kernel, ref, ratio, ratio_kws=None, kernel_kws=None, **kwargs):
+    def __init__(self, kernel, ref, ratio, ratio_kws=None, **kwargs):
         super().__init__(
-            kernel=kernel, ref=ref, ratio=ratio, ratio_kws=ratio_kws, kernel_kws=kernel_kws, **kwargs)
-        self.coeffs_process_class = ConjugateGaussianProcess
-        self.coeffs_process = ConjugateGaussianProcess()
+            kernel=kernel, ref=ref, ratio=ratio, ratio_kws=ratio_kws, **kwargs)
+        self.coeffs_process = ConjugateGaussianProcess(kernel=kernel, **kwargs)
 
 
 class TruncationTP(TruncationProcess):
 
-    def __init__(self, kernel=None, ratio=0.5, ref=1, ratio_kws=None, kernel_kws=None, **kwargs):
+    def __init__(self, kernel=None, ratio=0.5, ref=1, ratio_kws=None, **kwargs):
         super().__init__(
-            kernel=kernel, ratio=ratio, ref=ref, ratio_kws=ratio_kws, kernel_kws=kernel_kws, **kwargs)
-        self.coeffs_process_class = ConjugateStudentProcess
-        self.coeffs_process = ConjugateStudentProcess()
+            kernel=kernel, ratio=ratio, ref=ref, ratio_kws=ratio_kws, **kwargs)
+        self.coeffs_process = ConjugateStudentProcess(kernel=kernel, **kwargs)
 
-    def predict(self, X, order, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False):
+    def predict(self, X, order, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False, kind='both'):
         pred = super(TruncationTP, self).predict(
             X=X, order=order, return_std=return_std, return_cov=return_cov,
             Xc=Xc, y=y, pred_noise=pred_noise
@@ -1251,25 +1247,30 @@ class TruncationTP(TruncationProcess):
         if Xc is None:
             Xc = self.X_train_
 
-        # Use Xc from argument to define old points
-        K_oo = self.cov(X=Xc, Xp=Xc, start=0, end=order)
-        K_no = self.cov(X=X, Xp=Xc, start=0, end=order)
-
-        basis_lower_old = self.basis(X=Xc, start=0, end=order)
-        basis_lower_new = self.basis(X=X, start=0, end=order)
-        basis_lower = basis_lower_new - K_no @ solve(K_oo, basis_lower_old)
-
-        X_trunc = self.dX_
-        if X_trunc is not None:  # truncation error is constrained
-            K_oo_trunc = self.cov(X=X_trunc, Xp=X_trunc, start=order+1, end=np.inf)
-            K_no_trunc = self.cov(X=X, Xp=X_trunc, start=order+1, end=np.inf)
-
-            basis_trunc_old = self.basis(X=X_trunc, start=order+1, end=np.inf)
-            basis_trunc_new = self.basis(X=X, start=order+1, end=np.inf)
-            basis_trunc = basis_trunc_new - K_no_trunc @ solve(K_oo_trunc, basis_trunc_old)
-        else:  # not constrained
-            basis_trunc = self.basis(start=order + 1, end=np.inf, X=X)
         var, disp = self.coeffs_process.cov_factor_, self.coeffs_process.disp_
+        basis_lower, basis_trunc = np.zeros((X.shape[0], disp.shape[0])), np.zeros((X.shape[0], disp.shape[0]))
+
+        if kind == 'both' or kind == 'interp':
+            # Use Xc from argument to define old points
+            K_oo = self.cov(X=Xc, Xp=Xc, start=0, end=order)
+            K_no = self.cov(X=X, Xp=Xc, start=0, end=order)
+
+            basis_lower_old = self.basis(X=Xc, start=0, end=order)
+            basis_lower_new = self.basis(X=X, start=0, end=order)
+            basis_lower = basis_lower_new - K_no @ solve(K_oo, basis_lower_old)
+
+        if kind == 'both' or kind == 'trunc':
+            X_trunc = self.dX_
+            if X_trunc is not None:  # truncation error is constrained
+                K_oo_trunc = self.cov(X=X_trunc, Xp=X_trunc, start=order+1, end=np.inf)
+                K_no_trunc = self.cov(X=X, Xp=X_trunc, start=order+1, end=np.inf)
+
+                basis_trunc_old = self.basis(X=X_trunc, start=order+1, end=np.inf)
+                basis_trunc_new = self.basis(X=X, start=order+1, end=np.inf)
+                basis_trunc = basis_trunc_new - K_no_trunc @ solve(K_oo_trunc, basis_trunc_old)
+            else:  # not constrained
+                basis_trunc = self.basis(start=order + 1, end=np.inf, X=X)
+
         mean_cov = var * (basis_lower + basis_trunc) @ disp @ (basis_lower + basis_trunc).T
 
         if return_std:
@@ -1497,9 +1498,9 @@ class TruncationPointwise:
         scale = self._compute_scale(c=coeffs, df0=df0, scale0=scale0)
 
         n = self._num_orders(coeffs)
-        log_like = loggamma(df/2.) - loggamma(df0/2.) - 0.5 * n * np.log(2 * np.pi)
+        log_like = loggamma(df / 2.) - 0.5 * n * np.log(2 * np.pi)
         if df0 > 0:  # Ignore this infinite constant for scale invariant prior, df0 == 0
-            log_like += 0.5 * np.sum(df0 * np.log(df0 * scale0 ** 2 / 2.))
+            log_like += 0.5 * np.sum(df0 * np.log(df0 * scale0 ** 2 / 2.)) - loggamma(df0 / 2.)
         log_like -= 0.5 * np.sum(df * np.log(df * scale**2 / 2.))
         log_like -= np.sum(np.log(np.abs(ref)) + np.sum(orders[mask]) * np.log(ratio))  # From change of variables
         return log_like
