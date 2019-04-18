@@ -1,14 +1,21 @@
 /* In the Guzzle Sphinx theme, some elements of MathJax are green and some black */
 /* This needs to match .mo and .mi (which also highlight code) for MathJax to render consistently */
-/* I don't know if changing this makes something else ugly */
-.mn { color: #009999 }
+/* From https://stackoverflow.com/questions/46635023/mathjax-equations-are-colored-in-jekyll?noredirect=1&lq=1 */
+.MathJax .mi, .MathJax .mo {
+    color: inherit;
+}
 
+/**/
 /* Taken from
 https://github.com/CamDavidsonPilon/Probabilistic-Programming-and-Bayesian-Methods-for-Hackers/blob/master/styles/custom.css
 This somehow removes "In []" in Jupyter notebooks using the '.prompt' I think.
 It probably does other stuff as well.
 */
+
 <style>
+    /*.MathJax .mi, .MathJax .mo {*/
+    /*    color: inherit;*/
+    /*}*/
     /*@font-face {
         font-family: "Computer Modern";
         src: url('http://mirrors.ctan.org/fonts/cm-unicode/fonts/otf/cmunss.otf');
@@ -48,11 +55,13 @@ It probably does other stuff as well.
         margin-top: 0.5em;
         display: block;
     }
-    
+
     .warning{
         color: rgb( 240, 20, 20 )
-        } */ 
+        } */
 </style>
+
+
 /*<script>
     MathJax.Hub.Config({
                         TeX: {
