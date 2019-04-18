@@ -10,8 +10,8 @@ import inspect
 
 __all__ = [
     'cartesian', 'toy_data', 'coefficients', 'partials', 'stabilize', 'geometric_sum',
-    'predictions', 'gaussian', 'HPD', 'KL_Gauss', 'rbf', 'default_attributes',
-    'cholesky_errors', 'mahalanobis', 'VariogramFourthRoot'
+    'predictions', 'gaussian', 'hpd', 'kl_gauss', 'rbf', 'default_attributes',
+    'cholesky_errors', 'mahalanobis', 'VariogramFourthRoot', 'median_pdf', 'hpd_pdf'
 ]
 
 
@@ -20,37 +20,20 @@ def cartesian(*arrays):
 
     Parameters
     ----------
-    arrays: 1D array-like
+    *arrays : array group, shapes = (N_1,), (N_2,), ..., (N_p,)
             1D arrays where earlier arrays loop more slowly than later ones
+
+    Returns
+    -------
+    array, shape = (N_1 * N_2 * ... * N_p, p)
+        The cartesian product
     """
     N = len(arrays)
     return np.stack(np.meshgrid(*arrays, indexing='ij'), -1).reshape(-1, N)
 
 
-# def toy_data(orders, mu=0, sd=1, Q=0.5, ref=1, ls=None, noise=1e-6, X=None, size=None):
-#     # Set up covariance matrix
-#     if ls is not None:
-#         if size is not None:
-#             print('Warning: size parameter will be overriden')
-#         size = X.shape[0]
-#         with pm.Model():
-#             cov = sd**2 * pm.gp.cov.ExpQuad(input_dim=X.shape[1], ls=ls)
-#             K = cov(X) + noise**2 * tt.eye(size)
-#         # evaluate the covariance with the given hyperparameters
-#         K = theano.function([], K)()
-#     else:
-#         K = (sd**2 + noise**2) * np.eye(size)
-#     mean = mu*np.ones(size)
-#     coeffs = np.random.multivariate_normal(mean, K, size=len(orders))
-
-#     # Convert coefficients to observables
-#     ordervec = np.atleast_2d(orders).T
-#     obs_diffs = ref * coeffs * Q**(ordervec)
-#     obs = np.cumsum(obs_diffs, axis=0)
-#     return obs
-
 def toy_data(X, orders, basis=None, corr=None, beta=0, sd=1, ratio=0.5,
-             ref=1, noise=1e-5, ratio_kwargs=None, **corr_kwargs):
+             ref=1, noise=1e-5, **corr_kwargs):
     # Set up covariance matrix
     if corr is None:
         corr = gaussian
@@ -63,11 +46,9 @@ def toy_data(X, orders, basis=None, corr=None, beta=0, sd=1, ratio=0.5,
         basis = basis(X)
     mean = np.dot(basis, np.atleast_1d(beta))
 
-    if ratio_kwargs is None:
-        ratio_kwargs = {}
     coeffs = np.random.multivariate_normal(mean, K, size=len(orders))
-    return partials(coeffs=coeffs, ratio=ratio, X=X, ref=ref,
-                    orders=orders, **ratio_kwargs)
+    return partials(coeffs=coeffs, ratio=ratio, ref=ref,
+                    orders=orders)
 
 
 def generate_coefficients(X, size=1, basis=None, corr=None, beta=0, sd=1,
@@ -91,7 +72,7 @@ def coefficients(y, ratio, ref=1, orders=None):
 
     Parameters
     ----------
-    y : array, shape = ([n_samples], n_curves)
+    y : array, shape = (n_samples, n_curves)
     ratio : scalar or array, shape = (n_samples,)
     ref : scalar or array, shape = (n_samples,)
     orders : 1d array, optional
@@ -99,17 +80,18 @@ def coefficients(y, ratio, ref=1, orders=None):
 
     Returns
     -------
-    An ([n_samples], n_curves) array of the extracted coefficients
+    An (n_samples, n_curves) array of the extracted coefficients
     """
+    if y.ndim != 2:
+        raise ValueError('y must be 2d')
     if orders is None:
         orders = np.arange(y.shape[-1])
     if len(orders) != y.shape[-1]:
         raise ValueError('partials and orders must have the same length')
 
     ref, ratio, orders = np.atleast_1d(ref, ratio, orders)
-    if y.ndim == 2:
-        ref = ref[:, None]
-        ratio = ratio[:, None]
+    ref = ref[:, None]
+    ratio = ratio[:, None]
 
     # Make coefficients
     coeffs = np.diff(y, axis=-1)                       # Find differences
@@ -118,53 +100,41 @@ def coefficients(y, ratio, ref=1, orders=None):
     return coeffs
 
 
-def partials(coeffs, ratio, X=None, ref=1, orders=None, **ratio_kwargs):
+def partials(coeffs, ratio, ref=1, orders=None):
     R"""Returns the partial sums of a power series given the coefficients
 
     The ``k``th partial sum is given by
 
     .. math::
 
-        S_k = S_{\mathrm{ref}} \sum_{n=0}^k c_n r^n
+        y_k = y_{\mathrm{ref}} \sum_{n=0}^k c_n Q^n
 
     Parameters
     ----------
-    coeffs : (n, N) array
+    coeffs : (n_samples, n_curves) array
         The n lowest order coefficients in a power series
-    ratio : callable, scalar, or (N,) array
+    ratio : scalar, or (n_samples,) array
         The ratio variable that is raised to the nth power in the nth term of
         the sum
-    X : (N, d) array, optional
-        Input points passed to the ratio callable
-    ref : (N,) array, optional
+    ref : (n_samples,) array, optional
         The overall multiplicative scale of the series, default is 1
-    orders : (n,) array, optional
-        The orders corresponding to the given coefficients. All ungiven
+    orders : (n_curves,) array, optional
+        The orders corresponding to the given coefficients. All not given
         orders are assumed to have coefficients equal to zero. The default
         assumes that the n lowest order coefficients are given:
-        ``[0, 1, ..., n-1]``.
-    **ratio_kwargs : optional
-        Keywords passed to the ratio callable
+        ``[0, 1, ..., n_curves-1]``.
 
     Returns
     -------
-    (n, N) array
+    (n_samples, n_curves) array
         The partial sums
     """
-    # if callable(ratio):
-    #     ratio_vals = ratio(X, **ratio_kwargs)
-    # else:
-    #     ratio_vals = ratio
-
     if orders is None:
-        # orders = np.asarray(list(range(len(coeffs))))
         orders = np.arange(coeffs.shape[-1])
 
     # Convert coefficients to partial sums
-    # ordervec = np.atleast_2d(orders).T
     terms = ref * coeffs * ratio**orders
-    partials = np.cumsum(terms, axis=-1)
-    return partials
+    return np.cumsum(terms, axis=-1)
 
 
 def geometric_sum(x, start, end, excluded=None):
@@ -183,7 +153,7 @@ def geometric_sum(x, start, end, excluded=None):
         The start index of the sum
     end : int
         The end index of the sum (inclusive)
-    excluded : int or 1d array-like of ints
+    excluded : int or 1d array
         The indices to exclude from the sum
 
     Returns
@@ -201,6 +171,7 @@ def geometric_sum(x, start, end, excluded=None):
             if (n >= start) and (n <= end):
                 s -= x ** n
     return s
+
 
 def stabilize(M):
     return M + 1e-5 * np.eye(*M.shape)
@@ -264,7 +235,7 @@ def rbf(X, Xp=None, ls=1):
     return np.exp(- 0.5 * dist**2 / ls**2)
 
 
-def HPD(dist, alpha, *args):
+def hpd(dist, alpha, *args):
     R"""Returns the highest probability density interval of scipy dist.
 
     Inspired by this answer https://stackoverflow.com/a/25777507
@@ -273,63 +244,67 @@ def HPD(dist, alpha, *args):
     if args:
         dist = dist(*args)
 
-    def interval_length(start):
-        return dist.ppf(start + alpha) - dist.ppf(start)
+    def interval_length(start_):
+        return dist.ppf(start_ + alpha) - dist.ppf(start_)
     # find start of cdf interval that minimizes the pdf interval length
     start = fmin(interval_length, 1-alpha, ftol=1e-8, disp=False)[0]
     # return interval as array([low, high])
     return dist.ppf([start, alpha + start])
 
 
-def HPD_pdf(pdf, alpha, x, x0=None, opt_kwargs=None, *args):
+def hpd_pdf(pdf, alpha, x, x0=None, **kwargs):
     R"""Returns the highest probability density interval given the pdf.
 
     Inspired by this answer https://stackoverflow.com/a/22290087
     """
-    # if not callable(pdf):
-    #     pdf = sp.interpolate.interp1d(x, pdf)
-    #     args = []
     if x0 is None:
         x0 = 0
 
-    if opt_kwargs is None:
-        opt_kwargs = {}
+    # if opt_kwargs is None:
+    #     opt_kwargs = {}
 
-    lb, ub = np.min(x), np.max(x)
+    # if callable(pdf):
+    #     pdf_array = pdf(x, *args)
+    # else:
+    #     pdf_array = pdf
+    pdf_array = pdf
 
-    def errfn(p, alpha, *args):
-        # def fn(xx):
-        #     f = pdf(xx, *args)
-        #     return f if f > p else 0
-        # prob = integrate.quad(fn, lb, ub)[0]
-        if callable(pdf):
-            pdf_array = pdf(x, *args)
-        else:
-            pdf_array = pdf
+    def err_fn(p, alpha_):
         f = np.zeros(len(pdf_array))
-        mask = pdf_array > p
-        f[mask] = pdf_array[mask]
+        mask_ = pdf_array > p
+        f[mask_] = pdf_array[mask_]
         prob = np.trapz(f, x)
-        # print(p, prob, (prob - alpha)**2)
-        return (prob - alpha)**2
+        return (prob - alpha_) ** 2
 
-    hline = fmin(errfn, x0=x0, args=(alpha, *args), **opt_kwargs)[0]
-    if callable(pdf):
-        mask = pdf(x, *args) > hline
-    else:
-        mask = pdf > hline
-    interval = np.asarray(x)[mask]
+    horizontal = fmin(err_fn, x0=x0, args=alpha, **kwargs)[0]
+    interval = np.asarray(x)[pdf_array > horizontal]
     return np.min(interval), np.max(interval)
 
 
-def KL_Gauss(mu0, cov0, mu1, cov1=None, chol1=None):
+def median_pdf(pdf, x):
+    R"""Returns the median given the pdf.
+
+    """
+    i = 0
+    for i in range(len(x)):
+        p = np.trapz(pdf[:i], x[:i])
+        if p > 0.5:
+            break
+    return x[i]
+
+
+def kl_gauss(mu0, cov0, mu1, cov1=None, chol1=None):
     R"""The Kullbeck-Liebler divergence between two mv Gaussians
     
     The divergence from :math:`\mathcal{N}_1` to :math:`\mathcal{N}_0` is given by
 
     .. math::
 
-        D_\text{KL}(\mathcal{N}_0 \| \mathcal{N}_1) = \frac{1}{2} \left[ \mathrm{Tr} \left( \Sigma_1^{-1} \Sigma_0 \right) + \left( \mu_1 - \mu_0\right)^\text{T} \Sigma_1^{-1} ( \mu_1 - \mu_0 ) - k + \ln \left( \frac{\det \Sigma_1}{\det \Sigma_0} \right)  \right],
+        D_\text{KL}(\mathcal{N}_0 \| \mathcal{N}_1) = \frac{1}{2}
+            \left[ \mathrm{Tr} \left( \Sigma_1^{-1} \Sigma_0 \right) +
+                \left( \mu_1 - \mu_0\right)^\text{T} \Sigma_1^{-1} ( \mu_1 - \mu_0 ) -
+                k + \ln \left( \frac{\det \Sigma_1}{\det \Sigma_0} \right)
+            \right],
     
     which can be thought of as the amount of information lost when :math:`\mathcal{N}_1`
     is used to approximate :math:`\mathcal{N}_0`.
@@ -376,7 +351,7 @@ def KL_Gauss(mu0, cov0, mu1, cov1=None, chol1=None):
 
     tr_mat = np.trace(sp.linalg.cho_solve((chol1, True), cov0))
 
-    return 0.5*(tr_mat + quad - k + logdet1 - logdet0)
+    return 0.5 * (tr_mat + quad - k + logdet1 - logdet0)
 
 
 def lazy_property(function):
@@ -402,23 +377,23 @@ def lazy(function):
 
     @wraps(function)
     def decorator(self, *args, **kwargs):
-        lazy = True
+        is_lazy = True
 
         # If y are passed and are not the defaults
         y = kwargs.pop('y', None)
         if y is not None and not np.allclose(y, self.y):
-            lazy = False
+            is_lazy = False
         else:
             y = self.y
 
         # If cholesky is passed and are not the defaults
         corr_chol = kwargs.pop('corr_chol', None)
         if corr_chol is not None and not np.allclose(corr_chol, self._corr_chol):
-            lazy = False
+            is_lazy = False
         else:
             corr_chol = self._corr_chol
 
-        if not lazy or not hasattr(self, attribute):
+        if not is_lazy or not hasattr(self, attribute):
             setattr(self, attribute, function(self, *args, y=y, corr_chol=corr_chol, **kwargs))
         return getattr(self, attribute)
     return decorator
@@ -512,13 +487,6 @@ def default_attributes(**kws):
     return decorator
 
 
-# vec_solve_triangular = np.vectorize(sp.linalg.solve_triangular, excluded=['lower'], signature='(m,m),(m,n)->(m,n)')
-#
-#
-# def cholesky_errors(y, mean, chol):
-#     y = np.atleast_2d(y)
-#     return np.squeeze(np.swapaxes(vec_solve_triangular(chol, (y - mean).T, lower=True), -1, -2))
-
 def cholesky_errors(y, mean, chol):
     return sp.linalg.solve_triangular(chol, (y - mean).T, lower=True).T
 
@@ -531,7 +499,6 @@ def mahalanobis(y, mean, chol=None, inv=None):
         return np.linalg.norm(err, axis=-1)
     y = np.atleast_2d(y)
     return np.squeeze(np.sqrt(np.diag((y - mean) @ inv @ (y - mean).T)))
-    # return np.sum(np.square(np.dot(y - mean, inv)), axis=-1)
 
 
 class VariogramFourthRoot:
@@ -544,11 +511,11 @@ class VariogramFourthRoot:
 
     Parameters
     ----------
-    X : 2d array
-        The (N, d) shaped input locations of the observed function.
-    z : 1d or 2d array
-        The (N,) or (N, Ncurve) shaped function values
-    bin_bounds : 1d array
+    X : array, shape = (n_samples, n_features)
+        The shaped input locations of the observed function.
+    z : array, shape = (n_samples, [n_curves])
+        The function values
+    bin_bounds : array, shape = (n_bins-1,)
         The boundaries of the bins for the distances between the inputs. The
         bin location is computed as the average of all distances within the bin.
     """
@@ -634,13 +601,13 @@ class VariogramFourthRoot:
 
     def rho_ijkl(self, i, j, k, l):
         """The correlation between (Z_i - Z_j) and (Z_k - Z_l), estimated by gamma tilde"""
-        gamma = self.gamma_tilde_grid
-        gam_jk = gamma[j, k]
-        gam_il = gamma[i, l]
-        gam_ik = gamma[i, k]
-        gam_jl = gamma[j, l]
-        gam_ij = gamma[i, j]
-        gam_kl = gamma[k, l]
+        gam = self.gamma_tilde_grid
+        gam_jk = gam[j, k]
+        gam_il = gam[i, l]
+        gam_ik = gam[i, k]
+        gam_jl = gam[j, l]
+        gam_ij = gam[i, j]
+        gam_kl = gam[k, l]
         rho = (gam_jk + gam_il - gam_ik - gam_jl) / (2 * np.sqrt(gam_ij * gam_kl))
         return rho
 
@@ -663,18 +630,18 @@ class VariogramFourthRoot:
         corr[rho <= -1.] = -1.
         return corr
 
-    def cov_ijkl(self, i, j, k, l):
+    def cov_ijkl(self, i, j, k, ell):
         """The covariance between sqrt(|Z_i - Z_j|) and sqrt(|Z_k - Z_l|), estimated by gamma tilde
 
         Only estimates the correlation when (i,j) != (k,l), otherwise uses 1.
         """
-        i, j, k, l = np.atleast_1d(i, j, k, l)
-        if not (i.shape == j.shape == k.shape == l.shape):
-            raise ValueError(i.shape == j.shape == k.shape == l.shape, 'i, j, k, l must have the same shape')
+        i, j, k, ell = np.atleast_1d(i, j, k, ell)
+        if not (i.shape == j.shape == k.shape == ell.shape):
+            raise ValueError(i.shape == j.shape == k.shape == ell.shape, 'i, j, k, ell must have the same shape')
         # If (i, j) == (k, l), then return 1, else use corr formula
         n = i.shape[0], self.Ncurves
-        corr = np.where((i == k) & (j == l), np.ones(n).T, self.corr_ijkl(i, j, k, l).T).T
-        return corr * np.sqrt(self.var_ij(i, j) * self.var_ij(k, l))
+        corr = np.where((i == k) & (j == ell), np.ones(n).T, self.corr_ijkl(i, j, k, ell).T).T
+        return corr * np.sqrt(self.var_ij(i, j) * self.var_ij(k, ell))
 
     def var_ij(self, i, j):
         """The variance of sqrt(|Z_i - Z_j|), estimated by gamma tilde"""
@@ -701,8 +668,8 @@ class VariogramFourthRoot:
         ijkl = cartesian(data1[['i', 'j']].copy(), data2[['i', 'j']].copy())
         cov = 0.
         if ijkl.size > 0:
-            i, j, k, l = ijkl[:, 0]['i'], ijkl[:, 0]['j'], ijkl[:, 1]['i'], ijkl[:, 1]['j']
-            cov += np.sum(self.cov_ijkl(i, j, k, l), axis=0)
+            i, j, k, ell = ijkl[:, 0]['i'], ijkl[:, 0]['j'], ijkl[:, 1]['i'], ijkl[:, 1]['j']
+            cov += np.sum(self.cov_ijkl(i, j, k, ell), axis=0)
         cov /= nb1 * nb2
         return cov
 
@@ -710,7 +677,7 @@ class VariogramFourthRoot:
         return (x / self.mean_factor) ** 4
 
     def fourth_root_scale(self, x):
-        return self.mean_factor * x**(0.25)
+        return self.mean_factor * x ** 0.25
 
     def compute(self, rt_scale=False):
         """Returns the mean semivariogram and approximate 68% confidence intervals.
@@ -728,9 +695,9 @@ class VariogramFourthRoot:
             The semivariogram estimate and its lower and upper 68% bands
         """
         if rt_scale:
-            gamma = self.gamma_star_mean
+            gam = self.gamma_star_mean
         else:
-            gamma = self.gamma_tilde
+            gam = self.gamma_tilde
         sd = np.zeros((self.Nb, self.Ncurves))
         for i in range(self.Nb):
             sd[i] = np.sqrt(self.cov(i))
@@ -739,4 +706,4 @@ class VariogramFourthRoot:
         if not rt_scale:
             lower = self.variogram_scale(lower)
             upper = self.variogram_scale(upper)
-        return gamma, lower, upper
+        return gam, lower, upper
