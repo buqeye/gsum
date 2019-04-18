@@ -502,7 +502,7 @@ def mahalanobis(y, mean, chol=None, inv=None):
 
 
 class VariogramFourthRoot:
-    """Computes the empirical semivariogram and uncertainties via the fourth root transformation.
+    R"""Computes the empirical semivariogram and uncertainties via the fourth root transformation.
 
     Based mostly on the theory developed in Bowman & Crujeiras (2013) and Cressie & Hawkins (1980).
     Their original code was implemented in the `sm` R package, but was rewritten in Python as a check
@@ -600,7 +600,7 @@ class VariogramFourthRoot:
         self.gamma_tilde_grid = gamma_tilde_grid
 
     def rho_ijkl(self, i, j, k, l):
-        """The correlation between (Z_i - Z_j) and (Z_k - Z_l), estimated by gamma tilde"""
+        R"""The correlation between (Z_i - Z_j) and (Z_k - Z_l), estimated by gamma tilde"""
         gam = self.gamma_tilde_grid
         gam_jk = gam[j, k]
         gam_il = gam[i, l]
@@ -612,7 +612,7 @@ class VariogramFourthRoot:
         return rho
 
     def corr_ijkl(self, i, j, k, l):
-        """The correlation between sqrt(|Z_i - Z_j|) and sqrt(|Z_k - Z_l|), estimated by gamma tilde
+        R"""The correlation between sqrt(|Z_i - Z_j|) and sqrt(|Z_k - Z_l|), estimated by gamma tilde
 
         This is estimated using gamma tilde, the estimate of the variogram via the 4th root transform.
         Because the estimate can exceed the bounds [-1, 1], any correlation outside this range is
@@ -631,7 +631,7 @@ class VariogramFourthRoot:
         return corr
 
     def cov_ijkl(self, i, j, k, ell):
-        """The covariance between sqrt(|Z_i - Z_j|) and sqrt(|Z_k - Z_l|), estimated by gamma tilde
+        R"""The covariance between sqrt(|Z_i - Z_j|) and sqrt(|Z_k - Z_l|), estimated by gamma tilde
 
         Only estimates the correlation when (i,j) != (k,l), otherwise uses 1.
         """
@@ -644,7 +644,7 @@ class VariogramFourthRoot:
         return corr * np.sqrt(self.var_ij(i, j) * self.var_ij(k, ell))
 
     def var_ij(self, i, j):
-        """The variance of sqrt(|Z_i - Z_j|), estimated by gamma tilde"""
+        R"""The variance of sqrt(|Z_i - Z_j|), estimated by gamma tilde"""
         return self.var_factor * np.sqrt(self.gamma_tilde_grid[i, j])
 
     def cov(self, bin1, bin2=None):
@@ -680,7 +680,7 @@ class VariogramFourthRoot:
         return self.mean_factor * x ** 0.25
 
     def compute(self, rt_scale=False):
-        """Returns the mean semivariogram and approximate 68% confidence intervals.
+        R"""Returns the mean semivariogram and approximate 68% confidence intervals.
         
         Can be given on the 4th root scale or the variogram scale (default).
         
