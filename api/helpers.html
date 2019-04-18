@@ -1,9 +1,10 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   
   <!-- Licensed under the Apache 2.0 License -->
   <link rel="stylesheet" type="text/css" href="../_static/fonts/open-sans/stylesheet.css" />
@@ -16,21 +17,29 @@
     <title>Helpers &#8212; gsum 0.1 documentation</title>
     <link rel="stylesheet" href="../_static/guzzle.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="prev" title="Models" href="models.html" />
   
    
 
-  </head><body>
+  </head>
+  <body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -111,306 +120,143 @@
 <dt id="gsum.helpers.cartesian">
 <code class="descclassname">gsum.helpers.</code><code class="descname">cartesian</code><span class="sig-paren">(</span><em>*arrays</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#cartesian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.cartesian" title="Permalink to this definition">¶</a></dt>
 <dd><p>Makes the Cartesian product of arrays.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>*arrays</strong><span class="classifier">array group, shapes = (N_1,), (N_2,), …, (N_p,)</span></dt><dd><p>1D arrays where earlier arrays loop more slowly than later ones</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>array, shape = (N_1 * N_2 * … * N_p, p)</strong></dt><dd><p>The cartesian product</p>
-</dd>
-</dl>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>arrays: 1D array-like</strong></p>
+<blockquote class="last">
+<div><p>1D arrays where earlier arrays loop more slowly than later ones</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="gsum.helpers.coefficients">
-<code class="descclassname">gsum.helpers.</code><code class="descname">coefficients</code><span class="sig-paren">(</span><em>y</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.coefficients" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gsum.helpers.</code><code class="descname">coefficients</code><span class="sig-paren">(</span><em>partials</em>, <em>ratio</em>, <em>X=None</em>, <em>ref=1</em>, <em>orders=None</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.coefficients" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the coefficients of a power series</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>y</strong><span class="classifier">array, shape = (n_samples, n_curves)</span></dt><dd></dd>
-<dt><strong>ratio</strong><span class="classifier">scalar or array, shape = (n_samples,)</span></dt><dd></dd>
-<dt><strong>ref</strong><span class="classifier">scalar or array, shape = (n_samples,)</span></dt><dd></dd>
-<dt><strong>orders</strong><span class="classifier">1d array, optional</span></dt><dd><p>The orders at which y was computed. Defaults to 0, 1, …, n_curves-1</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>An (n_samples, n_curves) array of the extracted coefficients</strong></dt><dd></dd>
-</dl>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>partials</strong> : 2d array</p>
+<p><strong>ratio</strong> : 1d array, scalar, or callable</p>
+<p><strong>X</strong> : 2d array (optional)</p>
+<p><strong>ref</strong> : 1d array or scalar (optional)</p>
+<p><strong>orders</strong> : 1d array (optional)</p>
+<p><strong>rm_orders</strong> : 1d array (optional)</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">tuple</p>
+<p>An (n, N) array of the extracted coefficients and a (n,) array of their</p>
+<p class="last">corresponding orders</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="gsum.helpers.partials">
-<code class="descclassname">gsum.helpers.</code><code class="descname">partials</code><span class="sig-paren">(</span><em>coeffs</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#partials"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.partials" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gsum.helpers.</code><code class="descname">partials</code><span class="sig-paren">(</span><em>coeffs</em>, <em>ratio</em>, <em>X=None</em>, <em>ref=1</em>, <em>orders=None</em>, <em>**ratio_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#partials"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.partials" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the partial sums of a power series given the coefficients</p>
 <p>The <a href="#id1"><span class="problematic" id="id2">``</span></a>k``th partial sum is given by</p>
-<div class="math notranslate nohighlight">
-\[y_k = y_{\mathrm{ref}} \sum_{n=0}^k c_n Q^n\]</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>coeffs</strong><span class="classifier">(n_samples, n_curves) array</span></dt><dd><p>The n lowest order coefficients in a power series</p>
-</dd>
-<dt><strong>ratio</strong><span class="classifier">scalar, or (n_samples,) array</span></dt><dd><p>The ratio variable that is raised to the nth power in the nth term of
+<div class="math">
+\[S_k = S_{\mathrm{ref}} \sum_{n=0}^k c_n r^n\]</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>coeffs</strong> : (n, N) array</p>
+<blockquote>
+<div><p>The n lowest order coefficients in a power series</p>
+</div></blockquote>
+<p><strong>ratio</strong> : callable, scalar, or (N,) array</p>
+<blockquote>
+<div><p>The ratio variable that is raised to the nth power in the nth term of
 the sum</p>
-</dd>
-<dt><strong>ref</strong><span class="classifier">(n_samples,) array, optional</span></dt><dd><p>The overall multiplicative scale of the series, default is 1</p>
-</dd>
-<dt><strong>orders</strong><span class="classifier">(n_curves,) array, optional</span></dt><dd><p>The orders corresponding to the given coefficients. All not given
+</div></blockquote>
+<p><strong>X</strong> : (N, d) array, optional</p>
+<blockquote>
+<div><p>Input points passed to the ratio callable</p>
+</div></blockquote>
+<p><strong>ref</strong> : (N,) array, optional</p>
+<blockquote>
+<div><p>The overall multiplicative scale of the series, default is 1</p>
+</div></blockquote>
+<p><strong>orders</strong> : (n,) array, optional</p>
+<blockquote>
+<div><p>The orders corresponding to the given coefficients. All ungiven
 orders are assumed to have coefficients equal to zero. The default
 assumes that the n lowest order coefficients are given:
-<code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">n_curves-1]</span></code>.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>(n_samples, n_curves) array</strong></dt><dd><p>The partial sums</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="gsum.helpers.geometric_sum">
-<code class="descclassname">gsum.helpers.</code><code class="descname">geometric_sum</code><span class="sig-paren">(</span><em>x</em>, <em>start</em>, <em>end</em>, <em>excluded=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#geometric_sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.geometric_sum" title="Permalink to this definition">¶</a></dt>
-<dd><p>The geometric sum of x from <cite>i=start</cite> to <cite>i=end</cite> (inclusive)</p>
-<div class="math notranslate nohighlight">
-\[S = \sum_{i=start}^{end} x^i\]</div>
-<p>with the i in <cite>exclude</cite> excluded from the sum.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>x</strong><span class="classifier">array</span></dt><dd><p>The value to be summed</p>
-</dd>
-<dt><strong>start</strong><span class="classifier">int</span></dt><dd><p>The start index of the sum</p>
-</dd>
-<dt><strong>end</strong><span class="classifier">int</span></dt><dd><p>The end index of the sum (inclusive)</p>
-</dd>
-<dt><strong>excluded</strong><span class="classifier">int or 1d array</span></dt><dd><p>The indices to exclude from the sum</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>S</strong><span class="classifier">array</span></dt><dd><p>The geometric sum</p>
-</dd>
-</dl>
-</dd>
-</dl>
+<code class="docutils literal highlight highlight-default"><span></span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></code>.</p>
+</div></blockquote>
+<p><strong>**ratio_kwargs</strong> : optional</p>
+<blockquote>
+<div><p>Keywords passed to the ratio callable</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(n, N) array</p>
+<blockquote class="last">
+<div><p>The partial sums</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="gsum.helpers.predictions">
 <code class="descclassname">gsum.helpers.</code><code class="descname">predictions</code><span class="sig-paren">(</span><em>dist</em>, <em>dob=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.predictions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the mean and set of degree of belief intervals for a distribution</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>dist</strong><span class="classifier">distribution object</span></dt><dd></dd>
-<dt><strong>dob</strong><span class="classifier">scalar or 1D array</span></dt><dd></dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>array or tuple</strong></dt><dd><p>If dob is None, just the mean is returned, else a tuple of the mean and
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>dist</strong> : distribution object</p>
+<p><strong>dob</strong> : scalar or 1D array</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">array or tuple</p>
+<blockquote class="last">
+<div><p>If dob is None, just the mean is returned, else a tuple of the mean and
 degree of belief intervals is returned. The interval array is shaped
 (len(dob), 2, len(mean)) and is then squeezed to remove all axes of
 length 1.</p>
-</dd>
-</dl>
-</dd>
-</dl>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="gsum.helpers.gaussian">
 <code class="descclassname">gsum.helpers.</code><code class="descname">gaussian</code><span class="sig-paren">(</span><em>X</em>, <em>Xp=None</em>, <em>ls=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#gaussian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.gaussian" title="Permalink to this definition">¶</a></dt>
 <dd><p>A gaussian correlation function</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>X</strong><span class="classifier">(N, d) array</span></dt><dd></dd>
-<dt><strong>Xp</strong><span class="classifier">(M, d) array, optional</span></dt><dd></dd>
-<dt><strong>ls</strong><span class="classifier">scalar</span></dt><dd></dd>
-</dl>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : (N, d) array</p>
+<p><strong>Xp</strong> : (M, d) array, optional</p>
+<p class="last"><strong>ls</strong> : scalar</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
-<dt id="gsum.helpers.hpd">
-<code class="descclassname">gsum.helpers.</code><code class="descname">hpd</code><span class="sig-paren">(</span><em>dist</em>, <em>alpha</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#hpd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.hpd" title="Permalink to this definition">¶</a></dt>
+<dt id="gsum.helpers.HPD">
+<code class="descclassname">gsum.helpers.</code><code class="descname">HPD</code><span class="sig-paren">(</span><em>dist</em>, <em>alpha</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#HPD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.HPD" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the highest probability density interval of scipy dist.</p>
 <p>Inspired by this answer <a class="reference external" href="https://stackoverflow.com/a/25777507">https://stackoverflow.com/a/25777507</a></p>
-</dd></dl>
-
-<dl class="function">
-<dt id="gsum.helpers.kl_gauss">
-<code class="descclassname">gsum.helpers.</code><code class="descname">kl_gauss</code><span class="sig-paren">(</span><em>mu0</em>, <em>cov0</em>, <em>mu1</em>, <em>cov1=None</em>, <em>chol1=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#kl_gauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.kl_gauss" title="Permalink to this definition">¶</a></dt>
-<dd><p>The Kullbeck-Liebler divergence between two mv Gaussians</p>
-<p>The divergence from <span class="math notranslate nohighlight">\(\mathcal{N}_1\)</span> to <span class="math notranslate nohighlight">\(\mathcal{N}_0\)</span> is given by</p>
-<div class="math notranslate nohighlight">
-\[D_\text{KL}(\mathcal{N}_0 \| \mathcal{N}_1) = \frac{1}{2}
-    \left[ \mathrm{Tr} \left( \Sigma_1^{-1} \Sigma_0 \right) +
-        \left( \mu_1 - \mu_0\right)^\text{T} \Sigma_1^{-1} ( \mu_1 - \mu_0 ) -
-        k + \ln \left( \frac{\det \Sigma_1}{\det \Sigma_0} \right)
-    \right],\]</div>
-<p>which can be thought of as the amount of information lost when <span class="math notranslate nohighlight">\(\mathcal{N}_1\)</span>
-is used to approximate <span class="math notranslate nohighlight">\(\mathcal{N}_0\)</span>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>mu0</strong><span class="classifier">Scalar or 1d array</span></dt><dd><p>The mean of the posterior</p>
-</dd>
-<dt><strong>cov0</strong><span class="classifier">Scalar or 2d array</span></dt><dd><p>The covariance of the posterior</p>
-</dd>
-<dt><strong>mu1</strong><span class="classifier">Scalar or 1d array</span></dt><dd><p>The mean of the prior</p>
-</dd>
-<dt><strong>cov1</strong><span class="classifier">Scalar or 2d array</span></dt><dd><p>The covariance of the prior</p>
-</dd>
-<dt><strong>chol1</strong><span class="classifier">Scalar or 2d array</span></dt><dd><p>The cholesky docomposition of the prior</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>number</strong></dt><dd><p>The KL divergence</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>ValueError</strong></dt><dd><p>Exactly one of cov1 or chol1 must be given</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="gsum.helpers.default_attributes">
-<code class="descclassname">gsum.helpers.</code><code class="descname">default_attributes</code><span class="sig-paren">(</span><em>**kws</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#default_attributes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.default_attributes" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets <cite>None</cite> or empty <cite>*args</cite>/<cite>**kwargs</cite> arguments to attributes already stored in a class.</p>
-<p>This is a handy decorator to avoid <cite>if</cite> statements at the beginning of method
-calls:</p>
-<dl>
-<dt>def func(self, x=None):</dt><dd><dl class="simple">
-<dt>if x is None:</dt><dd><p>x = self.x</p>
-</dd>
-</dl>
-<p>…</p>
-</dd>
-</dl>
-<p>but is particularly useful when the function uses a cache to avoid
-unnecessary computations. Caches don’t recognize when the attributes change,
-so could result in incorrect returned values. This decorator <strong>must</strong> be put
-outside of the cache decorator though.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>kws</strong><span class="classifier">dict</span></dt><dd><p>The key must match the parameter name in the decorated function, and the value
-corresponds to the name of the attribute to use as the default</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="class">
-<dt id="gsum.helpers.VariogramFourthRoot">
-<em class="property">class </em><code class="descclassname">gsum.helpers.</code><code class="descname">VariogramFourthRoot</code><span class="sig-paren">(</span><em>X</em>, <em>z</em>, <em>bin_bounds</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the empirical semivariogram and uncertainties via the fourth root transformation.</p>
-<p>Based mostly on the theory developed in Bowman &amp; Crujeiras (2013) and Cressie &amp; Hawkins (1980).
-Their original code was implemented in the <cite>sm</cite> R package, but was rewritten in Python as a check
-and to gain a better understanding of the implementation. There are unresolved discrepancies
-with their code to date.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>X</strong><span class="classifier">array, shape = (n_samples, n_features)</span></dt><dd><p>The shaped input locations of the observed function.</p>
-</dd>
-<dt><strong>z</strong><span class="classifier">array, shape = (n_samples, [n_curves])</span></dt><dd><p>The function values</p>
-</dd>
-<dt><strong>bin_bounds</strong><span class="classifier">array, shape = (n_bins-1,)</span></dt><dd><p>The boundaries of the bins for the distances between the inputs. The
-bin location is computed as the average of all distances within the bin.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-<dl class="method">
-<dt id="gsum.helpers.VariogramFourthRoot.compute">
-<code class="descname">compute</code><span class="sig-paren">(</span><em>rt_scale=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.compute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the mean semivariogram and approximate 68% confidence intervals.</p>
-<p>Can be given on the 4th root scale or the variogram scale (default).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>rt_scale</strong><span class="classifier">bool</span></dt><dd><p>Returns results on 4th root scale if True (default is False)</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>gamma, lower, upper</strong></dt><dd><p>The semivariogram estimate and its lower and upper 68% bands</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="gsum.helpers.VariogramFourthRoot.corr_ijkl">
-<code class="descname">corr_ijkl</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>k</em>, <em>l</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.corr_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.corr_ijkl" title="Permalink to this definition">¶</a></dt>
-<dd><p>The correlation between sqrt(<a href="#id3"><span class="problematic" id="id4">|Z_i - Z_j|</span></a>) and sqrt(<a href="#id5"><span class="problematic" id="id6">|Z_k - Z_l|</span></a>), estimated by gamma tilde</p>
-<p>This is estimated using gamma tilde, the estimate of the variogram via the 4th root transform.
-Because the estimate can exceed the bounds [-1, 1], any correlation outside this range is
-manually set to +/-1.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gsum.helpers.VariogramFourthRoot.cov_ijkl">
-<code class="descname">cov_ijkl</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>k</em>, <em>ell</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.cov_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.cov_ijkl" title="Permalink to this definition">¶</a></dt>
-<dd><p>The covariance between sqrt(<a href="#id7"><span class="problematic" id="id8">|Z_i - Z_j|</span></a>) and sqrt(<a href="#id9"><span class="problematic" id="id10">|Z_k - Z_l|</span></a>), estimated by gamma tilde</p>
-<p>Only estimates the correlation when (i,j) != (k,l), otherwise uses 1.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gsum.helpers.VariogramFourthRoot.rho_ijkl">
-<code class="descname">rho_ijkl</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>k</em>, <em>l</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.rho_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.rho_ijkl" title="Permalink to this definition">¶</a></dt>
-<dd><p>The correlation between (Z_i - Z_j) and (Z_k - Z_l), estimated by gamma tilde</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gsum.helpers.VariogramFourthRoot.var_ij">
-<code class="descname">var_ij</code><span class="sig-paren">(</span><em>i</em>, <em>j</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.var_ij"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.var_ij" title="Permalink to this definition">¶</a></dt>
-<dd><p>The variance of sqrt(<a href="#id11"><span class="problematic" id="id12">|Z_i - Z_j|</span></a>), estimated by gamma tilde</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="function">
-<dt id="gsum.helpers.median_pdf">
-<code class="descclassname">gsum.helpers.</code><code class="descname">median_pdf</code><span class="sig-paren">(</span><em>pdf</em>, <em>x</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#median_pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.median_pdf" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the median given the pdf.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="gsum.helpers.hpd_pdf">
-<code class="descclassname">gsum.helpers.</code><code class="descname">hpd_pdf</code><span class="sig-paren">(</span><em>pdf</em>, <em>alpha</em>, <em>x</em>, <em>x0=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#hpd_pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.hpd_pdf" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the highest probability density interval given the pdf.</p>
-<p>Inspired by this answer <a class="reference external" href="https://stackoverflow.com/a/22290087">https://stackoverflow.com/a/22290087</a></p>
 </dd></dl>
 
 </div>
