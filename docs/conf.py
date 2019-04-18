@@ -42,7 +42,7 @@ extensions = [
     'numpydoc',
     'nbsphinx',
     'sphinxcontrib.inlinesyntaxhighlight',
-    'matplotlib.sphinxext.only_directives',
+    # 'matplotlib.sphinxext.only_directives',  # This was removed in matplotlib 3.
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_directive',
     'IPython.sphinxext.ipython_console_highlighting',
