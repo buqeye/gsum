@@ -412,7 +412,7 @@ class ConjugateProcess:
 
     @staticmethod
     def compute_cov_factor(scale_sq, df):
-        """Converts the squared scale hyperparameter :math:`\tau^2` to the correlation -> covariance conversion factor
+        R"""Converts the squared scale hyperparameter :math:`\tau^2` to the correlation -> covariance conversion factor
 
         The conversion is given by :math:`\sigma^2 = \nu \tau^2 / (\nu - 2)` for :math:`\nu > 2`
 
@@ -1323,7 +1323,9 @@ class TruncationPointwise:
         self.ref_ = None
         self.orders_ = None
         self.orders_mask_ = None
+        self._orders_masked = None
         self.coeffs_ = None
+        self.coeffs_dist_ = None
         self.df_ = None
         self.scale_ = None
         self.y_masked_ = None
