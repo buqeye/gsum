@@ -412,8 +412,8 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 <p>The basic steps for using this uncorrelated model are</p>
 <ul class="simple">
 <li><p>Define a <code class="docutils literal notranslate"><span class="pre">TruncationPointwise</span></code> model object with hyperparameters <span class="math notranslate nohighlight">\(\nu\)</span> and <span class="math notranslate nohighlight">\(\tau\)</span></p></li>
-<li><p>Use the <code class="docutils literal notranslate"><span class="pre">fit</span></code> method to input the order-by-order predictions, or partial sums, <code class="docutils literal notranslate"><span class="pre">partials</span></code> of the observable, with the expansion parameter <code class="docutils literal notranslate"><span class="pre">ratio</span></code>, and reference scale <code class="docutils literal notranslate"><span class="pre">ref</span></code> used to extract the coefficients of the series</p></li>
-<li><p>Call another method, such as <code class="docutils literal notranslate"><span class="pre">predictive</span></code> or <code class="docutils literal notranslate"><span class="pre">predict</span></code> to get posteriors or degree of belief intervals for the truncation error. Below we use <code class="docutils literal notranslate"><span class="pre">predictive</span></code>, which returns a frozen scipy <span class="math notranslate nohighlight">\(t\)</span> distribution object for the truncation error. Then one can use standard methods (see the scipy.stats documentation) to compute its pdf, credible intervals, etc.</p></li>
+<li><p>Use the <code class="docutils literal notranslate"><span class="pre">fit</span></code> method to update hyperparameters based on the order-by-order predictions <span class="math notranslate nohighlight">\(y_n\)</span>, expansion parameter <span class="math notranslate nohighlight">\(Q\)</span>, and reference scale <span class="math notranslate nohighlight">\(y_{\mathrm{ref}}\)</span>.</p></li>
+<li><p>Then call other methods, such as <code class="docutils literal notranslate"><span class="pre">interval</span></code> to get posteriors or degree of belief intervals for the truncation error.</p></li>
 </ul>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
@@ -554,7 +554,7 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 </div>
 <div class="section" id="Setup">
 <h3>Setup<a class="headerlink" href="#Setup" title="Permalink to this headline">¶</a></h3>
-<p>Observables are considered at many values of the kinematic parameters <span class="math notranslate nohighlight">\(E_{\mathrm{lab}}\)</span> and <span class="math notranslate nohighlight">\(\theta\)</span>. The expansion parameter is assumed to vary in energy so we must provide a callable function rather than a constant as before. Thus we will first define the <code class="docutils literal notranslate"><span class="pre">ratio</span></code> function that will be used as the expansion parameter.</p>
+<p>Observables are considered at many values of the kinematic parameters <span class="math notranslate nohighlight">\(E_{\mathrm{lab}}\)</span> and <span class="math notranslate nohighlight">\(\theta\)</span>. The expansion parameter is assumed to vary in energy so we must provide a callable function rather than a constant as before. Thus we will first define some functions for computing the expansion parameter.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
@@ -646,29 +646,6 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 <span class="n">D_nn_online</span> <span class="o">=</span> <span class="n">nn_online_file</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">nn_online_pot</span> <span class="o">+</span> <span class="s1">&#39;/D&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 <span class="n">AXX_nn_online</span> <span class="o">=</span> <span class="n">nn_online_file</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">nn_online_pot</span> <span class="o">+</span> <span class="s1">&#39;/AXX&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 <span class="n">AYY_nn_online</span> <span class="o">=</span> <span class="n">nn_online_file</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">nn_online_pot</span> <span class="o">+</span> <span class="s1">&#39;/AYY&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-
-<span class="c1"># with h5py.File(nn_url, &#39;r&#39;) as file:</span>
-<span class="c1">#     SGT = file[&#39;SGT&#39;][:]</span>
-<span class="c1">#     DSG = file[&#39;DSG&#39;][:]</span>
-<span class="c1">#     AY = file[&#39;PB&#39;][:]</span>
-<span class="c1">#     A = file[&#39;A&#39;][:]</span>
-<span class="c1">#     D = file[&#39;D&#39;][:]</span>
-<span class="c1">#     AXX = file[&#39;AXX&#39;][:]</span>
-<span class="c1">#     AYY = file[&#39;AYY&#39;][:]</span>
-<span class="c1">#     q_cm = file[&#39;q_cm&#39;][:]</span>
-<span class="c1">#     t_lab = file[&#39;t_lab&#39;][:]</span>
-<span class="c1">#     degrees = file[&#39;degrees&#39;][:]</span>
-
-<span class="c1"># q_cm *= hbarc</span>
-
-<span class="c1"># with h5py.File(os.path.expanduser(&#39;~/Desktop/NN-online-Observables.h5&#39;), &#39;r&#39;) as file:</span>
-<span class="c1">#     SGT_nn_online = file[nn_online_pot + &#39;/SGT&#39;][:]</span>
-<span class="c1">#     DSG_nn_online = file[nn_online_pot + &#39;/DSG&#39;][:, :-1]</span>
-<span class="c1">#     AY_nn_online = file[nn_online_pot + &#39;/PB&#39;][:, :-1]</span>
-<span class="c1">#     A_nn_online = file[nn_online_pot + &#39;/A&#39;][:, :-1]</span>
-<span class="c1">#     D_nn_online = file[nn_online_pot + &#39;/D&#39;][:, :-1]</span>
-<span class="c1">#     AXX_nn_online = file[nn_online_pot + &#39;/AXX&#39;][:, :-1]</span>
-<span class="c1">#     AYY_nn_online = file[nn_online_pot + &#39;/AYY&#39;][:, :-1]</span>
 </pre></div>
 </div>
 </div>
@@ -690,7 +667,7 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 </pre></div>
 </div>
 </div>
-<p>The reference scale <span class="math notranslate nohighlight">\(X_{\mathrm{ref}}\)</span> was chosen to be <span class="math notranslate nohighlight">\(X_0\)</span> for the total and differential cross section, but it was argued that <span class="math notranslate nohighlight">\(X_{\mathrm{ref}} = 1\)</span> was sufficient for the spin observables. Here we set up interpolators that could be used with any energy or <span class="math notranslate nohighlight">\(\theta\)</span> value.</p>
+<p>The reference scale <span class="math notranslate nohighlight">\(y_{\mathrm{ref}}\)</span> was chosen to be <span class="math notranslate nohighlight">\(y_0\)</span> for the total and differential cross section, but it was argued that <span class="math notranslate nohighlight">\(y_{\mathrm{ref}} = 1\)</span> was sufficient for the spin observables. Here we set up interpolators that could be used with any energy or <span class="math notranslate nohighlight">\(\theta\)</span> value.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>

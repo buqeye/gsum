@@ -112,6 +112,462 @@
   <div class="section" id="module-gsum.models">
 <span id="models"></span><h1>Models<a class="headerlink" href="#module-gsum.models" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
+<dt id="gsum.models.ConjugateProcess">
+<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">ConjugateProcess</code><span class="sig-paren">(</span><em>kernel=None</em>, <em>center=0</em>, <em>disp=1</em>, <em>df=1</em>, <em>scale=1</em>, <em>sd=None</em>, <em>basis=None</em>, <em>nugget=1e-10</em>, <em>optimizer='fmin_l_bfgs_b'</em>, <em>n_restarts_optimizer=0</em>, <em>copy_X_train=True</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess" title="Permalink to this definition">¶</a></dt>
+<dd><p>A conjugate Gaussian Process model.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>kernel</strong><span class="classifier">callable</span></dt><dd><p>The kernel for the correlation matrix. The covariance matrix is the kernel multiplied by the squared scale.</p>
+</dd>
+<dt><strong>center</strong><span class="classifier">float</span></dt><dd><p>The prior central values for the parameters of the mean function.</p>
+</dd>
+<dt><strong>disp</strong><span class="classifier">float &gt;= 0</span></dt><dd><p>The dispersion parameter for the normal prior placed on the mean. This, multiplied by the squared scale
+parameter from the inverse chi squared prior, determines the variance of the mean.
+The smaller the dispersion, the better determined is the mean.
+Set this to zero for a mean that is known to be <cite>mean</cite>.</p>
+</dd>
+<dt><strong>df</strong><span class="classifier">float &gt; 0</span></dt><dd><p>The degrees of freedom parameter for the inverse chi squared prior placed on the marginal variance.
+This is a measure of how well the marginal standard deviation (or variance) is known, with
+larger degrees of freedom implying a better known standard deviation. Set this to infinity for a
+standard deviation that is known to be <cite>scale</cite>, or use the <cite>sd</cite> keyword argument.</p>
+</dd>
+<dt><strong>scale</strong><span class="classifier">float &gt; 0</span></dt><dd><p>The scale parameter of the scaled inverse chi squared prior placed on the marginal variance
+of the Gaussian process. Approximately the prior standard deviation for the Gaussian process.</p>
+</dd>
+<dt><strong>sd</strong><span class="classifier">float &gt; 0, optional</span></dt><dd><p>A convenience argument that sets the marginal standard deviation for the Gaussian process.
+This is equivalent to setting df0 to infinity and scale0 to sd
+(i.e., a delta function prior on the standard deviation).</p>
+</dd>
+<dt><strong>nugget</strong><span class="classifier">float, optional (default: 1e-10)</span></dt><dd><p>Value added to the diagonal of the correlation matrix during fitting.
+Larger values correspond to increased noise level in the observations.
+This can also prevent a potential numerical issue during fitting, by
+ensuring that the calculated values form a positive definite matrix.</p>
+</dd>
+<dt><strong>optimizer</strong><span class="classifier">string or callable, optional (default: “fmin_l_bfgs_b”)</span></dt><dd><p>Can either be one of the internally supported optimizers for optimizing
+the kernel’s parameters, specified by a string, or an externally
+defined optimizer passed as a callable. If a callable is passed, it
+must have the signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">optimizer</span><span class="p">(</span><span class="n">obj_func</span><span class="p">,</span> <span class="n">initial_theta</span><span class="p">,</span> <span class="n">bounds</span><span class="p">):</span>
+    <span class="c1"># * &#39;obj_func&#39; is the objective function to be minimized, which</span>
+    <span class="c1">#   takes the hyperparameters theta as parameter and an</span>
+    <span class="c1">#   optional flag eval_gradient, which determines if the</span>
+    <span class="c1">#   gradient is returned additionally to the function value</span>
+    <span class="c1"># * &#39;initial_theta&#39;: the initial value for theta, which can be</span>
+    <span class="c1">#   used by local optimizers</span>
+    <span class="c1"># * &#39;bounds&#39;: the bounds on the values of theta</span>
+    <span class="o">....</span>
+    <span class="c1"># Returned are the best found hyperparameters theta and</span>
+    <span class="c1"># the corresponding value of the target function.</span>
+    <span class="k">return</span> <span class="n">theta_opt</span><span class="p">,</span> <span class="n">func_min</span>
+</pre></div>
+</div>
+<p>Per default, the ‘fmin_l_bfgs_b’ algorithm from scipy.optimize
+is used. If None is passed, the kernel’s parameters are kept fixed.
+Available internal optimizers are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;fmin_l_bfgs_b&#39;</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>n_restarts_optimizer</strong><span class="classifier">int, optional (default: 0)</span></dt><dd><p>The number of restarts of the optimizer for finding the kernel’s
+parameters which maximize the log-marginal likelihood. The first run
+of the optimizer is performed from the kernel’s initial parameters,
+the remaining ones (if any) from thetas sampled log-uniform randomly
+from the space of allowed theta-values. If greater than 0, all bounds
+must be finite. Note that n_restarts_optimizer == 0 implies that one
+run is performed.</p>
+</dd>
+<dt><strong>copy_X_train</strong><span class="classifier">bool, optional (default: True)</span></dt><dd><p>If True, a persistent copy of the training data is stored in the
+object. Otherwise, just a reference to the training data is stored,
+which might cause predictions to change if the data is modified
+externally.</p>
+</dd>
+<dt><strong>random_state</strong><span class="classifier">int, RandomState instance or None, optional (default: None)</span></dt><dd><p>The generator used to initialize the centers. If int, random_state is
+the seed used by the random number generator; If RandomState instance,
+random_state is the random number generator; If None, the random number
+generator is the RandomState instance used by <cite>np.random</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="staticmethod">
+<dt id="gsum.models.ConjugateProcess.avg_y">
+<em class="property">static </em><code class="descname">avg_y</code><span class="sig-paren">(</span><em>y</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.avg_y"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.avg_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the average of y over the set of curves</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>y</strong><span class="classifier">array, shape = (n_samples, [n_curves])</span></dt><dd><p>The data</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>avg_y</strong><span class="classifier">array, shape = (n_samples,)</span></dt><dd><p>The average of y over the set of curves</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gsum.models.ConjugateProcess.center">
+<code class="descname">center</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.center" title="Permalink to this definition">¶</a></dt>
+<dd><p>The regression coefficient hyperparameters for the mean updated by the call to <cite>fit</cite>.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gsum.models.ConjugateProcess.compute_center">
+<em class="property">classmethod </em><code class="descname">compute_center</code><span class="sig-paren">(</span><em>y</em>, <em>chol</em>, <em>basis</em>, <em>center0</em>, <em>disp0</em>, <em>eval_gradient=False</em>, <em>dR=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.compute_center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.compute_center" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the regression coefficients’ center hyperparameter <span class="math notranslate nohighlight">\(\eta\)</span> updated based on data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>y</strong><span class="classifier">array, shape = (n_curves, n_samples)</span></dt><dd><p>The data to condition upon</p>
+</dd>
+<dt><strong>chol</strong><span class="classifier">array, shape = (n_samples, n_samples)</span></dt><dd><p>The cholesky decomposition of the correlation matrix</p>
+</dd>
+<dt><strong>basis</strong><span class="classifier">array, shape = (n_samples, n_param)</span></dt><dd><p>The basis matrix that multiplies the regression coefficients beta to create the GP mean.</p>
+</dd>
+<dt><strong>center0</strong><span class="classifier">scalar or array, shape = (n_param)</span></dt><dd><p>The prior regression coefficients for the mean</p>
+</dd>
+<dt><strong>disp0</strong><span class="classifier">scalar or array, shape = (n_param, n_param)</span></dt><dd><p>The prior dispersion for the regression coefficients</p>
+</dd>
+<dt><strong>eval_gradient</strong><span class="classifier">bool</span></dt><dd></dd>
+<dt><strong>dR</strong></dt><dd></dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>center</strong><span class="classifier">scalar or array, shape = (n_param)</span></dt><dd><p>The posterior regression coefficients for the mean</p>
+</dd>
+<dt><strong>grad_center</strong><span class="classifier">array, shape = (n_param, n_kernel_params), optional</span></dt><dd><p>The gradient of the posterior regression coefficients for the mean with respect to kernel hyperparameters</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="gsum.models.ConjugateProcess.compute_cov_factor">
+<em class="property">static </em><code class="descname">compute_cov_factor</code><span class="sig-paren">(</span><em>scale_sq</em>, <em>df</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.compute_cov_factor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.compute_cov_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the squared scale hyperparameter <span class="math notranslate nohighlight">\(\tau^2\)</span> to the correlation -&gt; covariance conversion factor</p>
+<p>The conversion is given by <span class="math notranslate nohighlight">\(\sigma^2 = \nu \tau^2 / (\nu - 2)\)</span> for <span class="math notranslate nohighlight">\(\nu &gt; 2\)</span></p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If the correlation matrix does equal 1 on the diagonal, <span class="math notranslate nohighlight">\(\sigma^2\)</span> <strong>will not</strong>
+be the marginal variance. Instead, one must look at the diagonal of the covariance directly.</p>
+</div>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gsum.models.ConjugateProcess.compute_df">
+<em class="property">classmethod </em><code class="descname">compute_df</code><span class="sig-paren">(</span><em>y</em>, <em>df0</em>, <em>eval_gradient=False</em>, <em>dR=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.compute_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.compute_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the degrees of freedom hyperparameter <span class="math notranslate nohighlight">\(\nu\)</span> based on data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>y</strong><span class="classifier">array, shape = (n_curves, n_samples)</span></dt><dd><p>The data to condition upon</p>
+</dd>
+<dt><strong>df0</strong><span class="classifier">scalar</span></dt><dd><p>The prior degrees of freedom</p>
+</dd>
+<dt><strong>eval_gradient</strong></dt><dd></dd>
+<dt><strong>dR</strong></dt><dd></dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>df</strong><span class="classifier">scalar</span></dt><dd><p>The updated degrees of freedom</p>
+</dd>
+<dt><strong>grad_df</strong><span class="classifier">array, size = (n_kernel_params,), optional</span></dt><dd><p>The gradient of the updated degrees of freedom with respect to the kernel parameters</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gsum.models.ConjugateProcess.compute_disp">
+<em class="property">classmethod </em><code class="descname">compute_disp</code><span class="sig-paren">(</span><em>y</em>, <em>chol</em>, <em>basis</em>, <em>disp0</em>, <em>eval_gradient=False</em>, <em>dR=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.compute_disp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.compute_disp" title="Permalink to this definition">¶</a></dt>
+<dd><p>The dispersion hyperparameter <span class="math notranslate nohighlight">\(V\)</span> updated based on data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>y</strong><span class="classifier">array, shape = (n_curves, n_samples)</span></dt><dd><p>The data to condition upon</p>
+</dd>
+<dt><strong>chol</strong><span class="classifier">(n_samples, n_samples)-shaped array</span></dt><dd><p>The lower Cholesky decomposition of the correlation matrix</p>
+</dd>
+<dt><strong>basis</strong><span class="classifier">(n_samples, n_param)-shaped array</span></dt><dd><p>The basis for the <cite>p</cite> regression coefficients <cite>beta</cite></p>
+</dd>
+<dt><strong>disp0</strong><span class="classifier">(n_param, n_param)-shaped array</span></dt><dd><p>The prior dispersion</p>
+</dd>
+<dt><strong>eval_gradient</strong><span class="classifier">bool</span></dt><dd></dd>
+<dt><strong>dR</strong></dt><dd></dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>disp</strong><span class="classifier">(p, p)-shaped array</span></dt><dd><p>The updated dispersion hyperparameter</p>
+</dd>
+<dt><strong>grad_disp</strong><span class="classifier">array, shape = (p,p), optional</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gsum.models.ConjugateProcess.compute_scale_sq">
+<em class="property">classmethod </em><code class="descname">compute_scale_sq</code><span class="sig-paren">(</span><em>y</em>, <em>chol</em>, <em>basis</em>, <em>center0</em>, <em>disp0</em>, <em>df0</em>, <em>scale0</em>, <em>eval_gradient=False</em>, <em>dR=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.compute_scale_sq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.compute_scale_sq" title="Permalink to this definition">¶</a></dt>
+<dd><p>The squared scale hyperparameter <span class="math notranslate nohighlight">\(\tau^2\)</span> updated based on data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>y</strong><span class="classifier">array, shape = (n_samples, [n_curves])</span></dt><dd><p>The data to condition upon</p>
+</dd>
+<dt><strong>chol</strong><span class="classifier">array, shape = (n_samples, n_samples)</span></dt><dd><p>The lower Cholesky decomposition of the correlation matrix</p>
+</dd>
+<dt><strong>basis</strong><span class="classifier">array, shape = (n_samples, n_param)</span></dt><dd><p>The basis for the <cite>p</cite> regression coefficients <cite>beta</cite></p>
+</dd>
+<dt><strong>center0</strong><span class="classifier">scalar or array, shape = (n_param)</span></dt><dd><p>The prior regression coefficients for the mean</p>
+</dd>
+<dt><strong>disp0</strong><span class="classifier">array, shape = (n_param, n_param)</span></dt><dd><p>The prior dispersion</p>
+</dd>
+<dt><strong>df0</strong><span class="classifier">scalar</span></dt><dd><p>The prior degrees of freedom hyperparameter</p>
+</dd>
+<dt><strong>scale0</strong><span class="classifier">scalar</span></dt><dd><p>The prior scale hyperparameter</p>
+</dd>
+<dt><strong>eval_gradient</strong><span class="classifier">bool</span></dt><dd><p>Whether to return to the gradient with respect to kernel hyperparameters. Optional, defaults to False.</p>
+</dd>
+<dt><strong>dR</strong><span class="classifier">array, shape = (n_samples, n_samples, n_kernel_params)</span></dt><dd><p>The gradient of the correlation matrix</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>scale_sq</strong><span class="classifier">scalar</span></dt><dd><p>The updated scale hyperparameter squared</p>
+</dd>
+<dt><strong>grad_scale_sq</strong><span class="classifier">array, shape = (n_kernel_params,), optional</span></dt><dd><p>The gradient of scale^2 with respect to the kernel hyperparameters. Only returned if eval_gradient is True.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="gsum.models.ConjugateProcess.compute_scale_sq_v2">
+<em class="property">classmethod </em><code class="descname">compute_scale_sq_v2</code><span class="sig-paren">(</span><em>y</em>, <em>chol</em>, <em>basis</em>, <em>center0</em>, <em>disp0</em>, <em>df0</em>, <em>scale0</em>, <em>eval_gradient=False</em>, <em>dR=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.compute_scale_sq_v2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.compute_scale_sq_v2" title="Permalink to this definition">¶</a></dt>
+<dd><p>The squared scale hyperparameter <span class="math notranslate nohighlight">\(\tau^2\)</span> updated based on data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>y</strong><span class="classifier">array, shape = (n_samples, [n_curves])</span></dt><dd><p>The data to condition upon</p>
+</dd>
+<dt><strong>chol</strong><span class="classifier">array, shape = (n_samples, n_samples)</span></dt><dd><p>The lower Cholesky decomposition of the correlation matrix</p>
+</dd>
+<dt><strong>basis</strong><span class="classifier">array, shape = (n_samples, n_param)</span></dt><dd><p>The basis for the <cite>p</cite> regression coefficients <cite>beta</cite></p>
+</dd>
+<dt><strong>center0</strong><span class="classifier">scalar or array, shape = (n_param)</span></dt><dd><p>The prior regression coefficients for the mean</p>
+</dd>
+<dt><strong>disp0</strong><span class="classifier">array, shape = (n_param, n_param)</span></dt><dd><p>The prior dispersion</p>
+</dd>
+<dt><strong>df0</strong><span class="classifier">scalar</span></dt><dd><p>The prior degrees of freedom hyperparameter</p>
+</dd>
+<dt><strong>scale0</strong><span class="classifier">scalar</span></dt><dd><p>The prior scale hyperparameter</p>
+</dd>
+<dt><strong>eval_gradient</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to return to the gradient with respect to kernel hyperparameters. Optional, defaults to False.</p>
+</dd>
+<dt><strong>dR</strong><span class="classifier">array, shape = (n_samples, n_samples, n_kernel_params), optional</span></dt><dd><p>The gradient of the correlation matrix</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>scale_sq</strong><span class="classifier">scalar</span></dt><dd><p>The updated scale hyperparameter squared</p>
+</dd>
+<dt><strong>grad_scale_sq</strong><span class="classifier">array, shape = (n_kernel_params,), optional</span></dt><dd><p>The gradient of scale^2 with respect to the kernel hyperparameters. Only returned if eval_gradient is True.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gsum.models.ConjugateProcess.df">
+<code class="descname">df</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.df" title="Permalink to this definition">¶</a></dt>
+<dd><p>The degrees of freedom hyperparameter for the standard deviation updated by the call to <cite>fit</cite></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gsum.models.ConjugateProcess.disp">
+<code class="descname">disp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.disp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.disp" title="Permalink to this definition">¶</a></dt>
+<dd><p>The dispersion hyperparameter updated by the call to <cite>fit</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gsum.models.ConjugateProcess.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the process to data (X, y) and updates all hyperparameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array, shape = (n_samples, n_features)</span></dt><dd><p>The input variables where the response is observed</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">array, shape = (n_samples, [n_curves])</span></dt><dd><p>The response values</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>self</strong><span class="classifier">returns an instance of self.</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gsum.models.ConjugateProcess.mean">
+<code class="descname">mean</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>The MAP value for the mean of the process at inputs X with hyperparameters updated by y.</p>
+<p>This does not interpolate the y values. For that functionality, use <cite>predict</cite>.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="gsum.models.ConjugateProcess.num_y">
+<em class="property">static </em><code class="descname">num_y</code><span class="sig-paren">(</span><em>y</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.num_y"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.num_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the number of curves in y</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gsum.models.ConjugateProcess.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>X</em>, <em>return_std=False</em>, <em>return_cov=False</em>, <em>Xc=None</em>, <em>y=None</em>, <em>pred_noise=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the predictive GP at the points X</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array, shape = (n_samples, n_features)</span></dt><dd><p>Locations at which to predict the new y values</p>
+</dd>
+<dt><strong>return_std</strong><span class="classifier">bool</span></dt><dd><p>Whether the marginal standard deviation of the predictive process is to be returned</p>
+</dd>
+<dt><strong>return_cov</strong><span class="classifier">bool</span></dt><dd><p>Whether the covariance matrix of the predictive process is to be returned</p>
+</dd>
+<dt><strong>Xc</strong><span class="classifier">array, shape = (n_conditional_samples, n_features)</span></dt><dd><p>Locations at which to condition. Defaults to <cite>X</cite> used in fit. This <em>does not</em>
+affect the <cite>X</cite> used to update hyperparameters.</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">array, shape = (n_conditional_samples, [n_curves])</span></dt><dd><p>Points upon which to condition. Defaults to the <cite>y</cite> used in <cite>fit</cite>. This <em>does not</em>
+affect the <cite>y</cite> used to update hyperparameters.</p>
+</dd>
+<dt><strong>pred_noise</strong><span class="classifier">bool, optional</span></dt><dd><p>Adds <cite>noise_sd</cite> to the diagonal of the covariance matrix if <cite>return_cov == True</cite>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>y_mean</strong><span class="classifier">array, shape = (n_curves, n_samples)</span></dt><dd><p>Mean of predictive distribution at query points</p>
+</dd>
+<dt><strong>y_std</strong><span class="classifier">array, shape = (n_samples,), optional</span></dt><dd><p>Standard deviation of predictive distribution at query points.
+Only returned when return_std is True.</p>
+</dd>
+<dt><strong>y_cov</strong><span class="classifier">array, shape = (n_samples, n_samples), optional</span></dt><dd><p>Covariance of joint predictive distribution at query points.
+Only returned when return_cov is True.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gsum.models.ConjugateProcess.sample_y">
+<code class="descname">sample_y</code><span class="sig-paren">(</span><em>X</em>, <em>n_samples=1</em>, <em>random_state=0</em>, <em>underlying=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.sample_y"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.sample_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Taken from scikit-learn’s gp module</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gsum.models.ConjugateProcess.scale">
+<code class="descname">scale</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateProcess.scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateProcess.scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>The scale hyperparameter for the standard deviation updated by the call to <cite>fit</cite></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gsum.models.ConjugateGaussianProcess">
+<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">ConjugateGaussianProcess</code><span class="sig-paren">(</span><em>kernel=None</em>, <em>center=0</em>, <em>disp=1</em>, <em>df=1</em>, <em>scale=1</em>, <em>sd=None</em>, <em>basis=None</em>, <em>nugget=1e-10</em>, <em>optimizer='fmin_l_bfgs_b'</em>, <em>n_restarts_optimizer=0</em>, <em>copy_X_train=True</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateGaussianProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateGaussianProcess" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="gsum.models.ConjugateGaussianProcess.log_marginal_likelihood">
+<code class="descname">log_marginal_likelihood</code><span class="sig-paren">(</span><em>theta=None</em>, <em>eval_gradient=False</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateGaussianProcess.log_marginal_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateGaussianProcess.log_marginal_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns log-marginal likelihood of theta for training data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>theta</strong><span class="classifier">array-like, shape = (n_kernel_params,) or None</span></dt><dd><p>Kernel hyperparameters for which the log-marginal likelihood is
+evaluated. If None, the precomputed log_marginal_likelihood
+of <code class="docutils literal notranslate"><span class="pre">self.kernel_.theta</span></code> is returned.</p>
+</dd>
+<dt><strong>eval_gradient</strong><span class="classifier">bool, default: False</span></dt><dd><p>If True, the gradient of the log-marginal likelihood with respect
+to the kernel hyperparameters at position theta is returned
+additionally. If True, theta must not be None.</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">array, shape = (n_samples, [n_curves]), optional</span></dt><dd><p>The observed data to use. Defaults to <cite>y</cite> passed in <cite>fit</cite>.</p>
+</dd>
+<dt><strong>Returns</strong></dt><dd></dd>
+<dt><strong>——-</strong></dt><dd></dd>
+<dt><strong>log_likelihood</strong><span class="classifier">float</span></dt><dd><p>Log-marginal likelihood of theta for training data.</p>
+</dd>
+<dt><strong>log_likelihood_gradient</strong><span class="classifier">array, shape = (n_kernel_params,), optional</span></dt><dd><p>Gradient of the log-marginal likelihood with respect to the kernel
+hyperparameters at position theta.
+Only returned when eval_gradient is True.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gsum.models.ConjugateStudentProcess">
+<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">ConjugateStudentProcess</code><span class="sig-paren">(</span><em>kernel=None</em>, <em>center=0</em>, <em>disp=1</em>, <em>df=1</em>, <em>scale=1</em>, <em>sd=None</em>, <em>basis=None</em>, <em>nugget=1e-10</em>, <em>optimizer='fmin_l_bfgs_b'</em>, <em>n_restarts_optimizer=0</em>, <em>copy_X_train=True</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateStudentProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateStudentProcess" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="gsum.models.ConjugateStudentProcess.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>X</em>, <em>return_std=False</em>, <em>return_cov=False</em>, <em>Xc=None</em>, <em>y=None</em>, <em>pred_noise=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateStudentProcess.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateStudentProcess.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the predictive GP at the points X</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array, shape = (n_samples, n_features)</span></dt><dd><p>Locations at which to predict the new y values</p>
+</dd>
+<dt><strong>return_std</strong><span class="classifier">bool</span></dt><dd><p>Whether the marginal standard deviation of the predictive process is to be returned</p>
+</dd>
+<dt><strong>return_cov</strong><span class="classifier">bool</span></dt><dd><p>Whether the covariance matrix of the predictive process is to be returned</p>
+</dd>
+<dt><strong>Xc</strong><span class="classifier">array, shape = (n_conditional_samples, n_features)</span></dt><dd><p>Locations at which to condition. Defaults to <cite>X</cite> used in fit. This <em>does not</em>
+affect the <cite>X</cite> used to update hyperparameters.</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">array, shape = (n_conditional_samples, [n_curves])</span></dt><dd><p>Points upon which to condition. Defaults to the <cite>y</cite> used in <cite>fit</cite>. This <em>does not</em>
+affect the <cite>y</cite> used to update hyperparameters.</p>
+</dd>
+<dt><strong>pred_noise</strong><span class="classifier">bool, optional</span></dt><dd><p>Adds <cite>noise_sd</cite> to the diagonal of the covariance matrix if <cite>return_cov == True</cite>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>y_mean</strong><span class="classifier">array, shape = (n_curves, n_samples)</span></dt><dd><p>Mean of predictive distribution at query points</p>
+</dd>
+<dt><strong>y_std</strong><span class="classifier">array, shape = (n_samples,), optional</span></dt><dd><p>Standard deviation of predictive distribution at query points.
+Only returned when return_std is True.</p>
+</dd>
+<dt><strong>y_cov</strong><span class="classifier">array, shape = (n_samples, n_samples), optional</span></dt><dd><p>Covariance of joint predictive distribution at query points.
+Only returned when return_cov is True.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="gsum.models.TruncationPointwise">
 <em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">TruncationPointwise</code><span class="sig-paren">(</span><em>df=1</em>, <em>scale=1</em>, <em>excluded=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise" title="Permalink to this definition">¶</a></dt>
 <dd><p>An conjugacy-based implementation of the pointwise convergence model from Furnstahl et al. (2015)</p>

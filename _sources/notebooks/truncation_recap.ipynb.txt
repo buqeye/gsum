@@ -117,8 +117,8 @@
     "The basic steps for using this uncorrelated model are\n",
     "\n",
     "* Define a ``TruncationPointwise`` model object with hyperparameters $\\nu$ and $\\tau$\n",
-    "* Use the ``fit`` method to input the order-by-order predictions, or partial sums, ``partials`` of the observable, with the expansion parameter ``ratio``, and reference scale ``ref`` used to extract the coefficients of the series\n",
-    "* Call another method, such as ``predictive`` or ``predict`` to get posteriors or degree of belief intervals for the truncation error. Below we use ``predictive``, which returns a frozen scipy $t$ distribution object for the truncation error. Then one can use standard methods (see the scipy.stats documentation) to compute its pdf, credible intervals, etc."
+    "* Use the ``fit`` method to update hyperparameters based on the order-by-order predictions $y_n$, expansion parameter $Q$, and reference scale $y_{\\mathrm{ref}}$.\n",
+    "* Then call other methods, such as ``interval`` to get posteriors or degree of belief intervals for the truncation error."
    ]
   },
   {
@@ -334,7 +334,7 @@
     "\n",
     "Observables are considered at many values of the kinematic parameters $E_{\\mathrm{lab}}$ and $\\theta$.\n",
     "The expansion parameter is assumed to vary in energy so we must provide a callable function rather than a constant as before.\n",
-    "Thus we will first define the `ratio` function that will be used as the expansion parameter."
+    "Thus we will first define some functions for computing the expansion parameter."
    ]
   },
   {
@@ -441,30 +441,7 @@
     "A_nn_online = nn_online_file.get_node('/' + nn_online_pot + '/A').read()[:, :-1]\n",
     "D_nn_online = nn_online_file.get_node('/' + nn_online_pot + '/D').read()[:, :-1]\n",
     "AXX_nn_online = nn_online_file.get_node('/' + nn_online_pot + '/AXX').read()[:, :-1]\n",
-    "AYY_nn_online = nn_online_file.get_node('/' + nn_online_pot + '/AYY').read()[:, :-1]\n",
-    "\n",
-    "# with h5py.File(nn_url, 'r') as file:\n",
-    "#     SGT = file['SGT'][:]\n",
-    "#     DSG = file['DSG'][:]\n",
-    "#     AY = file['PB'][:]\n",
-    "#     A = file['A'][:]\n",
-    "#     D = file['D'][:]\n",
-    "#     AXX = file['AXX'][:]\n",
-    "#     AYY = file['AYY'][:]\n",
-    "#     q_cm = file['q_cm'][:]\n",
-    "#     t_lab = file['t_lab'][:]\n",
-    "#     degrees = file['degrees'][:]\n",
-    "\n",
-    "# q_cm *= hbarc\n",
-    "\n",
-    "# with h5py.File(os.path.expanduser('~/Desktop/NN-online-Observables.h5'), 'r') as file:\n",
-    "#     SGT_nn_online = file[nn_online_pot + '/SGT'][:]\n",
-    "#     DSG_nn_online = file[nn_online_pot + '/DSG'][:, :-1]\n",
-    "#     AY_nn_online = file[nn_online_pot + '/PB'][:, :-1]\n",
-    "#     A_nn_online = file[nn_online_pot + '/A'][:, :-1]\n",
-    "#     D_nn_online = file[nn_online_pot + '/D'][:, :-1]\n",
-    "#     AXX_nn_online = file[nn_online_pot + '/AXX'][:, :-1]\n",
-    "#     AYY_nn_online = file[nn_online_pot + '/AYY'][:, :-1]"
+    "AYY_nn_online = nn_online_file.get_node('/' + nn_online_pot + '/AYY').read()[:, :-1]"
    ]
   },
   {
@@ -495,7 +472,7 @@
     "pycharm": {}
    },
    "source": [
-    "The reference scale $X_{\\mathrm{ref}}$ was chosen to be $X_0$ for the total and differential cross section, but it was argued that $X_{\\mathrm{ref}} = 1$ was sufficient for the spin observables. Here we set up interpolators that could be used with any energy or $\\theta$ value."
+    "The reference scale $y_{\\mathrm{ref}}$ was chosen to be $y_0$ for the total and differential cross section, but it was argued that $y_{\\mathrm{ref}} = 1$ was sufficient for the spin observables. Here we set up interpolators that could be used with any energy or $\\theta$ value."
    ]
   },
   {

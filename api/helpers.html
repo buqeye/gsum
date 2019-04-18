@@ -280,7 +280,7 @@ is used to approximate <span class="math notranslate nohighlight">\(\mathcal{N}_
 </dd>
 <dt><strong>cov1</strong><span class="classifier">Scalar or 2d array</span></dt><dd><p>The covariance of the prior</p>
 </dd>
-<dt><strong>chol1</strong><span class="classifier">Scalar or 2d array</span></dt><dd><p>The cholesky docomposition of the prior</p>
+<dt><strong>chol1</strong><span class="classifier">Scalar or 2d array</span></dt><dd><p>The Cholesky decomposition of the prior</p>
 </dd>
 </dl>
 </dd>
@@ -373,7 +373,7 @@ bin location is computed as the average of all distances within the bin.</p>
 <dl class="method">
 <dt id="gsum.helpers.VariogramFourthRoot.corr_ijkl">
 <code class="descname">corr_ijkl</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>k</em>, <em>l</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.corr_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.corr_ijkl" title="Permalink to this definition">¶</a></dt>
-<dd><p>The correlation between sqrt(<a href="#id3"><span class="problematic" id="id4">|Z_i - Z_j|</span></a>) and sqrt(<a href="#id5"><span class="problematic" id="id6">|Z_k - Z_l|</span></a>), estimated by gamma tilde</p>
+<dd><p>The correlation between <span class="math notranslate nohighlight">\(\sqrt(|Z_i - Z_j|)\)</span> and <span class="math notranslate nohighlight">\(\sqrt(|Z_k - Z_l|)\)</span>, estimated by gamma tilde</p>
 <p>This is estimated using gamma tilde, the estimate of the variogram via the 4th root transform.
 Because the estimate can exceed the bounds [-1, 1], any correlation outside this range is
 manually set to +/-1.</p>
@@ -381,21 +381,21 @@ manually set to +/-1.</p>
 
 <dl class="method">
 <dt id="gsum.helpers.VariogramFourthRoot.cov_ijkl">
-<code class="descname">cov_ijkl</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>k</em>, <em>ell</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.cov_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.cov_ijkl" title="Permalink to this definition">¶</a></dt>
-<dd><p>The covariance between sqrt(<a href="#id7"><span class="problematic" id="id8">|Z_i - Z_j|</span></a>) and sqrt(<a href="#id9"><span class="problematic" id="id10">|Z_k - Z_l|</span></a>), estimated by gamma tilde</p>
-<p>Only estimates the correlation when (i,j) != (k,l), otherwise uses 1.</p>
+<code class="descname">cov_ijkl</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>k</em>, <em>l</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.cov_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.cov_ijkl" title="Permalink to this definition">¶</a></dt>
+<dd><p>The covariance between <span class="math notranslate nohighlight">\(\sqrt(|Z_i - Z_j|)\)</span> and <span class="math notranslate nohighlight">\(\sqrt(|Z_k - Z_l|)\)</span>, estimated by gamma tilde</p>
+<p>Only estimates the correlation when <cite>(i,j) != (k,l)</cite>, otherwise uses 1.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gsum.helpers.VariogramFourthRoot.rho_ijkl">
 <code class="descname">rho_ijkl</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>k</em>, <em>l</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.rho_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.rho_ijkl" title="Permalink to this definition">¶</a></dt>
-<dd><p>The correlation between (Z_i - Z_j) and (Z_k - Z_l), estimated by gamma tilde</p>
+<dd><p>The correlation between <span class="math notranslate nohighlight">\((Z_i - Z_j)\)</span> and <span class="math notranslate nohighlight">\((Z_k - Z_l)\)</span>, estimated by gamma tilde</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gsum.helpers.VariogramFourthRoot.var_ij">
 <code class="descname">var_ij</code><span class="sig-paren">(</span><em>i</em>, <em>j</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.var_ij"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.var_ij" title="Permalink to this definition">¶</a></dt>
-<dd><p>The variance of sqrt(<a href="#id11"><span class="problematic" id="id12">|Z_i - Z_j|</span></a>), estimated by gamma tilde</p>
+<dd><p>The variance of sqrt(<a href="#id3"><span class="problematic" id="id4">|Z_i - Z_j|</span></a>), estimated by gamma tilde</p>
 </dd></dl>
 
 </dd></dl>
