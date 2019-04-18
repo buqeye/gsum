@@ -1,10 +1,9 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
   
   <!-- Licensed under the Apache 2.0 License -->
   <link rel="stylesheet" type="text/css" href="../_static/fonts/open-sans/stylesheet.css" />
@@ -17,30 +16,22 @@
     <title>BUQEYE Model &#8212; gsum 0.1 documentation</title>
     <link rel="stylesheet" href="../_static/guzzle.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../',
-        VERSION:     '0.1',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Bayesian truncation errors in chiral effective field theory: A Recap" href="truncation_recap.html" />
+    <link rel="next" title="Bayesian truncation errors in chiral effective field theory: A Pointwise Approach" href="truncation_recap.html" />
     <link rel="prev" title="Examples" href="../examples.html" />
   
    
 
-  </head>
-  <body>
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -48,7 +39,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="truncation_recap.html" title="Bayesian truncation errors in chiral effective field theory: A Recap"
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="truncation_recap.html" title="Bayesian truncation errors in chiral effective field theory: A Pointwise Approach"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="../examples.html" title="Examples"
@@ -76,7 +70,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../examples.html">Examples</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">BUQEYE Model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="truncation_recap.html">Bayesian truncation errors in chiral effective field theory: A Recap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="truncation_recap.html">Bayesian truncation errors in chiral effective field theory: A Pointwise Approach</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correlated_EFT_publication.html">Correlated Truncation Errors in Effective Field Theory: The code behind the manuscript</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
@@ -185,18 +180,18 @@ div.nblast {
 
 /* input prompt */
 div.nbinput div.prompt pre {
-    color: #303F9F;
+    color: #307FC1;
 }
 
 /* output prompt */
 div.nboutput div.prompt pre {
-    color: #D84315;
+    color: #BF5B3D;
 }
 
 /* all prompts */
 div.nbinput div.prompt,
 div.nboutput div.prompt {
-    min-width: 9ex;
+    min-width: 7ex;
     padding-top: 0.4em;
     padding-right: 0.4em;
     text-align: right;
@@ -236,9 +231,9 @@ div.nboutput div.output_area {
 
 /* input area */
 div.nbinput div.input_area {
-    border: 1px solid #cfcfcf;
+    border: 1px solid #e0e0e0;
     border-radius: 2px;
-    background: #f7f7f7;
+    background: #f5f5f5;
 }
 
 /* override MathJax center alignment in output cells */
@@ -246,7 +241,7 @@ div.nboutput div[class*=MathJax] {
     text-align: left !important;
 }
 
-/* override sphinx.ext.pngmath center alignment in output cells */
+/* override sphinx.ext.imgmath center alignment in output cells */
 div.nboutput div.math p {
     text-align: left;
 }
@@ -295,13 +290,46 @@ div.nboutput div.output_area.stderr {
 
 .ansi-bold { font-weight: bold; }
 .ansi-underline { text-decoration: underline; }
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
 </style>
-<div class="nbinput nblast container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [1]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">pickle</span>
@@ -321,14 +349,12 @@ div.nboutput div.output_area.stderr {
 <h1>BUQEYE Model<a class="headerlink" href="#BUQEYE-Model" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="Setup">
 <h2>Setup<a class="headerlink" href="#Setup" title="Permalink to this headline">¶</a></h2>
-<p>First define the <code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio</span></code> function that will be used as the expansion
-parameter</p>
-<div class="nbinput nblast container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [2]:
+<p>First define the <code class="docutils literal notranslate"><span class="pre">ratio</span></code> function that will be used as the expansion parameter</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Constants: proton/neutron masses and hbar</span>
 <span class="n">m_p</span> <span class="o">=</span> <span class="mf">938.27208</span>  <span class="c1"># MeV/c^2</span>
 <span class="n">m_n</span> <span class="o">=</span> <span class="mf">939.56541</span>  <span class="c1"># MeV/c^2</span>
@@ -378,12 +404,11 @@ parameter</p>
 </div>
 </div>
 <p>Now import the relevant data</p>
-<div class="nbinput nblast container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [3]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">dir_path</span> <span class="o">=</span> <span class="s1">&#39;./observable_data/&#39;</span>
 <span class="n">pot_type</span> <span class="o">=</span> <span class="s1">&#39;kvnn_41&#39;</span>
 <span class="n">observable</span> <span class="o">=</span> <span class="s1">&#39;diff_cross_sec&#39;</span>
@@ -397,14 +422,12 @@ parameter</p>
 </pre></div>
 </div>
 </div>
-<p>Now define the reference function as an interpolator of one of the
-orders</p>
-<div class="nbinput nblast container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [4]:
+<p>Now define the reference function as an interpolator of one of the orders</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">energy_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">351</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span>
 <span class="n">theta_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span>
 <span class="n">Xall</span> <span class="o">=</span> <span class="n">cartesian</span><span class="p">(</span><span class="n">energy_all</span><span class="p">,</span> <span class="n">theta_all</span><span class="p">)</span>
@@ -416,14 +439,12 @@ orders</p>
 </div>
 <div class="section" id="Usage">
 <h2>Usage<a class="headerlink" href="#Usage" title="Permalink to this headline">¶</a></h2>
-<p>Now that we have imported the data and defined both a <code class="docutils literal highlight highlight-default"><span></span><span class="n">ratio</span></code> and
-<code class="docutils literal highlight highlight-default"><span></span><span class="n">ref</span></code> function, we are ready to build the model and condition on data.</p>
-<div class="nbinput nblast container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [5]:
+<p>Now that we have imported the data and defined both a <code class="docutils literal notranslate"><span class="pre">ratio</span></code> and <code class="docutils literal notranslate"><span class="pre">ref</span></code> function, we are ready to build the model and condition on data.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">96</span><span class="p">])[:,</span> <span class="bp">None</span><span class="p">]</span>
 <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">181</span><span class="p">,</span> <span class="mi">35</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span>
 <span class="n">X</span> <span class="o">=</span> <span class="n">cartesian</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
@@ -432,12 +453,11 @@ orders</p>
 </pre></div>
 </div>
 </div>
-<div class="nbinput nblast container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [6]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">ls</span> <span class="o">=</span> <span class="mi">35</span>
 <span class="n">ratio_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Lambda_b&#39;</span><span class="p">:</span> <span class="mi">600</span><span class="p">}</span>
 <span class="n">max_index</span> <span class="o">=</span> <span class="mi">3</span>
@@ -452,16 +472,12 @@ orders</p>
 </pre></div>
 </div>
 </div>
-<p>The <code class="docutils literal highlight highlight-default"><span></span><span class="n">observable</span></code> object has been initialized with standard
-hyperparameters and has observed the partial sums that have been fed to
-it. Now we’d like to either predict the series value at unseen orders or
-interpolate some of the data that has been given to it already.</p>
-<div class="nbinput nblast container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [24]:
+<p>The <code class="docutils literal notranslate"><span class="pre">observable</span></code> object has been initialized with standard hyperparameters and has observed the partial sums that have been fed to it. Now we’d like to either predict the series value at unseen orders or interpolate some of the data that has been given to it already.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">energy_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">96</span><span class="p">])[:,</span> <span class="bp">None</span><span class="p">]</span>
 <span class="n">theta_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">181</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[:,</span> <span class="bp">None</span><span class="p">]</span>
 <span class="n">Xnew</span> <span class="o">=</span> <span class="n">cartesian</span><span class="p">(</span><span class="n">energy_new</span><span class="p">,</span> <span class="n">theta_new</span><span class="p">)</span>
@@ -471,15 +487,12 @@ interpolate some of the data that has been given to it already.</p>
 </pre></div>
 </div>
 </div>
-<p>The following code uses the <code class="docutils literal highlight highlight-default"><span></span><span class="n">predict</span></code> method to compute a posterior
-for <span class="math">\(\Delta_k\)</span> and optionally rescale it by <span class="math">\(X_\text{ref}\)</span>
-and reshift by <span class="math">\(X_k\)</span>.</p>
-<div class="nbinput container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [25]:
+<p>The following code uses the <code class="docutils literal notranslate"><span class="pre">predict</span></code> method to compute a posterior for <span class="math notranslate nohighlight">\(\Delta_k\)</span> and optionally rescale it by <span class="math notranslate nohighlight">\(X_\text{ref}\)</span> and reshift by <span class="math notranslate nohighlight">\(X_k\)</span>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">Xpred</span> <span class="o">=</span> <span class="n">Xnew</span>
 <span class="n">th</span> <span class="o">=</span> <span class="n">theta_new</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
 
@@ -497,46 +510,40 @@ and reshift by <span class="math">\(X_k\)</span>.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>Out[25]:
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
-<div class="output_area highlight-none"><div class="highlight"><pre>
+<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
 <span></span>[&lt;matplotlib.lines.Line2D at 0x1c1caf15f8&gt;,
  &lt;matplotlib.lines.Line2D at 0x1c1cc16748&gt;]
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast container">
-<div class="prompt empty container">
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area container">
+<div class="output_area docutils container">
 <img alt="../_images/notebooks_bq_test_14_1.png" src="../_images/notebooks_bq_test_14_1.png" />
 </div>
 </div>
-<p><code class="docutils literal highlight highlight-default"><span></span><span class="n">conditional</span></code> works differently than <code class="docutils literal highlight highlight-default"><span></span><span class="n">predict</span></code>. It interpolates the
-unseen values of a given order using knowledge of the underlying
-Gaussian process from the observed points. It too can be rescaled and
-reshifted.</p>
-<div class="nbinput nblast container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [26]:
+<p><code class="docutils literal notranslate"><span class="pre">conditional</span></code> works differently than <code class="docutils literal notranslate"><span class="pre">predict</span></code>. It interpolates the unseen values of a given order using knowledge of the underlying Gaussian process from the observed points. It too can be rescaled and reshifted.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># The true unseen values</span>
 <span class="n">coeffs_all</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">bq</span><span class="o">.</span><span class="n">coefficients</span><span class="p">(</span><span class="n">partials</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">orders</span><span class="o">=</span><span class="n">orders</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">)</span>
 <span class="n">coeffs_new</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">bq</span><span class="o">.</span><span class="n">coefficients</span><span class="p">(</span><span class="n">partials_new</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">Xnew</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="p">(</span><span class="n">Xnew</span><span class="p">),</span> <span class="n">orders</span><span class="o">=</span><span class="n">orders</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nbinput container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [27]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;orange&#39;</span><span class="p">,</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;red&#39;</span><span class="p">]</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 
@@ -557,23 +564,31 @@ reshifted.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast container">
-<div class="prompt empty container">
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area container">
+<div class="output_area docutils container">
 <img alt="../_images/notebooks_bq_test_17_0.png" src="../_images/notebooks_bq_test_17_0.png" />
 </div>
 </div>
 <p>We also have the ability to make posteriors for <strong>general</strong> parameters</p>
-<div class="nbinput nblast container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [11]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># ls_array = np.arange(20, 70, 2)</span>
 <span class="c1"># ls_pdf = observable.posterior(&#39;ls&#39;, ls=ls_array)</span>
 <span class="c1"># plt.plot(ls_array, ls_pdf)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
 </pre></div>
 </div>
 </div>
@@ -590,7 +605,7 @@ reshifted.</p>
       </div>
     
       <div class="pull-right">
-        <a class="btn btn-default" href="truncation_recap.html" title="next chapter (use the right arrow)">Bayesian truncation errors in chiral effective field theory: A Recap</a>
+        <a class="btn btn-default" href="truncation_recap.html" title="next chapter (use the right arrow)">Bayesian truncation errors in chiral effective field theory: A Pointwise Approach</a>
       </div>
     </div>
     <div class="clearer"></div>
@@ -605,7 +620,10 @@ reshifted.</p>
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="truncation_recap.html" title="Bayesian truncation errors in chiral effective field theory: A Recap"
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="truncation_recap.html" title="Bayesian truncation errors in chiral effective field theory: A Pointwise Approach"
              >next</a> |</li>
         <li class="right" >
           <a href="../examples.html" title="Examples"
