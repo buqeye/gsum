@@ -119,8 +119,9 @@
 
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s1">&#39;SGP&#39;</span><span class="p">,</span> <span class="s1">&#39;PowerProcess&#39;</span><span class="p">,</span> <span class="s1">&#39;PowerSeries&#39;</span><span class="p">,</span> <span class="s1">&#39;ConjugateProcess&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;ConjugateGaussianProcess&#39;</span><span class="p">,</span> <span class="s1">&#39;ConjugateStudentProcess&#39;</span><span class="p">,</span> <span class="s1">&#39;TruncationGP&#39;</span><span class="p">,</span> <span class="s1">&#39;TruncationTP&#39;</span><span class="p">,</span> <span class="s1">&#39;TruncationPointwise&#39;</span><span class="p">]</span>
+    <span class="s1">&#39;ConjugateProcess&#39;</span><span class="p">,</span> <span class="s1">&#39;ConjugateGaussianProcess&#39;</span><span class="p">,</span> <span class="s1">&#39;ConjugateStudentProcess&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;TruncationGP&#39;</span><span class="p">,</span> <span class="s1">&#39;TruncationTP&#39;</span><span class="p">,</span> <span class="s1">&#39;TruncationPointwise&#39;</span>
+<span class="p">]</span>
 
 
 <span class="k">class</span> <span class="nc">ConjugateProcess</span><span class="p">:</span>
@@ -1700,7 +1701,7 @@
 
 
 
-<div class="viewcode-block" id="SGP"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP">[docs]</a><span class="k">class</span> <span class="nc">SGP</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">SGP</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sa">R</span><span class="sd">&quot;&quot;&quot;A semiparametric Gaussian process class</span>
 
 <span class="sd">    Treats a function :math:`y` as a Gaussian process</span>
@@ -1829,7 +1830,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> must be a number or function&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
 
-<div class="viewcode-block" id="SGP.observe"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.observe">[docs]</a>    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Observe GP outputs and update parameters.</span>
 
 <span class="sd">        Conditions on :math:`n` iid processes at :math:`N` locations</span>
@@ -1867,13 +1868,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_means</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">means</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_inv_cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inv_cov</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_recompute_corr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="c1"># Must be non-empty and not equal to the defaults</span>
         <span class="k">return</span> <span class="n">corr_kwargs</span> <span class="ow">and</span> <span class="n">corr_kwargs</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_corr_kwargs</span>
 
-<div class="viewcode-block" id="SGP.shape"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.shape">[docs]</a>    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;The shape parameter :math:`a` of the inverse gamma distribution</span>
 
 <span class="sd">        If ``y`` is given or ``observe`` has been used, then the posterior</span>
@@ -1895,9 +1896,9 @@
         <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span>
         <span class="n">num_y</span><span class="p">,</span> <span class="n">N</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape_0</span> <span class="o">+</span> <span class="n">N</span> <span class="o">*</span> <span class="n">num_y</span> <span class="o">/</span> <span class="mf">2.0</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape_0</span> <span class="o">+</span> <span class="n">N</span> <span class="o">*</span> <span class="n">num_y</span> <span class="o">/</span> <span class="mf">2.0</span>
 
-<div class="viewcode-block" id="SGP.scale"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.scale">[docs]</a>    <span class="k">def</span> <span class="nf">scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;The scale parameter :math:`b` of the inverse gamma distribution</span>
 
 <span class="sd">        If ``y`` is given or ``observe`` has been used,</span>
@@ -1944,9 +1945,9 @@
         <span class="n">val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">means_0</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">inv_cov_0</span><span class="p">,</span> <span class="n">means_0</span><span class="p">))</span> <span class="o">+</span> <span class="n">quad</span> <span class="o">-</span> \
             <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">means</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">inv_cov</span><span class="p">,</span> <span class="n">means</span><span class="p">))</span>
         <span class="c1"># print(&#39;scaleval&#39;, self._corr_kwargs, corr_kwargs, y, val)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_0</span> <span class="o">+</span> <span class="n">val</span> <span class="o">/</span> <span class="mf">2.0</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_0</span> <span class="o">+</span> <span class="n">val</span> <span class="o">/</span> <span class="mf">2.0</span>
 
-<div class="viewcode-block" id="SGP.means"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.means">[docs]</a>    <span class="k">def</span> <span class="nf">means</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">means</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;The mean parameters :math:`\mu` of the normal distribution on :math:`\beta`</span>
 
 <span class="sd">        If ``y`` is given or ``observe`` has been used,</span>
@@ -1983,9 +1984,9 @@
         <span class="n">Rinv_y</span> <span class="o">=</span> <span class="n">cho_solve</span><span class="p">((</span><span class="n">R_chol</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span> <span class="n">avg_y</span><span class="p">)</span>
         <span class="n">val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inv_cov_0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">means_0</span><span class="p">)</span> <span class="o">+</span> \
             <span class="n">num_y</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Rinv_y</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cov</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cov</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
 
-<div class="viewcode-block" id="SGP.inv_cov"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.inv_cov">[docs]</a>    <span class="k">def</span> <span class="nf">inv_cov</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">inv_cov</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;The inverse covariance :math:`V^{-1}` of the normal distribution on</span>
 <span class="sd">        :math:`\beta`</span>
 
@@ -2022,9 +2023,9 @@
         <span class="n">right</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve_triangular</span><span class="p">(</span><span class="n">R_chol</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">quad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">right</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
         <span class="c1"># print(&#39;inv_cov_quad&#39;, quad, H)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inv_cov_0</span> <span class="o">+</span> <span class="n">num_y</span> <span class="o">*</span> <span class="n">quad</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inv_cov_0</span> <span class="o">+</span> <span class="n">num_y</span> <span class="o">*</span> <span class="n">quad</span>
 
-<div class="viewcode-block" id="SGP.cov"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.cov">[docs]</a>    <span class="k">def</span> <span class="nf">cov</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">cov</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;The covariance :math:`V` of the normal distribution on :math:`\beta`</span>
 
 <span class="sd">        If ``y`` is given or ``observe`` has been used,</span>
@@ -2051,7 +2052,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recompute_corr</span><span class="p">(</span><span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cov</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inv_cov</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inv_cov</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">setup_chol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="n">corr</span> <span class="o">=</span> <span class="n">stabilize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">corr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">))</span>
@@ -2080,7 +2081,7 @@
         <span class="n">right</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve_triangular</span><span class="p">(</span><span class="n">R_chol</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">N</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">right</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">right</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">H</span><span class="p">))</span>
 
-<div class="viewcode-block" id="SGP.MAP_params"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.MAP_params">[docs]</a>    <span class="k">def</span> <span class="nf">MAP_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">MAP_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;The MAP parameters mu, cov for the GP based on data</span>
 <span class="sd">        </span>
 <span class="sd">        [description]</span>
@@ -2106,9 +2107,9 @@
 
         <span class="n">MAP_cov</span> <span class="o">=</span> <span class="n">MAP_var</span> <span class="o">*</span> <span class="n">R</span>
         <span class="n">MAP_chol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">MAP_var</span><span class="p">)</span> <span class="o">*</span> <span class="n">corr_chol</span>
-        <span class="k">return</span> <span class="n">MAP_mean</span><span class="p">,</span> <span class="n">MAP_cov</span><span class="p">,</span> <span class="n">MAP_chol</span></div>
+        <span class="k">return</span> <span class="n">MAP_mean</span><span class="p">,</span> <span class="n">MAP_cov</span><span class="p">,</span> <span class="n">MAP_chol</span>
 
-<div class="viewcode-block" id="SGP.student_params"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.student_params">[docs]</a>    <span class="k">def</span> <span class="nf">student_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">H</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">student_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">H</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Returns the parameters of the student :math:`t` distribution.</span>
 
 <span class="sd">        Given a function</span>
@@ -2176,7 +2177,7 @@
         <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">H</span><span class="p">,</span> <span class="n">means</span><span class="p">)</span>
         <span class="n">sigma</span> <span class="o">=</span> <span class="n">scale</span> <span class="o">/</span> <span class="n">shape</span> <span class="o">*</span> <span class="p">(</span><span class="n">R</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">H</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cov</span><span class="p">,</span> <span class="n">H</span><span class="o">.</span><span class="n">T</span><span class="p">)))</span>
         <span class="n">df</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">shape</span>
-        <span class="k">return</span> <span class="n">df</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span></div>
+        <span class="k">return</span> <span class="n">df</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span>
 
     <span class="k">def</span> <span class="nf">_build_conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                            <span class="n">basis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
@@ -2218,7 +2219,7 @@
 
         <span class="k">return</span> <span class="n">H_new</span><span class="p">,</span> <span class="n">shift</span><span class="p">,</span> <span class="n">R_new</span>
 
-<div class="viewcode-block" id="SGP.conditional"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.conditional">[docs]</a>    <span class="k">def</span> <span class="nf">conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Returns a conditional distribution object anchored to observed points.</span>
 
 <span class="sd">        The conditional Gaussian process given the observed ``y[index]`` is</span>
@@ -2259,9 +2260,9 @@
             <span class="k">return</span> <span class="n">MVT</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">stabilize</span><span class="p">(</span><span class="n">sigma</span><span class="p">),</span> <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">sigma</span><span class="p">))</span>
-            <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">t</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span></div>
+            <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">t</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
 
-<div class="viewcode-block" id="SGP.condition"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.condition">[docs]</a>    <span class="k">def</span> <span class="nf">condition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">condition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Conditions on observed data and returns interpolant and error bands.</span>
 
 <span class="sd">        Extracts the mean and degree of belief intervals from the corresponding</span>
@@ -2292,9 +2293,9 @@
 <span class="sd">            degree of belief intervals is returned.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditional</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">predictions</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="n">dob</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">predictions</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="n">dob</span><span class="p">)</span>
 
-<div class="viewcode-block" id="SGP.predictive"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.predictive">[docs]</a>    <span class="k">def</span> <span class="nf">predictive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">predictive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a posterior predictive distribution object.</span>
 
 <span class="sd">        Predicts new curves given the observed curves ``y``</span>
@@ -2325,13 +2326,13 @@
             <span class="k">return</span> <span class="n">MVT</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">stabilize</span><span class="p">(</span><span class="n">sigma</span><span class="p">),</span> <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">sigma</span><span class="p">))</span>
-            <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">t</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span></div>
+            <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">t</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictive</span><span class="p">(</span><span class="n">Xnew</span><span class="o">=</span><span class="n">Xnew</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">predictions</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="n">dob</span><span class="p">)</span>
 
-<div class="viewcode-block" id="SGP.evidence"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.evidence">[docs]</a>    <span class="k">def</span> <span class="nf">evidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">evidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Computes the evidence, or marginal likelihood, of the observed data</span>
 
 <span class="sd">        Specifically, the evidence integrates out :math:`\beta` and</span>
@@ -2396,9 +2397,9 @@
         <span class="c1"># print(&#39;parent2ev&#39;, ev)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">log</span><span class="p">:</span>
             <span class="n">ev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">ev</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ev</span></div>
+        <span class="k">return</span> <span class="n">ev</span>
 
-<div class="viewcode-block" id="SGP.posterior"><a class="viewcode-back" href="../../api/models.html#gsum.models.SGP.posterior">[docs]</a>    <span class="k">def</span> <span class="nf">posterior</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">logprior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">posterior</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">logprior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Returns the posterior pdf for arbitrary correlation variables</span>
 
 <span class="sd">        Uses Bayes&#39; Theorem to compute</span>
@@ -2451,7 +2452,7 @@
             <span class="c1"># Integrate using trapezoid rule</span>
             <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">pdf</span><span class="o">/</span><span class="n">norm</span>
-        <span class="k">return</span> <span class="n">log_pdf</span></div>
+        <span class="k">return</span> <span class="n">log_pdf</span>
 
     <span class="k">def</span> <span class="nf">credible_diagnostic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">dobs</span><span class="p">,</span> <span class="n">band_intervals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                             <span class="n">band_dobs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">samples</span><span class="o">=</span><span class="mf">1e4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -2488,7 +2489,7 @@
                  <span class="k">for</span> <span class="n">bi</span> <span class="ow">in</span> <span class="n">band_intervals</span><span class="p">])</span>
             <span class="c1"># bands = np.transpose(bands, [0, 2, 1])</span>
             <span class="k">return</span> <span class="n">D_CI</span><span class="p">,</span> <span class="n">bands</span>
-        <span class="k">return</span> <span class="n">D_CI</span></div>
+        <span class="k">return</span> <span class="n">D_CI</span>
 
     <span class="c1"># def corr_post(self, logprior=None, **corr_kwargs):</span>
     <span class="c1">#     &quot;&quot;&quot;Evaluates the posterior for the correlation parameters in corr_kwargs</span>
@@ -2512,7 +2513,7 @@
     <span class="c1">#     return np.exp(log_post)</span>
 
 
-<div class="viewcode-block" id="PowerProcess"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerProcess">[docs]</a><span class="k">class</span> <span class="nc">PowerProcess</span><span class="p">(</span><span class="n">SGP</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">PowerProcess</span><span class="p">(</span><span class="n">SGP</span><span class="p">):</span>
     <span class="sa">R</span><span class="sd">&quot;&quot;&quot;A power series with iid random processes as coefficients.</span>
 
 <span class="sd">    Implements the following model</span>
@@ -2545,7 +2546,7 @@
             <span class="k">return</span> <span class="n">coeffs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_mask</span><span class="p">]</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="PowerProcess.observe"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerProcess.observe">[docs]</a>    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">partials</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">partials</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">leading_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Observe the partial sums of the series and update parameters.</span>
 
@@ -2627,7 +2628,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">max_order</span> <span class="o">=</span> <span class="n">orders</span><span class="p">[</span><span class="n">max_order_arg</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_partial</span> <span class="o">=</span> <span class="n">partials</span><span class="p">[</span><span class="n">max_order_arg</span><span class="p">]</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">PowerProcess</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span>
-            <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">coeffs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_mask</span><span class="p">],</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span></div>
+            <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">coeffs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_mask</span><span class="p">],</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_build_conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                            <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
@@ -2731,7 +2732,7 @@
 
         <span class="k">return</span> <span class="n">df</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span>
 
-<div class="viewcode-block" id="PowerProcess.conditional"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerProcess.conditional">[docs]</a>    <span class="k">def</span> <span class="nf">conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">conditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Returns a conditional distribution object anchored to observed points.</span>
 
@@ -2774,9 +2775,9 @@
             <span class="k">return</span> <span class="n">MVT</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">sigma</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">sigma</span><span class="p">))</span>
-            <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">t</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span></div>
+            <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">t</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
 
-<div class="viewcode-block" id="PowerProcess.condition"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerProcess.condition">[docs]</a>    <span class="k">def</span> <span class="nf">condition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">condition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                   <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Conditions on observed data and returns interpolant and error bands.</span>
 
@@ -2812,7 +2813,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditional</span><span class="p">(</span><span class="n">Xnew</span><span class="o">=</span><span class="n">Xnew</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="n">rescale</span><span class="p">,</span>
                                 <span class="n">ratio_kwargs</span><span class="o">=</span><span class="n">ratio_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">predictions</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="n">dob</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">predictions</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="n">dob</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_build_predictive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">max_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                           <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
@@ -2843,7 +2844,7 @@
             <span class="n">R</span> <span class="o">=</span> <span class="n">R</span> <span class="o">*</span> <span class="n">ref_mat</span>
         <span class="k">return</span> <span class="n">H</span><span class="p">,</span> <span class="n">R</span>
 
-<div class="viewcode-block" id="PowerProcess.predictive"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerProcess.predictive">[docs]</a>    <span class="k">def</span> <span class="nf">predictive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">predictive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                    <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Returns a posterior predictive distribution object.</span>
 
@@ -2901,9 +2902,9 @@
             <span class="k">return</span> <span class="n">MVT</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">stabilize</span><span class="p">(</span><span class="n">sigma</span><span class="p">),</span> <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">sigma</span><span class="p">))</span>
-            <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">t</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span></div>
+            <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">t</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
 
-<div class="viewcode-block" id="PowerProcess.predict"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerProcess.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xnew</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Predicts the power series value and provides error bands.</span>
 
@@ -2940,9 +2941,9 @@
         <span class="n">dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictive</span><span class="p">(</span>
             <span class="n">Xnew</span><span class="o">=</span><span class="n">Xnew</span><span class="p">,</span> <span class="n">corr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_order</span><span class="o">=</span><span class="n">max_order</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="n">rescale</span><span class="p">,</span>
             <span class="n">ratio_kwargs</span><span class="o">=</span><span class="n">ratio_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">predictions</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="n">dob</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">predictions</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">dob</span><span class="o">=</span><span class="n">dob</span><span class="p">)</span>
 
-<div class="viewcode-block" id="PowerProcess.evidence"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerProcess.evidence">[docs]</a>    <span class="k">def</span> <span class="nf">evidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">evidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Computes the evidence, or marginal likelihood, of the partial sums</span>
 
 <span class="sd">        Specifically, the evidence integrates out :math:`\beta` and</span>
@@ -3011,9 +3012,9 @@
         <span class="c1"># print(&#39;ev3&#39;, ev)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">log</span><span class="p">:</span>
             <span class="n">ev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">ev</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ev</span></div>
+        <span class="k">return</span> <span class="n">ev</span>
 
-<div class="viewcode-block" id="PowerProcess.posterior"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerProcess.posterior">[docs]</a>    <span class="k">def</span> <span class="nf">posterior</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">logprior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">posterior</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">logprior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ratio_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="o">**</span><span class="n">corr_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Returns the posterior pdf for arbitrary correlation or ratio variables</span>
 
@@ -3085,7 +3086,7 @@
             <span class="c1"># Integrate using trapezoid rule</span>
             <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">pdf</span><span class="o">/</span><span class="n">norm</span>
-        <span class="k">return</span> <span class="n">log_pdf</span></div></div>
+        <span class="k">return</span> <span class="n">log_pdf</span>
 
     <span class="c1"># def ratio_post(self, ratio_kwargs, logprior=None, **corr_kwargs):</span>
     <span class="c1">#     if not callable(logprior):</span>
@@ -3103,7 +3104,7 @@
     <span class="c1">#     return np.exp(log_post)</span>
 
 
-<div class="viewcode-block" id="PowerSeries"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerSeries">[docs]</a><span class="k">class</span> <span class="nc">PowerSeries</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">PowerSeries</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sa">R</span><span class="sd">&quot;&quot;&quot;A power series with iid random variables as coefficients.</span>
 
 <span class="sd">    Implements the following model</span>
@@ -3139,7 +3140,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape_0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_0</span>
 
-<div class="viewcode-block" id="PowerSeries.observe"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerSeries.observe">[docs]</a>    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partials</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partials</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">rm_orders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;Observe the partial sums of the series and update parameters.</span>
 
@@ -3213,7 +3214,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ordersvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orders</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rm_orders</span> <span class="o">=</span> <span class="n">rm_orders</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">coeffs</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_mask</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_domain_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
@@ -3244,15 +3245,15 @@
             <span class="k">return</span> <span class="n">coeffs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_mask</span><span class="p">]</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">coeffs</span>
 
-<div class="viewcode-block" id="PowerSeries.shape"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerSeries.shape">[docs]</a>    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;The shape parameter :math:`a` of the inverse gamma distribution.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">coeffs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recompute_coeffs</span><span class="p">(</span><span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">)</span>
         <span class="n">num_c</span> <span class="o">=</span> <span class="n">coeffs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape_0</span> <span class="o">+</span> <span class="n">num_c</span> <span class="o">/</span> <span class="mf">2.0</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape_0</span> <span class="o">+</span> <span class="n">num_c</span> <span class="o">/</span> <span class="mf">2.0</span>
 
-<div class="viewcode-block" id="PowerSeries.scale"><a class="viewcode-back" href="../../api/models.html#gsum.models.PowerSeries.scale">[docs]</a>    <span class="k">def</span> <span class="nf">scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">):</span>
         <span class="sa">R</span><span class="sd">&quot;&quot;&quot;The scale parameter :math:`b` of the inverse gamma distribution.</span>
 
 <span class="sd">        [description]</span>
@@ -3271,7 +3272,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">coeffs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recompute_coeffs</span><span class="p">(</span><span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">)</span>
         <span class="n">csq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">coeffs</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_0</span> <span class="o">+</span> <span class="n">csq</span><span class="o">/</span><span class="mf">2.0</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_0</span> <span class="o">+</span> <span class="n">csq</span><span class="o">/</span><span class="mf">2.0</span>
 
     <span class="k">def</span> <span class="nf">predictive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">ratio_kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ratio_kwargs</span><span class="p">:</span>
@@ -3404,7 +3405,7 @@
             <span class="c1">#     [np.percentile(band_D_CI, [100*(1-bi)/2, 100*(1+bi)/2], axis=0)</span>
             <span class="c1">#      for bi in band_intervals])</span>
             <span class="c1"># bands = np.transpose(bands, [0, 2, 1])</span>
-        <span class="k">return</span> <span class="n">D_CI</span></div>
+        <span class="k">return</span> <span class="n">D_CI</span>
 </pre></div>
 
           </div>

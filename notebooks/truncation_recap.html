@@ -350,6 +350,9 @@ div.rendered_html tbody tr:hover {
 <span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">Image</span>
 
+<span class="kn">import</span> <span class="nn">urllib.request</span>
+<span class="kn">import</span> <span class="nn">tables</span>
+
 <span class="o">%</span><span class="k">matplotlib</span> inline
 </pre></div>
 </div>
@@ -372,29 +375,40 @@ div.rendered_html tbody tr:hover {
 <li><p><a class="reference external" href="https://arxiv.org/abs/1506.01343">Furnstahl et al.</a>, Quantifying Truncation Errors in Effective Field Theory</p></li>
 <li><p><a class="reference external" href="https://arxiv.org/abs/1704.03308">Melendez et al.</a>, Bayesian truncation errors in chiral effective field theory: Nucleon-nucleon observables</p></li>
 </ul>
-<p>In these papers, the convergence pattern of nucleon-nucleon scattering observables, including the total and differential cross sections and a set of spin scattering observables, were studied to infer the effective field theory (EFT) truncation error. Given the <span class="math notranslate nohighlight">\(k\)</span> lowest order EFTs, a sequence of observable calculations <span class="math notranslate nohighlight">\(\\{y_0, ..., y_k\\}\)</span> can be computed for a generic observable <span class="math notranslate nohighlight">\(y\)</span>. It is assumed in the above papers that one can write the sum of all contributions as
-<span class="math">\begin{align}
+<p>In these papers, the convergence pattern of nucleon-nucleon scattering observables, including the total and differential cross sections and a set of spin scattering observables, were studied to infer the effective field theory (EFT) truncation error. Given the <span class="math notranslate nohighlight">\(k\)</span> lowest order EFTs, a sequence of observable calculations <span class="math notranslate nohighlight">\(\\{y_0, ..., y_k\\}\)</span> can be computed for a generic observable <span class="math notranslate nohighlight">\(y\)</span>. It is assumed in the above papers that one can write the sum of all contributions as</p>
+<div class="math notranslate nohighlight">
+\begin{align}
 y = y_{\mathrm{ref}}\sum_{n=0}^\infty c_n Q^n
-\end{align}</span> for iid observable coefficients <span class="math notranslate nohighlight">\(c_n\)</span>. Hence, the <span class="math notranslate nohighlight">\(k\)</span> lowest orders can be conditioned upon to estimate the remaining higher orders, and the full summation. The expansion parameter <span class="math notranslate nohighlight">\(Q\)</span> is considered a ratio of low- and high-energy scales, with the low energy scale a combination of the relative scattering momentum <span class="math notranslate nohighlight">\(p\)</span> and pion mass <span class="math notranslate nohighlight">\(m_\pi\)</span>, and the high energy scale is <span class="math notranslate nohighlight">\(\Lambda_b\)</span>, also known as the breakdown scale. The specific parameterization is
-<span class="math">\begin{align}
+\end{align}</div><p>for iid observable coefficients <span class="math notranslate nohighlight">\(c_n\)</span>. Hence, the <span class="math notranslate nohighlight">\(k\)</span> lowest orders can be conditioned upon to estimate the remaining higher orders, and the full summation. The expansion parameter <span class="math notranslate nohighlight">\(Q\)</span> is considered a ratio of low- and high-energy scales, with the low energy scale a combination of the relative scattering momentum <span class="math notranslate nohighlight">\(p\)</span> and pion mass <span class="math notranslate nohighlight">\(m_\pi\)</span>, and the high energy scale is <span class="math notranslate nohighlight">\(\Lambda_b\)</span>, also known as the breakdown scale. The specific parameterization is</p>
+<div class="math notranslate nohighlight">
+\begin{align}
 Q = \frac{m_\pi^n + p^n}{m_\pi^{n-1} + p^{n-1}} \frac{1}{\Lambda_b}
-\end{align}</span> with <span class="math notranslate nohighlight">\(n=8\)</span> used in Melendez et al.</p>
-<p>The hierarchical model from the above papers considered the following prior sets, and Melendez et al. focused on set C with <span class="math notranslate nohighlight">\(\bar c_&lt; = 0.25\)</span> and <span class="math notranslate nohighlight">\(\bar c_&gt; = 10\)</span>.</p>
+\end{align}</div><p>with <span class="math notranslate nohighlight">\(n=8\)</span> used in Melendez et al.</p>
+<p>The hierarchical model from the above papers considered the following prior sets, and Melendez et al. focused on set C with <span class="math notranslate nohighlight">\(\bar c_&lt; = 0.25\)</span> and <span class="math notranslate nohighlight">\(\bar c_&gt; = 10\)</span>.</p>
 <!--- | Set | $pr(c_n | \bar c)$ | $pr(\bar c)$ |
 | :---: | :------------------: | :------------: |
 | A   | $\frac{1}{2\bar c}\theta(\bar c - |c_n|)$ |  $\frac{1}{\bar c\ln\bar c_> /\bar c_<}\theta(\bar c - \bar c_<) \theta(\bar c_> - \bar c)$ |
 | B   | $\frac{1}{2\bar c}\theta(\bar c - |c_n|)$ | $\frac{1}{\sqrt{2\pi}\bar c \sigma} e^{-(\ln \bar c)^2/2\sigma^2}$ |
-| C  | $\frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c}$ | $\frac{1}{\bar c\ln\bar c_> /\bar c_<}\theta(\bar c - \bar c_<) \theta(\bar c_> - \bar c)$ | ---><p>\begin{array}{ccc} <span class="math">\hline</span> <span class="math">\mathrm{Set}</span> &amp; pr(c_n | <span class="math">\bar `c) & pr(:nbsphinx-math:</span>bar <cite>c) \ :nbsphinx-math:</cite>hline` A &amp; <span class="math">\frac{1}{2\bar c}</span><span class="math">\theta`(:nbsphinx-math:</span>bar <cite>c - |c_n|) &amp; :nbsphinx-math:</cite>frac{1}{bar clnbar <a href="#id5"><span class="problematic" id="id6">c_</span></a>&gt; /bar c_&lt;}`:nbsphinx-math:<cite>theta`(:nbsphinx-math:</cite>bar <cite>c - :nbsphinx-math:</cite>bar <cite>c_&lt;) :nbsphinx-math:</cite>theta`(<span class="math">\bar `c_> - :nbsphinx-math:</span>bar <cite>c) \ B &amp;
-:nbsphinx-math:</cite>frac{1}{2bar c}`:nbsphinx-math:<cite>theta`(:nbsphinx-math:</cite>bar <cite>c - |c_n|) &amp; :nbsphinx-math:</cite>frac{1}{sqrt{2pi}bar c sigma}` e<sup>{-(:nbsphinx-math:</sup>ln <cite>:nbsphinx-math:</cite>bar <cite>c)</cite>2/2:nbsphinx-math:<cite>sigma`^2} \ C &amp; :nbsphinx-math:</cite>frac{1}{sqrt{2pi}bar c}` e<sup>{-c_n</sup>2/2:nbsphinx-math:<cite>bar `c} &amp; :nbsphinx-math:</cite>frac{1}{bar clnbar <a href="#id7"><span class="problematic" id="id8">c_</span></a>&gt; /bar c_&lt;}`:nbsphinx-math:<cite>theta`(:nbsphinx-math:</cite>bar <cite>c - :nbsphinx-math:</cite>bar <cite>c_&lt;)
-:nbsphinx-math:</cite>theta`(<span class="math">\bar `c_> - :nbsphinx-math:</span>bar <cite>c) \ :nbsphinx-math:</cite>hline` \end{array}</p>
-<p>This package instead employs a conjugate prior set, where the <span class="math notranslate nohighlight">\(c_n\)</span> are Gaussian and an inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> is placed on <span class="math notranslate nohighlight">\(\bar c^2\)</span>, <span class="math">\begin{align}
+| C  | $\frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c}$ | $\frac{1}{\bar c\ln\bar c_> /\bar c_<}\theta(\bar c - \bar c_<) \theta(\bar c_> - \bar c)$ | ---><div class="math notranslate nohighlight">
+\begin{array}{ccc}
+\hline
+\mathrm{Set} &amp; pr(c_n | \bar c) &amp; pr(\bar c) \\ \hline
+A &amp; \frac{1}{2\bar c}\theta(\bar c - |c_n|) &amp;  \frac{1}{\bar c\ln\bar c_&gt; /\bar c_&lt;}\theta(\bar c - \bar c_&lt;) \theta(\bar c_&gt; - \bar c) \\
+B &amp; \frac{1}{2\bar c}\theta(\bar c - |c_n|) &amp;  \frac{1}{\sqrt{2\pi}\bar c \sigma} e^{-(\ln \bar c)^2/2\sigma^2} \\
+C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln\bar c_&gt; /\bar c_&lt;}\theta(\bar c - \bar c_&lt;) \theta(\bar c_&gt; - \bar c) \\
+\hline
+\end{array}</div><p>This package instead employs a conjugate prior set, where the <span class="math notranslate nohighlight">\(c_n\)</span> are Gaussian and an inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> is placed on <span class="math notranslate nohighlight">\(\bar c^2\)</span>,</p>
+<div class="math notranslate nohighlight">
+\begin{align}
 \bar c^2 \sim \chi^{-2}(\nu_0, \tau_0^2)
-\end{align}</span> where <span class="math notranslate nohighlight">\(\nu_0\)</span> and <span class="math notranslate nohighlight">\(\tau_0\)</span> are the prior degrees of freedom and scale parameters, respectively. The inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> density is given by <span class="math">\begin{align}
+\end{align}</div><p>where <span class="math notranslate nohighlight">\(\nu_0\)</span> and <span class="math notranslate nohighlight">\(\tau_0\)</span> are the prior degrees of freedom and scale parameters, respectively. The inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> density is given by</p>
+<div class="math notranslate nohighlight">
+\begin{align}
 \chi^{-2}(z; \nu, \tau^2) = \frac{(\nu\tau^2/2)^{\nu/2}}{\Gamma(\nu/2)} z^{-\nu/2-1} e^{-\frac{\nu\tau^2}{2z}}
-\end{align}</span> Here we compare the results of the very convenient conjugate formulation to the prior published results.</p>
+\end{align}</div><p>Here we compare the results of the very convenient conjugate formulation to the prior published results.</p>
 <div class="section" id="Proof-of-Concept">
 <h2>Proof of Concept<a class="headerlink" href="#Proof-of-Concept" title="Permalink to this headline">¶</a></h2>
-<p>Many proof of concept tests were performed in Furnstahl et al. Here we reproduce some of those tests with this package. Since setting <span class="math notranslate nohighlight">\(\nu = 0\)</span> is equivalent to prior set <span class="math notranslate nohighlight">\(C\)</span> with <span class="math notranslate nohighlight">\(\bar c_&lt; = 1/\bar c_&gt; = 0\)</span>, the results should be identical in this case.</p>
+<p>Many proof of concept tests were performed in Furnstahl et al. Here we reproduce some of those tests with this package. Since setting <span class="math notranslate nohighlight">\(\nu = 0\)</span> is equivalent to prior set <span class="math notranslate nohighlight">\(C\)</span> with <span class="math notranslate nohighlight">\(\bar c_&lt; = 1/\bar c_&gt; = 0\)</span>, the results should be identical in this case.</p>
 <p>The basic steps for using this uncorrelated model are</p>
 <ul class="simple">
 <li><p>Define a <code class="docutils literal notranslate"><span class="pre">TruncationPointwise</span></code> model object with hyperparameters <span class="math notranslate nohighlight">\(\nu\)</span> and <span class="math notranslate nohighlight">\(\tau\)</span></p></li>
@@ -463,18 +477,11 @@ Q = \frac{m_\pi^n + p^n}{m_\pi^{n-1} + p^{n-1}} \frac{1}{\Lambda_b}
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_4_0.png" src="../_images/notebooks_truncation_recap_4_0.png" />
-</div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_4_1.png" src="../_images/notebooks_truncation_recap_4_1.png" />
+<img alt="../_images/notebooks_truncation_recap_4_0.png" src="../_images/notebooks_truncation_recap_4_0.png" />
 </div>
 </div>
 <p>Compare the above figure with the blue curves from Fig. 4 in Furnstahl et al., reproduced below:</p>
@@ -487,7 +494,7 @@ Q = \frac{m_\pi^n + p^n}{m_\pi^{n-1} + p^{n-1}} \frac{1}{\Lambda_b}
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
+<div class="nboutput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
@@ -495,28 +502,19 @@ Q = \frac{m_\pi^n + p^n}{m_\pi^{n-1} + p^{n-1}} \frac{1}{\Lambda_b}
 <a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_6_0.jpeg"><img alt="../_images/notebooks_truncation_recap_6_0.jpeg" src="../_images/notebooks_truncation_recap_6_0.jpeg" style="width: 800px;" /></a>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_6_1.jpeg"><img alt="../_images/notebooks_truncation_recap_6_1.jpeg" src="../_images/notebooks_truncation_recap_6_1.jpeg" style="width: 800px;" /></a>
-</div>
-</div>
 <p>The original paper states that Fig. 4 uses the “leading-omitted-term approximation” to the truncation error, but this is a misprint. Thus, the curves are indeed identical. This package allows any <span class="math notranslate nohighlight">\(\nu\)</span> and <span class="math notranslate nohighlight">\(\tau^2\)</span> to be chosen instead, each of which allow pdfs to be computed efficiently without any manual integration.</p>
 </div>
 <div class="section" id="NN-Scattering-Observables">
 <h2>NN Scattering Observables<a class="headerlink" href="#NN-Scattering-Observables" title="Permalink to this headline">¶</a></h2>
-<p>Although the total cross section was covered in Furnstahl et al., it and other observables were more extensively studied in Melendez et al. Here we will reproduce some of the key figures from Melendez et al. with a slightly altered prior on <span class="math notranslate nohighlight">\(\bar c\)</span>.</p>
+<p>Although the total cross section was covered in Furnstahl et al., it and other observables were more extensively studied in Melendez et al. Here we will reproduce some of the key figures from Melendez et al. with a slightly altered prior on <span class="math notranslate nohighlight">\(\bar c\)</span>.</p>
 <div class="section" id="Choose-Hyperparameters">
 <h3>Choose Hyperparameters<a class="headerlink" href="#Choose-Hyperparameters" title="Permalink to this headline">¶</a></h3>
-<dl class="simple">
-<dt>First let’s figure out the hyperparameters of the inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> distribution that best reproduce the “Set C” prior with <span class="math notranslate nohighlight">\(\bar c_&gt; = 10\)</span> and <span class="math notranslate nohighlight">\(\bar c_&lt; = 0.25\)</span>, which was the most extensively used prior set of Melendez et al. Scipy has an inverse gamma distribution, which is equivalent to the inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> distribution, with hyperparameters defined by :nbsphinx-math:<a href="#id1"><span class="problematic" id="id2">`</span></a>begin{align}</dt><dd><p>a &amp; = frac{nu}{2} \
-b &amp; = frac{nu tau^2}{2}</p>
-</dd>
-</dl>
-<p>end{align}`</p>
-<div class="nbinput docutils container">
+<p>First let’s figure out the hyperparameters of the inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> distribution that best reproduce the “Set C” prior with <span class="math notranslate nohighlight">\(\bar c_&gt; = 10\)</span> and <span class="math notranslate nohighlight">\(\bar c_&lt; = 0.25\)</span>, which was the most extensively used prior set of Melendez et al. Scipy has an inverse gamma distribution, which is equivalent to the inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> distribution, with hyperparameters defined by</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+    a &amp; = \frac{\nu}{2} \\
+    b &amp; = \frac{\nu \tau^2}{2}
+\end{align}</div><div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
@@ -545,18 +543,11 @@ b &amp; = frac{nu tau^2}{2}</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_10_0.png" src="../_images/notebooks_truncation_recap_10_0.png" />
-</div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_10_1.png" src="../_images/notebooks_truncation_recap_10_1.png" />
+<img alt="../_images/notebooks_truncation_recap_10_0.png" src="../_images/notebooks_truncation_recap_10_0.png" />
 </div>
 </div>
 <p>It looks like <span class="math notranslate nohighlight">\(\nu \approx 0.6\)</span> and <span class="math notranslate nohighlight">\(\tau \approx 0.8\)</span> work nicely! Let’s see if we can reproduce old results now.</p>
@@ -623,11 +614,7 @@ b &amp; = frac{nu tau^2}{2}</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-
-<span></span><span class="kn">import</span> <span class="nn">urllib.request</span>
-<span class="kn">import</span> <span class="nn">tables</span>
-
-<span class="n">nn_url</span> <span class="o">=</span> <span class="s1">&#39;https://github.com/buqeye/buqeyebox/blob/master/nn_scattering/scattering_observables_EKM_R-0p9fm.h5?raw=true&#39;</span>
+<span></span><span class="n">nn_url</span> <span class="o">=</span> <span class="s1">&#39;https://github.com/buqeye/buqeyebox/blob/master/nn_scattering/scattering_observables_EKM_R-0p9fm.h5?raw=true&#39;</span>
 
 <span class="n">response</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">nn_url</span><span class="p">)</span>
 <span class="n">h5file</span> <span class="o">=</span> <span class="n">tables</span><span class="o">.</span><span class="n">open_file</span><span class="p">(</span><span class="s2">&quot;nn_observables_eft.h5&quot;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s2">&quot;H5FD_CORE&quot;</span><span class="p">,</span>
@@ -703,15 +690,6 @@ b &amp; = frac{nu tau^2}{2}</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
-</pre></div>
-</div>
-<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
-<span></span>(5, 350)
-</pre></div>
-</div>
-</div>
 <p>The reference scale <span class="math notranslate nohighlight">\(X_{\mathrm{ref}}\)</span> was chosen to be <span class="math notranslate nohighlight">\(X_0\)</span> for the total and differential cross section, but it was argued that <span class="math notranslate nohighlight">\(X_{\mathrm{ref}} = 1\)</span> was sufficient for the spin observables. Here we set up interpolators that could be used with any energy or <span class="math notranslate nohighlight">\(\theta\)</span> value.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
@@ -743,11 +721,11 @@ b &amp; = frac{nu tau^2}{2}</p>
 </div>
 <div class="section" id="Total-Cross-Section">
 <h3>Total Cross Section<a class="headerlink" href="#Total-Cross-Section" title="Permalink to this headline">¶</a></h3>
-<dl class="simple">
-<dt>In Melendez et al., we produced plots of residuals with statistical error bands for various EFT regulators and also ran model checking tests. The residual is defined as :nbsphinx-math:<a href="#id3"><span class="problematic" id="id4">`</span></a>begin{align}</dt><dd><p>y_{mathrm{res}} equiv y_{mathrm{th}} - y_{mathrm{exp}}</p>
-</dd>
-</dl>
-<p>end{align}` First let’s define the values of energies to be used in the analysis and get the imported data</p>
+<p>In Melendez et al., we produced plots of residuals with statistical error bands for various EFT regulators and also ran model checking tests. The residual is defined as</p>
+<div class="math notranslate nohighlight">
+\begin{align}
+    y_{\mathrm{res}} \equiv y_{\mathrm{th}} - y_{\mathrm{exp}}
+\end{align}</div><p>First let’s define the values of energies to be used in the analysis and get the imported data</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
@@ -767,7 +745,6 @@ b &amp; = frac{nu tau^2}{2}</p>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 (350,) (350,)
-(350,) (350,)
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -784,21 +761,14 @@ b &amp; = frac{nu tau^2}{2}</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
+<div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <img alt="../_images/notebooks_truncation_recap_22_0.png" src="../_images/notebooks_truncation_recap_22_0.png" />
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_22_1.png" src="../_images/notebooks_truncation_recap_22_1.png" />
-</div>
-</div>
-<p>Let’s start by reproducing the Fig. 7 from Melendez et al. We will again begin by fitting the model, and then calling <code class="docutils literal notranslate"><span class="pre">interval</span></code> to find the the truncation error bands.</p>
+<p>Let’s start by reproducing the Fig. 7 from Melendez et al. We will again begin by fitting the model, and then calling <code class="docutils literal notranslate"><span class="pre">interval</span></code> to find the the truncation error bands.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
@@ -832,18 +802,11 @@ b &amp; = frac{nu tau^2}{2}</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_24_0.png" src="../_images/notebooks_truncation_recap_24_0.png" />
-</div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_24_1.png" src="../_images/notebooks_truncation_recap_24_1.png" />
+<img alt="../_images/notebooks_truncation_recap_24_0.png" src="../_images/notebooks_truncation_recap_24_0.png" />
 </div>
 </div>
 <p>Compare the above figure with Fig. 7 from Melendez et al.</p>
@@ -856,20 +819,12 @@ b &amp; = frac{nu tau^2}{2}</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_26_0.png"><img alt="../_images/notebooks_truncation_recap_26_0.png" src="../_images/notebooks_truncation_recap_26_0.png" style="width: 400px;" /></a>
-</div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
-<a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_26_1.png"><img alt="../_images/notebooks_truncation_recap_26_1.png" src="../_images/notebooks_truncation_recap_26_1.png" style="width: 400px;" /></a>
+<a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_26_0.png"><img alt="../_images/notebooks_truncation_recap_26_0.png" src="../_images/notebooks_truncation_recap_26_0.png" style="width: 400px;" /></a>
 </div>
 </div>
 </div>
@@ -896,7 +851,6 @@ b &amp; = frac{nu tau^2}{2}</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-(5, 179) (179,)
 (5, 179) (179,)
 </pre></div></div>
 </div>
@@ -937,18 +891,11 @@ b &amp; = frac{nu tau^2}{2}</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_30_0.png" src="../_images/notebooks_truncation_recap_30_0.png" />
-</div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_30_1.png" src="../_images/notebooks_truncation_recap_30_1.png" />
+<img alt="../_images/notebooks_truncation_recap_30_0.png" src="../_images/notebooks_truncation_recap_30_0.png" />
 </div>
 </div>
 <p>Compare the above figure with Fig. 8 from Melendez et al.:</p>
@@ -961,20 +908,12 @@ b &amp; = frac{nu tau^2}{2}</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_32_0.png"><img alt="../_images/notebooks_truncation_recap_32_0.png" src="../_images/notebooks_truncation_recap_32_0.png" style="width: 400px;" /></a>
-</div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
-<a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_32_1.png"><img alt="../_images/notebooks_truncation_recap_32_1.png" src="../_images/notebooks_truncation_recap_32_1.png" style="width: 400px;" /></a>
+<a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_32_0.png"><img alt="../_images/notebooks_truncation_recap_32_0.png" src="../_images/notebooks_truncation_recap_32_0.png" style="width: 400px;" /></a>
 </div>
 </div>
 </div>
@@ -1027,18 +966,11 @@ diagonal in the plot below. The 68% and 95% gray uncertainty bands allow for dev
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_34_0.png" src="../_images/notebooks_truncation_recap_34_0.png" />
-</div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_34_1.png" src="../_images/notebooks_truncation_recap_34_1.png" />
+<img alt="../_images/notebooks_truncation_recap_34_0.png" src="../_images/notebooks_truncation_recap_34_0.png" />
 </div>
 </div>
 <p>Again, compare this with Fig. 12 of Melendez et al.:</p>
@@ -1051,20 +983,12 @@ diagonal in the plot below. The 68% and 95% gray uncertainty bands allow for dev
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_36_0.png"><img alt="../_images/notebooks_truncation_recap_36_0.png" src="../_images/notebooks_truncation_recap_36_0.png" style="width: 400px;" /></a>
-</div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
-<a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_36_1.png"><img alt="../_images/notebooks_truncation_recap_36_1.png" src="../_images/notebooks_truncation_recap_36_1.png" style="width: 400px;" /></a>
+<a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_36_0.png"><img alt="../_images/notebooks_truncation_recap_36_0.png" src="../_images/notebooks_truncation_recap_36_0.png" style="width: 400px;" /></a>
 </div>
 </div>
 <p>Each curve shows a slight discrepancy (only a few points) with Fig. 12, but that is expected since the priors are not identical between the figures. Now let’s move on to pr(<span class="math notranslate nohighlight">\(\Lambda_b | c\)</span>). The <span class="math notranslate nohighlight">\(\Lambda_b\)</span> posteriors were computed with uninformative Set C prior, which corresponds exactly to <span class="math notranslate nohighlight">\(\nu_0 = 0\)</span> for the inverse chi squared prior. Thus, the figures generated below should correspond exactly with those in the paper. Below, are some helper functions, including one to call
@@ -1193,18 +1117,11 @@ the <code class="docutils literal notranslate"><span class="pre">log_likelihood<
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_40_0.png" src="../_images/notebooks_truncation_recap_40_0.png" />
-</div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_truncation_recap_40_1.png" src="../_images/notebooks_truncation_recap_40_1.png" />
+<img alt="../_images/notebooks_truncation_recap_40_0.png" src="../_images/notebooks_truncation_recap_40_0.png" />
 </div>
 </div>
 <p>Compare the above figure with Fig. 22 of Melendez et al.:</p>
@@ -1217,7 +1134,7 @@ the <code class="docutils literal notranslate"><span class="pre">log_likelihood<
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
+<div class="nboutput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
@@ -1225,19 +1142,11 @@ the <code class="docutils literal notranslate"><span class="pre">log_likelihood<
 <a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_42_0.png"><img alt="../_images/notebooks_truncation_recap_42_0.png" src="../_images/notebooks_truncation_recap_42_0.png" style="width: 400px;" /></a>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<a class="reference internal image-reference" href="../_images/notebooks_truncation_recap_42_1.png"><img alt="../_images/notebooks_truncation_recap_42_1.png" src="../_images/notebooks_truncation_recap_42_1.png" style="width: 400px;" /></a>
-</div>
-</div>
 </div>
 </div>
 <div class="section" id="Conclusion">
 <h2>Conclusion<a class="headerlink" href="#Conclusion" title="Permalink to this headline">¶</a></h2>
-<p>We have regenerated important figures from Furnstahl et al. and Melendez et al. This code is significantly more condensed, efficient, and reusable than the original. We believe that the ease with which results can be obtained with this package can greatly expand its domain of applicability.</p>
+<p>We have regenerated important figures from Furnstahl et al. and Melendez et al. This code is significantly more condensed, efficient, and reusable than the original. We believe that the ease with which results can be obtained with this package can greatly expand its domain of applicability.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
