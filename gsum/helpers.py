@@ -276,7 +276,7 @@ def hpd_pdf(pdf, alpha, x, x0=None, **kwargs):
         prob = np.trapz(f, x)
         return (prob - alpha_) ** 2
 
-    horizontal = fmin(err_fn, x0=x0, args=alpha, **kwargs)[0]
+    horizontal = fmin(err_fn, x0=x0, args=(alpha,), **kwargs)[0]
     interval = np.asarray(x)[pdf_array > horizontal]
     return np.min(interval), np.max(interval)
 

@@ -1,5 +1,5 @@
 from __future__ import division
-from .helpers import coefficients, predictions, gaussian, stabilize, HPD, mahalanobis, geometric_sum
+from .helpers import coefficients, predictions, gaussian, stabilize, hpd, mahalanobis, geometric_sum
 import numpy as np
 from numpy.linalg import solve, cholesky
 import scipy as sp
@@ -1533,7 +1533,7 @@ class TruncationPointwise:
                 bands = np.zeros((len(band_intervals), 2, len(band_dobs)))
                 for i, p in enumerate(band_intervals):
                     bands[i] = np.array(
-                        [HPD(sp.stats.beta, p, N*s+1, N-N*s+1)
+                        [hpd(sp.stats.beta, p, N*s+1, N-N*s+1)
                          for s in band_dobs]).T
                 # bands = np.transpose(bands, [0, 1, 2])
             else:
@@ -3282,7 +3282,7 @@ class PowerSeries(object):
                 bands = np.zeros((len(band_intervals), 2, len(band_dobs)))
                 for i, p in enumerate(band_intervals):
                     bands[i] = np.array(
-                        [HPD(sp.stats.beta, p, N*s+1, N-N*s+1)
+                        [hpd(sp.stats.beta, p, N*s+1, N-N*s+1)
                          for s in band_dobs]).T
                 # bands = np.transpose(bands, [0, 1, 2])
             else:
