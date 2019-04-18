@@ -1,8 +1,8 @@
-from .models import SGP
-from .models import PowerSeries
-from .models import PowerProcess
-from .models import ConjugateProcess, ConjugateGaussianProcess, ConjugateStudentProcess, TruncationGP, TruncationTP, \
-    TruncationPointwise
+from .models import ConjugateGaussianProcess
+from .models import ConjugateStudentProcess
+from .models import TruncationGP
+from .models import TruncationTP
+from .models import TruncationPointwise
 from .diagnostics import Diagnostic
 from .diagnostics import GraphicalDiagnostic
 

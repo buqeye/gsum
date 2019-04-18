@@ -19,7 +19,7 @@ from operator import itemgetter
 
 
 __all__ = [
-    'ConjugateProcess', 'ConjugateGaussianProcess', 'ConjugateStudentProcess',
+    'ConjugateGaussianProcess', 'ConjugateStudentProcess',
     'TruncationGP', 'TruncationTP', 'TruncationPointwise'
 ]
 
@@ -714,6 +714,9 @@ class ConjugateProcess:
 
         
 class ConjugateGaussianProcess(ConjugateProcess):
+    R"""A conjugacy-based Gaussian Process class.
+
+    """
 
     def log_marginal_likelihood(self, theta=None, eval_gradient=False, y=None):
         """Returns log-marginal likelihood of theta for training data.
@@ -855,6 +858,9 @@ class ConjugateGaussianProcess(ConjugateProcess):
 
 
 class ConjugateStudentProcess(ConjugateProcess):
+    R"""A conjugacy-based Student-t Process class.
+
+    """
 
     def cov(self, X, Xp=None):
         if Xp is None:
@@ -1011,24 +1017,25 @@ class ConjugateStudentProcess(ConjugateProcess):
 
 
 class TruncationProcess:
+    R"""
+
+    Parameters
+    ----------
+    kernel
+    ratio
+    ref
+    excluded : 1d array
+        The set of orders to ignore when constructing process for y_order and dy_order, i.e., the geometric sum
+        will not include these values
+    ratio_kws
+    kernel_kws
+    nugget
+    verbose
+    kwargs
+    """
 
     def __init__(self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs):
-        R"""
 
-        Parameters
-        ----------
-        kernel
-        ratio
-        ref
-        excluded : 1d array
-            The set of orders to ignore when constructing process for y_order and dy_order, i.e., the geometric sum
-            will not include these values
-        ratio_kws
-        kernel_kws
-        nugget
-        verbose
-        kwargs
-        """
         if not callable(ref):
             self.ref = lambda X, *args, **kws: ref * np.ones(X.shape[0])
         else:
@@ -1222,6 +1229,7 @@ class TruncationProcess:
 
 
 class TruncationGP(TruncationProcess):
+    R"""A Gaussian Process Truncation class"""
 
     def __init__(self, kernel, ref, ratio, ratio_kws=None, **kwargs):
         super().__init__(
@@ -1230,6 +1238,7 @@ class TruncationGP(TruncationProcess):
 
 
 class TruncationTP(TruncationProcess):
+    R"""A Student-t Process Truncation class"""
 
     def __init__(self, kernel=None, ratio=0.5, ref=1, ratio_kws=None, **kwargs):
         super().__init__(
@@ -1283,7 +1292,7 @@ class TruncationTP(TruncationProcess):
 
 
 class TruncationPointwise:
-    R"""An conjugacy-based implementation of the pointwise convergence model from Furnstahl et al. (2015)
+    R"""A conjugacy-based implementation of the pointwise convergence model from Furnstahl et al. (2015)
 
     Implements the following model
 
