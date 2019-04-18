@@ -320,7 +320,7 @@ def kl_gauss(mu0, cov0, mu1, cov1=None, chol1=None):
     cov1 : Scalar or 2d array
         The covariance of the prior
     chol1 : Scalar or 2d array
-        The cholesky docomposition of the prior
+        The Cholesky decomposition of the prior
     
     Returns
     -------
@@ -400,7 +400,7 @@ def lazy(function):
 
 
 def default_attributes(**kws):
-    """Sets `None` or empty `*args`/`**kwargs` arguments to attributes already stored in a class.
+    R"""Sets `None` or empty `*args`/`**kwargs` arguments to attributes already stored in a class.
     
     This is a handy decorator to avoid `if` statements at the beginning of method
     calls:
@@ -600,7 +600,7 @@ class VariogramFourthRoot:
         self.gamma_tilde_grid = gamma_tilde_grid
 
     def rho_ijkl(self, i, j, k, l):
-        R"""The correlation between (Z_i - Z_j) and (Z_k - Z_l), estimated by gamma tilde"""
+        R"""The correlation between :math:`(Z_i - Z_j)` and :math:`(Z_k - Z_l)`, estimated by gamma tilde"""
         gam = self.gamma_tilde_grid
         gam_jk = gam[j, k]
         gam_il = gam[i, l]
@@ -612,7 +612,7 @@ class VariogramFourthRoot:
         return rho
 
     def corr_ijkl(self, i, j, k, l):
-        R"""The correlation between sqrt(|Z_i - Z_j|) and sqrt(|Z_k - Z_l|), estimated by gamma tilde
+        R"""The correlation between :math:`\sqrt(|Z_i - Z_j|)` and :math:`\sqrt(|Z_k - Z_l|)`, estimated by gamma tilde
 
         This is estimated using gamma tilde, the estimate of the variogram via the 4th root transform.
         Because the estimate can exceed the bounds [-1, 1], any correlation outside this range is
@@ -630,18 +630,18 @@ class VariogramFourthRoot:
         corr[rho <= -1.] = -1.
         return corr
 
-    def cov_ijkl(self, i, j, k, ell):
-        R"""The covariance between sqrt(|Z_i - Z_j|) and sqrt(|Z_k - Z_l|), estimated by gamma tilde
+    def cov_ijkl(self, i, j, k, l):
+        R"""The covariance between :math:`\sqrt(|Z_i - Z_j|)` and :math:`\sqrt(|Z_k - Z_l|)`, estimated by gamma tilde
 
-        Only estimates the correlation when (i,j) != (k,l), otherwise uses 1.
+        Only estimates the correlation when `(i,j) != (k,l)`, otherwise uses 1.
         """
-        i, j, k, ell = np.atleast_1d(i, j, k, ell)
-        if not (i.shape == j.shape == k.shape == ell.shape):
-            raise ValueError(i.shape == j.shape == k.shape == ell.shape, 'i, j, k, ell must have the same shape')
+        i, j, k, l = np.atleast_1d(i, j, k, l)
+        if not (i.shape == j.shape == k.shape == l.shape):
+            raise ValueError(i.shape == j.shape == k.shape == l.shape, 'i, j, k, l must have the same shape')
         # If (i, j) == (k, l), then return 1, else use corr formula
         n = i.shape[0], self.Ncurves
-        corr = np.where((i == k) & (j == ell), np.ones(n).T, self.corr_ijkl(i, j, k, ell).T).T
-        return corr * np.sqrt(self.var_ij(i, j) * self.var_ij(k, ell))
+        corr = np.where((i == k) & (j == l), np.ones(n).T, self.corr_ijkl(i, j, k, l).T).T
+        return corr * np.sqrt(self.var_ij(i, j) * self.var_ij(k, l))
 
     def var_ij(self, i, j):
         R"""The variance of sqrt(|Z_i - Z_j|), estimated by gamma tilde"""
