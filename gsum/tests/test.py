@@ -4,7 +4,6 @@ from scipy.stats import multivariate_normal
 # import unittest
 from gsum import ConjugateGaussianProcess
 from gsum.helpers import *
-from pymc3.gp.cov import ExpQuad
 
 
 from sklearn.gaussian_process import GaussianProcessRegressor
