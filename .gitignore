@@ -18,5 +18,13 @@ MANIFEST
 README.html
 
 tests/.ipynb_checkpoints/
+docs/notebooks/.ipynb_checkpoints/
+gsum/examples/.ipynb_checkpoints/
+docs/notebooks/.ipynb_checkpoints/
 
 docs/_build
+
+*.so
+
+.idea/
+build/
