@@ -19,85 +19,86 @@ from operator import itemgetter
 
 
 __all__ = [
-    'SGP', 'PowerProcess', 'PowerSeries', 'ConjugateProcess',
-    'ConjugateGaussianProcess', 'ConjugateStudentProcess', 'TruncationGP', 'TruncationTP', 'TruncationPointwise']
+    'ConjugateProcess', 'ConjugateGaussianProcess', 'ConjugateStudentProcess',
+    'TruncationGP', 'TruncationTP', 'TruncationPointwise'
+]
 
 
 class ConjugateProcess:
+    R"""A conjugate Gaussian Process model.
+
+
+    Parameters
+    ----------
+    kernel : callable
+        The kernel for the correlation matrix. The covariance matrix is the kernel multiplied by the squared scale.
+    center : float
+        The prior central values for the parameters of the mean function.
+    disp : float >= 0
+        The dispersion parameter for the normal prior placed on the mean. This, multiplied by the squared scale
+        parameter from the inverse chi squared prior, determines the variance of the mean.
+        The smaller the dispersion, the better determined is the mean.
+        Set this to zero for a mean that is known to be `mean`.
+    df : float > 0
+        The degrees of freedom parameter for the inverse chi squared prior placed on the marginal variance.
+        This is a measure of how well the marginal standard deviation (or variance) is known, with
+        larger degrees of freedom implying a better known standard deviation. Set this to infinity for a
+        standard deviation that is known to be `scale`, or use the `sd` keyword argument.
+    scale : float > 0
+        The scale parameter of the scaled inverse chi squared prior placed on the marginal variance
+        of the Gaussian process. Approximately the prior standard deviation for the Gaussian process.
+    sd : float > 0, optional
+        A convenience argument that sets the marginal standard deviation for the Gaussian process.
+        This is equivalent to setting df0 to infinity and scale0 to sd
+        (i.e., a delta function prior on the standard deviation).
+    nugget : float, optional (default: 1e-10)
+        Value added to the diagonal of the correlation matrix during fitting.
+        Larger values correspond to increased noise level in the observations.
+        This can also prevent a potential numerical issue during fitting, by
+        ensuring that the calculated values form a positive definite matrix.
+    optimizer : string or callable, optional (default: "fmin_l_bfgs_b")
+        Can either be one of the internally supported optimizers for optimizing
+        the kernel's parameters, specified by a string, or an externally
+        defined optimizer passed as a callable. If a callable is passed, it
+        must have the signature::
+            def optimizer(obj_func, initial_theta, bounds):
+                # * 'obj_func' is the objective function to be minimized, which
+                #   takes the hyperparameters theta as parameter and an
+                #   optional flag eval_gradient, which determines if the
+                #   gradient is returned additionally to the function value
+                # * 'initial_theta': the initial value for theta, which can be
+                #   used by local optimizers
+                # * 'bounds': the bounds on the values of theta
+                ....
+                # Returned are the best found hyperparameters theta and
+                # the corresponding value of the target function.
+                return theta_opt, func_min
+        Per default, the 'fmin_l_bfgs_b' algorithm from scipy.optimize
+        is used. If None is passed, the kernel's parameters are kept fixed.
+        Available internal optimizers are::
+            'fmin_l_bfgs_b'
+    n_restarts_optimizer : int, optional (default: 0)
+        The number of restarts of the optimizer for finding the kernel's
+        parameters which maximize the log-marginal likelihood. The first run
+        of the optimizer is performed from the kernel's initial parameters,
+        the remaining ones (if any) from thetas sampled log-uniform randomly
+        from the space of allowed theta-values. If greater than 0, all bounds
+        must be finite. Note that n_restarts_optimizer == 0 implies that one
+        run is performed.
+    copy_X_train : bool, optional (default: True)
+        If True, a persistent copy of the training data is stored in the
+        object. Otherwise, just a reference to the training data is stored,
+        which might cause predictions to change if the data is modified
+        externally.
+    random_state : int, RandomState instance or None, optional (default: None)
+        The generator used to initialize the centers. If int, random_state is
+        the seed used by the random number generator; If RandomState instance,
+        random_state is the random number generator; If None, the random number
+        generator is the RandomState instance used by `np.random`.
+    """
     
     def __init__(self, kernel=None, center=0, disp=1, df=1, scale=1, sd=None, basis=None, nugget=1e-10,
                  optimizer='fmin_l_bfgs_b', n_restarts_optimizer=0, copy_X_train=True, random_state=None):
-        R"""A conjugate Gaussian Process model.
-
-
-        Parameters
-        ----------
-        kernel : callable
-            The kernel for the correlation matrix. The covariance matrix is the kernel multiplied by the squared scale.
-        center : float
-            The prior central values for the parameters of the mean function.
-        disp : float >= 0
-            The dispersion parameter for the normal prior placed on the mean. This, multiplied by the squared scale
-            parameter from the inverse chi squared prior, determines the variance of the mean.
-            The smaller the dispersion, the better determined is the mean.
-            Set this to zero for a mean that is known to be `mean`.
-        df : float > 0
-            The degrees of freedom parameter for the inverse chi squared prior placed on the marginal variance.
-            This is a measure of how well the marginal standard deviation (or variance) is known, with
-            larger degrees of freedom implying a better known standard deviation. Set this to infinity for a
-            standard deviation that is known to be `scale`, or use the `sd` keyword argument.
-        scale : float > 0
-            The scale parameter of the scaled inverse chi squared prior placed on the marginal variance
-            of the Gaussian process. Approximately the prior standard deviation for the Gaussian process.
-        sd : float > 0, optional
-            A convenience argument that sets the marginal standard deviation for the Gaussian process.
-            This is equivalent to setting df0 to infinity and scale0 to sd
-            (i.e., a delta function prior on the standard deviation).
-        nugget : float, optional (default: 1e-10)
-            Value added to the diagonal of the correlation matrix during fitting.
-            Larger values correspond to increased noise level in the observations.
-            This can also prevent a potential numerical issue during fitting, by
-            ensuring that the calculated values form a positive definite matrix.
-        optimizer : string or callable, optional (default: "fmin_l_bfgs_b")
-            Can either be one of the internally supported optimizers for optimizing
-            the kernel's parameters, specified by a string, or an externally
-            defined optimizer passed as a callable. If a callable is passed, it
-            must have the signature::
-                def optimizer(obj_func, initial_theta, bounds):
-                    # * 'obj_func' is the objective function to be minimized, which
-                    #   takes the hyperparameters theta as parameter and an
-                    #   optional flag eval_gradient, which determines if the
-                    #   gradient is returned additionally to the function value
-                    # * 'initial_theta': the initial value for theta, which can be
-                    #   used by local optimizers
-                    # * 'bounds': the bounds on the values of theta
-                    ....
-                    # Returned are the best found hyperparameters theta and
-                    # the corresponding value of the target function.
-                    return theta_opt, func_min
-            Per default, the 'fmin_l_bfgs_b' algorithm from scipy.optimize
-            is used. If None is passed, the kernel's parameters are kept fixed.
-            Available internal optimizers are::
-                'fmin_l_bfgs_b'
-        n_restarts_optimizer : int, optional (default: 0)
-            The number of restarts of the optimizer for finding the kernel's
-            parameters which maximize the log-marginal likelihood. The first run
-            of the optimizer is performed from the kernel's initial parameters,
-            the remaining ones (if any) from thetas sampled log-uniform randomly
-            from the space of allowed theta-values. If greater than 0, all bounds
-            must be finite. Note that n_restarts_optimizer == 0 implies that one
-            run is performed.
-        copy_X_train : bool, optional (default: True)
-            If True, a persistent copy of the training data is stored in the
-            object. Otherwise, just a reference to the training data is stored,
-            which might cause predictions to change if the data is modified
-            externally.
-        random_state : int, RandomState instance or None, optional (default: None)
-            The generator used to initialize the centers. If int, random_state is
-            the seed used by the random number generator; If RandomState instance,
-            random_state is the random number generator; If None, the random number
-            generator is the RandomState instance used by `np.random`.
-        """
         self.kernel = kernel
 
         # Setup hyperparameters
