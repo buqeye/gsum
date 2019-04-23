@@ -1,8 +1,10 @@
+Cython
+CythonGSL
 gsl
 numpy>=1.12.0
+pandas
 scipy
+seaborn
 statsmodels
 matplotlib
 scikit-learn
-Cython
-CythonGSL
