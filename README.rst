@@ -9,18 +9,18 @@
 .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/jordan-melendez/gsum/master
 
-The gsum package provides two classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
+The gsum package provides convenient classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
 Specifically, this is a conjugacy-based implementation of the statistical model developed in `this paper <https://arxiv.org/abs/1506.01343>`_.
 
 
 Installation
 ============
 
-The latest release of gsum can be installed from PyPI using ``pip``:
+.. The latest release of gsum can be installed from PyPI using ``pip``:
 
-.. code-block:: console
+.. .. code-block:: console
 
-  $ pip install gsum
+..  $ pip install gsum
 
 The current working branch can be installed via
 
@@ -37,6 +37,8 @@ Additionally, one can clone the repository and install using
   $ pip install .
 
 This will install the package as is, but if you want to make edits to the code for testing you can exchange the last line with ``pip install -e .``, which will allow you to edit the package without reinstalling.
+
+Soon, an up-to-date version of this package will be added to `pip`, for an easier installation process.
 
 Dependencies
 ============
