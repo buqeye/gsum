@@ -1037,12 +1037,12 @@ class TruncationProcess:
     def __init__(self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs):
 
         if not callable(ref):
-            self.ref = lambda X, *args, **kws: ref * np.ones(X.shape[0])
+            self.ref = lambda X, ref=ref: ref * np.ones(X.shape[0])
         else:
             self.ref = ref
 
         if not callable(ratio):
-            self.ratio = lambda X, *args, **kws: ratio * np.ones(X.shape[0])
+            self.ratio = lambda X, ratio=ratio: ratio * np.ones(X.shape[0])
         else:
             self.ratio = ratio
 
@@ -1214,7 +1214,7 @@ class TruncationProcess:
         ratio = self.ratio(X, **ratio_kws)
 
         orders_mask = ~ np.isin(orders, self.excluded)
-        coeffs = coefficients(y=y, ratio=ratio, ref=ref, orders=orders)[orders_mask]
+        coeffs = coefficients(y=y, ratio=ratio, ref=ref, orders=orders)[:, orders_mask]
         result = self.coeffs_process.log_marginal_likelihood(theta, eval_gradient=eval_gradient, y=coeffs)
         if eval_gradient:
             coeff_log_like, coeff_log_like_gradient = result
@@ -1231,18 +1231,18 @@ class TruncationProcess:
 class TruncationGP(TruncationProcess):
     R"""A Gaussian Process Truncation class"""
 
-    def __init__(self, kernel, ref, ratio, ratio_kws=None, **kwargs):
+    def __init__(self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs):
         super().__init__(
-            kernel=kernel, ref=ref, ratio=ratio, ratio_kws=ratio_kws, **kwargs)
+            kernel=kernel, ref=ref, ratio=ratio, excluded=excluded, ratio_kws=ratio_kws, **kwargs)
         self.coeffs_process = ConjugateGaussianProcess(kernel=kernel, **kwargs)
 
 
 class TruncationTP(TruncationProcess):
     R"""A Student-t Process Truncation class"""
 
-    def __init__(self, kernel=None, ratio=0.5, ref=1, ratio_kws=None, **kwargs):
+    def __init__(self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs):
         super().__init__(
-            kernel=kernel, ratio=ratio, ref=ref, ratio_kws=ratio_kws, **kwargs)
+            kernel=kernel, ratio=ratio, ref=ref, excluded=excluded, ratio_kws=ratio_kws, **kwargs)
         self.coeffs_process = ConjugateStudentProcess(kernel=kernel, **kwargs)
 
     def predict(self, X, order, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False, kind='both'):
@@ -1421,7 +1421,7 @@ class TruncationPointwise:
         -------
 
         """
-        alpha = np.atleast_1d(alpha)
+        alpha = np.array(alpha)
         if alpha.ndim == 1:
             alpha = alpha[:, None, None]
         interval = np.array(self.dist_.interval(alpha))
@@ -1480,7 +1480,7 @@ class TruncationPointwise:
 
         .. math::
             pr(\vec{y}_k \, | \, Q, y_{ref}) & = \frac{pr(\vec{c}_k)}{\prod_n y_{ref} Q^n} \\
-            pr(\vec{c}_k) & = \frac{\Gamma(\nu/2)}{\Gamma(\nu_0/2})
+            pr(\vec{c}_k) & = \frac{\Gamma(\nu/2)}{\Gamma(\nu_0/2)}
                               \sqrt{\frac{1}{(2\pi)^n} \frac{(\nu_0 \tau_0^2 / 2)^{\nu_0}}{(\nu \tau^2 / 2)^{\nu}}}
 
         Parameters
