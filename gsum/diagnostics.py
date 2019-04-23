@@ -3,10 +3,13 @@ from .helpers import cholesky_errors, mahalanobis, lazy_property, \
     VariogramFourthRoot
 from .cutils import pivoted_cholesky
 import numpy as np
-from numpy.linalg import solve
+from numpy.linalg import solve, cholesky
 from scipy.linalg import cho_solve
-import scipy.stats as st
+import scipy.stats as stats
 from statsmodels.sandbox.distributions.mv_normal import MVT
+
+import seaborn as sns
+import pandas as pd
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -26,65 +29,68 @@ class Diagnostic:
         self.cov = cov
         self.sd = sd = np.sqrt(np.diag(cov))
         if df is None:
-            self.dist = st.multivariate_normal(mean=mean, cov=cov)
-            self.udist = st.norm(loc=mean, scale=sd)
-            self.std_udist = st.norm(loc=0., scale=1.)
+            self.dist = stats.multivariate_normal(mean=mean, cov=cov)
+            self.udist = stats.norm(loc=mean, scale=sd)
+            self.std_udist = stats.norm(loc=0., scale=1.)
         else:
             sigma = cov * (df - 2) / df
             self.dist = MVT(mean=mean, sigma=sigma, df=df)
-            self.udist = st.t(loc=mean, scale=sd, df=df)
-            self.std_udist = st.t(loc=0., scale=1., df=df)
+            self.udist = stats.t(loc=mean, scale=sd, df=df)
+            self.std_udist = stats.t(loc=0., scale=1., df=df)
         self.dist.random_state = random_state
         self.udist.random_state = random_state
         self.std_udist.random_state = random_state
 
-    @lazy_property
-    def chol(self):
-        """Returns the lower Cholesky matrix G where cov = G.G^T"""
-        return np.linalg.cholesky(self.cov)
+        self._chol = cholesky(self.cov)
+        self._pchol = pivoted_cholesky(self.cov)
 
-    @lazy_property
-    def pivoted_chol(self):
-        """Returns the pivoted Cholesky matrix G where cov = G.G^T"""
-        return pivoted_cholesky(self.cov)
-
-    @lazy_property
-    def eig(self):
-        """Returns the eigendecomposition matrix G where cov = G.G^T"""
         e, v = np.linalg.eigh(self.cov)
         ee = np.diag(np.sqrt(e))
-        return np.dot(v, ee)
+        self._eig = np.dot(v, ee)
 
     def samples(self, n):
-        return self.dist.rvs(n)
+        return self.dist.rvs(n).T
 
     def individual_errors(self, y):
-        return (y - self.mean) / np.sqrt(np.diag(self.cov))
+        R"""Computes the scaled individual errors diagnostic
+
+        .. math::
+            D_I(y) = \frac{y-m}{\sigma}
+
+        Parameters
+        ----------
+        y : array, shape = (n_samples, n_curves)
+
+        Returns
+        -------
+        array : shape = (n_samples, n_curves)
+        """
+        return ((y.T - self.mean) / np.sqrt(np.diag(self.cov))).T
 
     def cholesky_errors(self, y):
-        return cholesky_errors(y, self.mean, self.chol)
+        return cholesky_errors(y.T, self.mean, self._chol).T
 
     def pivoted_cholesky_errors(self, y):
-        return solve(self.pivoted_chol, (y - self.mean).T).T
+        return solve(self._pchol, (y.T - self.mean).T)
 
     def eigen_errors(self, y):
-        return solve(self.eig, (y - self.mean).T).T
+        return solve(self._eig, (y.T - self.mean).T)
 
     def chi2(self, y):
-        return np.sum(self.individual_errors(y), axis=-1)
+        return np.sum(self.individual_errors(y), axis=0)
 
     def md_squared(self, y):
         R"""The squared Mahalanobis distance"""
-        return mahalanobis(y, self.mean, self.chol) ** 2
+        return mahalanobis(y.T, self.mean, self._chol) ** 2
 
     def kl(self, mean, cov):
         R"""The Kullbeck-Leibler divergence"""
-        m1, c1, chol1 = self.mean, self.cov, self.chol
+        m1, c1, chol1 = self.mean, self.cov, self._chol
         m0, c0 = mean, cov
         tr = np.trace(cho_solve((chol1, True), c0))
         dist = self.md_squared(m0)
         k = c1.shape[-1]
-        logs = 2* np.sum(np.log(np.diag(c1))) - np.linalg.slogdet(c0)[-1]
+        logs = 2 * np.sum(np.log(np.diag(c1))) - np.linalg.slogdet(c0)[-1]
         return 0.5 * (tr + dist - k + logs)
 
     def credible_interval(self, y, intervals):
@@ -103,12 +109,12 @@ class Diagnostic:
             return np.average(indicator, axis=1)  # The diagnostic
 
         dci = np.apply_along_axis(
-            diagnostic, axis=1, arr=np.atleast_2d(y), lower=lower,
-            upper=upper)
+            diagnostic, axis=1, arr=np.atleast_2d(y).T, lower_=lower, upper_=upper)
         dci = np.squeeze(dci)
         return dci
 
-    def variogram(self, X, y, bin_bounds):
+    @staticmethod
+    def variogram(X, y, bin_bounds):
         v = VariogramFourthRoot(X, y, bin_bounds)
         bin_locations = v.bin_locations
         gamma, lower, upper = v.compute(rt_scale=False)
@@ -116,9 +122,27 @@ class Diagnostic:
 
 
 class GraphicalDiagnostic:
+    R"""A class for plotting diagnostics and their reference distributions
 
-    def __init__(self, diagnostic, data, nref=1000, colors=None, markers=None):
-        self.diagnostic = diagnostic
+    Parameters
+    ----------
+    diagnostic : Diagnostic
+        A diagnostic object
+    data : array, shape = (n_samples, n_curves)
+        The data to compute diagnostics against
+    nref : int
+        The number of samples to use in computing a reference distribution by simulation
+    colors : list
+        The colors to use for each curve
+    markers : list
+        The markers to use for each curve, where applicable.
+    """
+
+    # See: https://ianstormtaylor.com/design-tip-never-use-black/
+    soft_black = '#262626'
+
+    def __init__(self, data, mean, cov, df=None, random_state=1, nref=1000, colors=None, markers=None, labels=None):
+        self.diagnostic = Diagnostic(mean=mean, cov=cov, df=df, random_state=random_state)
         self.data = data
         self.samples = self.diagnostic.samples(nref)
         prop_list = list(mpl.rcParams['axes.prop_cycle'])
@@ -127,75 +151,93 @@ class GraphicalDiagnostic:
             colors = [c['color'] for c in prop_list]
         if markers is None:
             markers = ['o' for c in prop_list]
+        if labels is None:
+            labels = np.array([r'$c_{{{}}}$'.format(i) for i in range(data.shape[-1])])
+        self.labels = labels
         self.markers = markers
         self.marker_cycle = cycler('marker', colors)
         self.colors = colors
         self.color_cycle = cycler('color', colors)
 
-    def error_plot(self, err, title=None, ylabel=None, ax=None):
+        n = len(cov)
+        if df is None:
+            self.md_ref_dist = stats.chi2(df=n)
+        else:
+            self.md_ref_dist = stats.chi2(dfn=n, dfd=df, scale=(df-2)*n/df)
+
+    def error_plot(self, err, title=None, xlabel='Index', ylabel=None, ax=None):
         if ax is None:
             ax = plt.gca()
-        ax.axhline(0, 0, 1, linestyle='-', color='k', lw=1, zorder=0)
+        ax.axhline(0, 0, 1, linestyle='-', color=self.soft_black, lw=1, zorder=0)
         # The standardized 2 sigma bands since the sd has been divided out.
         sd = self.diagnostic.std_udist.std()
-        ax.axhline(-2 * sd, 0, 1, linestyle='--', color='gray', label=r'$2\sigma$', zorder=0)
-        ax.axhline(2 * sd, 0, 1, linestyle='--', color='gray', zorder=0)
-        ax.set_prop_cycle(color=self.colors, marker=self.markers)
-        index = np.arange(self.data.shape[-1])
-        # print(np.arange(self.data.shape[-1]).shape, err.T.shape)
-        for error in err:
-            ax.plot(index, error, ls='')
-        ax.set_xlabel('Index')
-        if ylabel is not None:
-            ax.set_ylabel(ylabel)
-        if title is not None:
-            ax.set_title(title)
+        ax.axhline(-2 * sd, 0, 1, color='lightgray', label=r'$2\sigma$', zorder=0, lw=1)
+        ax.axhline(2 * sd, 0, 1, color='lightgray', zorder=0, lw=1)
+        index = np.arange(1, self.data.shape[0]+1)
+
+        if err.ndim == 1:
+            err = err[:, None]
+        for i, error in enumerate(err.T):
+            ax.plot(index, error, ls='', color=self.colors[i], marker=self.markers[i])
+        ax.set_xlabel(xlabel)
+        ax.margins(x=0.05)
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
         return ax
 
-    def individual_errors(self, ax=None):
+    def individual_errors(self, title='Individual Errors', ax=None):
         err = self.diagnostic.individual_errors(self.data)
-        return self.error_plot(err, title='Individual Errors', ax=ax)
+        return self.error_plot(err, title=title, ax=ax)
 
-    def individual_errors_qq(self, ax=None):
+    def individual_errors_qq(self, title='Individual QQ Plot', ax=None):
         return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.individual_errors,
-                       title='Individual QQ Plot', ax=ax)
+                       title=title, ax=ax)
 
-    def cholesky_errors(self, ax=None):
+    def cholesky_errors(self, title='Cholesky Errors', ax=None):
         err = self.diagnostic.cholesky_errors(self.data)
-        return self.error_plot(err, title='Cholesky Decomposed Errors', ax=ax)
+        return self.error_plot(err, title=title, ax=ax)
 
-    def cholesky_errors_qq(self, ax=None):
+    def cholesky_errors_qq(self, title='Cholesky QQ Plot', ax=None):
         return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.cholesky_errors,
-                       title='Cholesky QQ Plot', ax=ax)
+                       title=title, ax=ax)
 
-    def pivoted_cholesky_errors(self, ax=None):
+    def pivoted_cholesky_errors(self, title='Pivoted Cholesky Errors', ax=None):
         err = self.diagnostic.pivoted_cholesky_errors(self.data)
-        return self.error_plot(err, title='Pivoted Cholesky Decomposed Errors', ax=ax)
+        return self.error_plot(err, title=title, ax=ax)
 
-    def pivoted_cholesky_errors_qq(self, ax=None):
+    def pivoted_cholesky_errors_qq(self, title='Pivoted Cholesky QQ Plot', ax=None):
         return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.pivoted_cholesky_errors,
-                       title='Pivoted Cholesky QQ Plot', ax=ax)
+                       title=title, ax=ax)
 
-    def eigen_errors(self, ax=None):
+    def eigen_errors(self, title='Eigen Errors', ax=None):
         err = self.diagnostic.eigen_errors(self.data)
-        return self.error_plot(err, title='Eigen Decomposed Errors', ax=ax)
+        return self.error_plot(err, title=title, ax=ax)
 
-    def eigen_errors_qq(self, ax=None):
+    def eigen_errors_qq(self, title='Eigen QQ Plot', ax=None):
         return self.qq(self.data, self.samples, [0.68, 0.95], self.diagnostic.eigen_errors,
-                       title='Eigen QQ Plot', ax=ax)
+                       title=title, ax=ax)
 
     def hist(self, data, ref, title=None, xlabel=None, ylabel=None, vlines=True, ax=None):
-        ref_stats = st.describe(ref)
-        ref_sd = np.sqrt(ref_stats.variance)
-        ref_mean = ref_stats.mean
+
+        if hasattr(ref, 'ppf'):
+            lower_95 = ref.ppf(0.975)
+            upper_95 = ref.ppf(0.025)
+            x = np.linspace(lower_95, upper_95, 100)
+            ax.plot(x, ref.pdf(x), label='ref', color=self.soft_black)
+        else:
+            ref_stats = stats.describe(ref)
+            ref_sd = np.sqrt(ref_stats.variance)
+            ref_mean = ref_stats.mean
+            # This doesn't exactly match 95% intervals from distribution
+            lower_95 = ref_mean - 2 * ref_sd
+            upper_95 = ref_mean + 2 * ref_sd
+            ax.hist(ref, density=1, label='ref', histtype='step', color=self.soft_black)
 
         if ax is None:
             ax = plt.gca()
-        ax.hist(ref, density=1, label='ref', histtype='step', color='k')
-        # ax.vlines([ref_mean - ref_sd, ref_mean + ref_sd], 0, 1, color='gray',
-        #           linestyle='--', transform=ax.get_xaxis_transform(), label='68%')
-        ax.axvline(ref_mean - 2 * ref_sd, 0, 1, color='gray', linestyle='--', label=r'$2\sigma$')
-        ax.axvline(ref_mean + 2 * ref_sd, 0, 1, color='gray', linestyle='--')
+
+        ax.axvline(lower_95, 0, 1, color='gray', linestyle='--', label=r'$2\sigma$')
+        ax.axvline(upper_95, 0, 1, color='gray', linestyle='--')
         if vlines:
             for c, d in zip(cycle(self.color_cycle), np.atleast_1d(data)):
                 ax.axvline(d, 0, 1, zorder=50, **c)
@@ -210,9 +252,7 @@ class GraphicalDiagnostic:
             ax.set_ylabel(ylabel)
         return ax
 
-    def violin(self, data, ref, title=None, xlabel=None, ylabel=None, vlines=True, ax=None):
-        import seaborn as sns
-        import pandas as pd
+    def violin(self, data, ref, title=None, xlabel=None, ylabel=None, ax=None):
         if ax is None:
             ax = plt.gca()
         n = len(data)
@@ -222,68 +262,104 @@ class GraphicalDiagnostic:
         nans = np.nan * np.ones(nref)
         fake = np.hstack((np.ones(nref, dtype=bool), np.zeros(nref, dtype=bool)))
         fake_ref = np.hstack((fake[:, None], np.hstack((ref, nans))[:, None]))
-        ref_df = pd.DataFrame(fake_ref, columns=['fake', title])
+
+        label = 'label_'  # Placeholder
+        ref_df = pd.DataFrame(fake_ref, columns=['fake', label])
         tidy_data = np.hstack((orders[:, None], data[:, None]))
-        print(tidy_data.shape, tidy_data)
-        data_df = pd.DataFrame(tidy_data, columns=['orders', title])
-        sns.violinplot(x=np.zeros(2 * nref, dtype=int), y=title, data=ref_df,
+        data_df = pd.DataFrame(tidy_data, columns=['orders', label])
+        sns.violinplot(x=np.zeros(2 * nref, dtype=int), y=label, data=ref_df,
                        color='lightgrey', hue='fake', split=True, inner='box', ax=ax)
-        sns.set_palette(self.colors)
-        sns.swarmplot(x=zero, y=title, data=data_df, hue='orders', ax=ax)
-        ax.set_xlabel('Density')
+        with sns.color_palette(self.colors):
+            sns.swarmplot(x=zero, y=label, data=data_df, hue='orders', ax=ax)
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel(xlabel)
+        ax.set_title(title)
         ax.set_xlim(-0.05, 0.5)
         return ax
 
-    def box(self, data, ref, title=None, xlabel=None, ylabel=None, vlines=True, trim=True, size=5, ax=None):
-        import seaborn as sns
-        import pandas as pd
+    def box(self, data, ref, title=None, xlabel=None, ylabel=None, trim=True, size=8, legend=False, ax=None):
         if ax is None:
             ax = plt.gca()
+
+        label = 'label_'  # Placeholder
+
+        # Plot reference dist
+        if hasattr(ref, 'ppf'):
+            gray = 'gray'
+            boxartist = self._dist_boxplot(
+                ref, ax=ax, positions=[0],
+                patch_artist=True,
+                widths=0.8)
+            for box in boxartist['boxes']:
+                box.update(dict(facecolor='lightgrey', edgecolor=gray))
+            for whisk in boxartist["whiskers"]:
+                whisk.update(dict(color=gray))
+            for cap in boxartist["caps"]:
+                cap.update(dict(color=gray))
+            for med in boxartist["medians"]:
+                med.update(dict(color=gray))
+        else:
+            nref = len(ref)
+            ref_df = pd.DataFrame(ref, columns=[label])
+            sns.boxplot(
+                x=np.zeros(nref, dtype=int), y=label, data=ref_df, color='lightgrey', ax=ax, fliersize=0, sym='',
+                whis=[2.5, 97.5], bootstrap=None,
+            )
+
+        # Plot data
         n = len(data)
-        nref = len(ref)
         orders = np.array([r'$c_{{{}}}$'.format(i) for i in range(n)])
         zero = np.zeros(len(data), dtype=int)
-        # nans = np.nan * np.ones(nref)
-        # fake = np.hstack((np.ones(nref, dtype=bool), np.zeros(nref, dtype=bool)))
-        # fake_ref = np.hstack((fake[:, None], np.hstack((ref, nans))[:, None]))
-        ref_df = pd.DataFrame(ref, columns=[title])
         tidy_data = np.array([orders, data], dtype=np.object).T
-        # print(tidy_data)
-        data_df = pd.DataFrame(tidy_data, columns=['orders', title])
-        sns.boxplot(x=np.zeros(nref, dtype=int), y=title, data=ref_df,
-                    color='lightgrey', ax=ax,
-                    fliersize=0,
-                    sym='',
-                    whis=[2.5, 97.5],
-                    bootstrap=None,
-                    )
-        sns.set_palette(self.colors)
-        sns.swarmplot(x=zero, y=title, data=data_df, hue='orders', ax=ax, size=size)
+        data_df = pd.DataFrame(tidy_data, columns=['orders', label])
+        with sns.color_palette(self.colors):
+            sns.swarmplot(x=zero, y=label, data=data_df, hue='orders', ax=ax, size=size)
+
+        ax.set_ylabel(ylabel)
         ax.set_xticks([])
-        ax.legend(title=None)
+        ax.set_xlabel(xlabel)
+        ax.set_title(title)
+        if legend:
+            ax.legend(title=None)
+        else:
+            ax.get_legend().remove()
         sns.despine(offset=0, trim=trim, bottom=True, ax=ax)
         return ax
 
+    @staticmethod
+    def _dist_boxplot(dist, q1=0.25, q3=0.75, whislo=0.025, whishi=0.975, label=None, ax=None, other_stats=None,
+                     **kwargs):
+        """Creates a boxplot computed from a Scipy.stats-like distribution."""
+        if ax is None:
+            ax = plt.gca()
+        stat_dict = [{'med': dist.median(), 'q1': dist.ppf(q1), 'q3': dist.ppf(q3),
+                      'whislo': dist.ppf(whislo), 'whishi': dist.ppf(whishi)}]
+        if label is not None:
+            stat_dict[0]['label'] = label
+        if other_stats is not None:
+            stat_dict = [*stat_dict, *other_stats]
+        return ax.bxp(stat_dict, showfliers=False, **kwargs)
+
     def qq(self, data, ref, band_perc, func, title=None, ax=None):
-        data = np.sort(func(data.copy()), axis=-1)
-        ref = np.sort(func(ref.copy()), axis=-1)
-        bands = np.array([np.percentile(ref, [100 * (1. - bi) / 2, 100 * (1. + bi) / 2], axis=0)
+        data = np.sort(func(data.copy()), axis=0)
+        ref = np.sort(func(ref.copy()), axis=0)
+        bands = np.array([np.percentile(ref, [100 * (1. - bi) / 2, 100 * (1. + bi) / 2], axis=1)
                           for bi in band_perc])
-        n = data.shape[-1]
+        n = data.shape[0]
         quants = (np.arange(1, n + 1) - 0.5) / n
         q_theory = self.diagnostic.std_udist.ppf(quants)
 
         if ax is None:
             ax = plt.gca()
-        ax.set_prop_cycle(self.color_cycle)
 
         for i in range(len(band_perc) - 1, -1, -1):
             ax.fill_between(q_theory, bands[i, 0], bands[i, 1], alpha=0.5, color='gray')
 
-        ax.plot(q_theory, data.T)
+        for i, dat in enumerate(data.T):
+            ax.plot(q_theory, dat, c=self.colors[i], label=self.labels[i])
         yl, yu = ax.get_ylim()
         xl, xu = ax.get_xlim()
-        ax.plot([xl, xu], [xl, xu], c='k')
+        ax.plot([xl, xu], [xl, xu], c=self.soft_black)
         ax.set_ylim([yl, yu])
         ax.set_xlim([xl, xu])
         if title is not None:
@@ -292,24 +368,19 @@ class GraphicalDiagnostic:
         ax.set_ylabel('Empirical Quantiles')
         return ax
 
-    def md(self, ax=None, type='hist', **kwargs):
+    def md_squared(self, ax=None, type='hist', title='Mahalanobis Distance', xlabel='MD', **kwargs):
         if ax is None:
             ax = plt.gca()
-        md_data = self.diagnostic.md(self.data)
-        md_ref = self.diagnostic.md(self.samples)
-        if type == 'violin':
-            return self.violin(
-                md_data, md_ref, title='Mahalanobis Distance',
-                xlabel='MD', ylabel='density', ax=ax)
-        elif type == 'hist':
-            return self.hist(md_data, md_ref, title='Mahalanobis Distance',
-                             xlabel='MD', ylabel='density', ax=ax, **kwargs)
+        md_data = self.diagnostic.md_squared(self.data)
+        if type == 'hist':
+            return self.hist(md_data, self.md_ref_dist, title=title,
+                             xlabel=xlabel, ax=ax, **kwargs)
         elif type == 'box':
             return self.box(
-                md_data, md_ref, title='Mahalanobis Distance',
-                xlabel='MD', ylabel='density', ax=ax, **kwargs)
+                md_data, self.md_ref_dist, title=title,
+                xlabel=xlabel, ax=ax, **kwargs)
 
-    def kl(self, X, gp, predict=False, vlines=True, ax=None):
+    def kl(self, X, gp, predict=False, vlines=True, title='KL Divergence', xlabel='KL', ax=None):
         if ax is None:
             ax = plt.gca()
         ref_means = []
@@ -336,10 +407,11 @@ class GraphicalDiagnostic:
 
         kl_ref = [self.diagnostic.kl(mean, cov) for mean, cov in zip(ref_means, ref_covs)]
         kl_data = [self.diagnostic.kl(mean, cov) for mean, cov in zip(data_means, data_covs)]
-        return self.hist(kl_data, kl_ref, title='KL Divergence',
-                         xlabel='KL', ylabel='density', vlines=vlines, ax=ax)
+        return self.hist(kl_data, kl_ref, title=title,
+                         xlabel=xlabel, vlines=vlines, ax=ax)
 
-    def credible_interval(self, intervals, band_perc, ax=None):
+    def credible_interval(self, intervals, band_perc, title='Credible Interval Diagnostic',
+                          xlabel='Credible Interval', ylabel='Empirical Coverage', ax=None):
         dci_data = self.diagnostic.credible_interval(self.data, intervals)
         dci_ref = self.diagnostic.credible_interval(self.samples, intervals)
         bands = np.array([np.percentile(dci_ref, [100 * (1. - bi) / 2, 100 * (1. + bi) / 2], axis=0)
@@ -347,25 +419,23 @@ class GraphicalDiagnostic:
         greys = mpl.cm.get_cmap('Greys')
         if ax is None:
             ax = plt.gca()
-        # for i in range(len(band_perc)-1, -1, -1):
-        #     ax.fill_between(intervals, bands[i, 0], bands[i, 1], alpha=1., color=greys((i+1)/(len(band_perc)+1)))
         band_perc = np.sort(band_perc)
         for i, perc in enumerate(band_perc):
             ax.fill_between(intervals, bands[i, 0], bands[i, 1], alpha=1.,
                             color=greys((len(band_perc) - i) / (len(band_perc) + 2.5)),
                             zorder=-perc)
 
-        ax.plot([0, 1], [0, 1], c='k')
-        ax.set_prop_cycle(self.color_cycle)
-        ax.plot(intervals, dci_data.T)
+        ax.plot([0, 1], [0, 1], c=self.soft_black)
+        for i, data in enumerate(dci_data):
+            ax.plot(intervals, data, color=self.colors[i], label=self.labels[i])
         ax.set_xlim([0, 1])
         ax.set_ylim([0, 1])
-        ax.set_ylabel('Empirical Coverage')
-        ax.set_xlabel('Credible Interval')
-        ax.set_title('Credible Interval Diagnostic')
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel(xlabel)
+        ax.set_title(title)
         return ax
 
-    def variogram(self, X, ax=None):
+    def variogram(self, X, title='Variogram', xlabel='Lag', ax=None):
         y = self.data
         N = len(X)
         nbins = np.ceil((N * (N - 1) / 2.) ** (1. / 3))
@@ -375,8 +445,8 @@ class GraphicalDiagnostic:
         if ax is None:
             ax = plt.gca()
 
-        ax.set_title('Variogram')
-        ax.set_xlabel(r"$|x-x'|$")
+        ax.set_title(title)
+        ax.set_xlabel(xlabel)
         for i in range(y.shape[0]):
             ax.plot(loc, gamma[:, i], ls='', marker='o', c=self.colors[i])
             ax.plot(loc, lower[:, i], lw=0.5, c=self.colors[i])
@@ -387,8 +457,9 @@ class GraphicalDiagnostic:
         if gp is None:
             pass
         fig, axes = plt.subplots(4, 3, figsize=(12, 12))
-        self.md(vlines=vlines, ax=axes[0, 0])
-        self.kl(X, gp, predict, vlines=vlines, ax=axes[0, 1])
+        self.md_squared(vlines=vlines, ax=axes[0, 0])
+        if gp is not None:
+            self.kl(X, gp, predict, vlines=vlines, ax=axes[0, 1])
         self.credible_interval(np.linspace(0, 1, 101), [0.68, 0.95], axes[0, 2])
         self.individual_errors(axes[1, 0])
         self.individual_errors_qq(axes[2, 0])
@@ -398,14 +469,13 @@ class GraphicalDiagnostic:
         self.eigen_errors_qq(axes[2, 2])
         self.pivoted_cholesky_errors(axes[3, 0])
         self.pivoted_cholesky_errors_qq(axes[3, 1])
-        # self.variogram(X, axes[3, 2])
         fig.tight_layout()
         return fig, axes
 
     def essentials(self, vlines=True, bare=False):
         if bare:
             fig, axes = plt.subplots(1, 3, figsize=(7, 3))
-            self.md(vlines=vlines, ax=axes[0])
+            self.md_squared(vlines=vlines, ax=axes[0])
             self.pivoted_cholesky_errors(axes[1])
             self.credible_interval(np.linspace(0, 1, 101), [0.68, 0.95], axes[2])
             axes[0].set_title('')
@@ -430,7 +500,7 @@ class GraphicalDiagnostic:
             fig.tight_layout(h_pad=0.01, w_pad=0.1)
         else:
             fig, axes = plt.subplots(2, 3, figsize=(12, 6))
-            self.md(vlines=vlines, ax=axes[0, 0])
+            self.md_squared(vlines=vlines, ax=axes[0, 0])
             self.credible_interval(np.linspace(0, 1, 101), [0.68, 0.95], axes[1, 0])
             self.eigen_errors(axes[0, 1])
             self.eigen_errors_qq(axes[1, 1])
