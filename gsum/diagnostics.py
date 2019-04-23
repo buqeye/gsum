@@ -45,8 +45,12 @@ class Diagnostic:
         self._pchol = pivoted_cholesky(self.cov)
 
         e, v = np.linalg.eigh(self.cov)
+        # To match Bastos and O'Hagan definition
+        # i.e., eigenvalues ordered from largest to smallest
+        e, v = e[::-1], v[:, ::-1]
         ee = np.diag(np.sqrt(e))
-        self._eig = np.dot(v, ee)
+        self._eig = (v @ ee)
+        # self._eig = ee @ v
 
     def samples(self, n):
         return self.dist.rvs(n).T
