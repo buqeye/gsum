@@ -193,13 +193,13 @@ Only returned when return_cov is True.</p>
 
 <dl class="class">
 <dt id="gsum.models.TruncationGP">
-<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">TruncationGP</code><span class="sig-paren">(</span><em>kernel</em>, <em>ref</em>, <em>ratio</em>, <em>ratio_kws=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationGP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationGP" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">TruncationGP</code><span class="sig-paren">(</span><em>kernel=None</em>, <em>ratio=0.5</em>, <em>ref=1</em>, <em>excluded=None</em>, <em>ratio_kws=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationGP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationGP" title="Permalink to this definition">¶</a></dt>
 <dd><p>A Gaussian Process Truncation class</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="gsum.models.TruncationTP">
-<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">TruncationTP</code><span class="sig-paren">(</span><em>kernel=None</em>, <em>ratio=0.5</em>, <em>ref=1</em>, <em>ratio_kws=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationTP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationTP" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">TruncationTP</code><span class="sig-paren">(</span><em>kernel=None</em>, <em>ratio=0.5</em>, <em>ref=1</em>, <em>excluded=None</em>, <em>ratio_kws=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationTP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationTP" title="Permalink to this definition">¶</a></dt>
 <dd><p>A Student-t Process Truncation class</p>
 <dl class="method">
 <dt id="gsum.models.TruncationTP.predict">
@@ -300,7 +300,7 @@ Defaults to <cite>None</cite>.</p>
 <p>That is</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}pr(\vec{y}_k \, | \, Q, y_{ref}) &amp; = \frac{pr(\vec{c}_k)}{\prod_n y_{ref} Q^n} \\
-pr(\vec{c}_k) &amp; = \frac{\Gamma(\nu/2)}{\Gamma(\nu_0/2})
+pr(\vec{c}_k) &amp; = \frac{\Gamma(\nu/2)}{\Gamma(\nu_0/2)}
                   \sqrt{\frac{1}{(2\pi)^n} \frac{(\nu_0 \tau_0^2 / 2)^{\nu_0}}{(\nu \tau^2 / 2)^{\nu}}}\end{split}\]</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

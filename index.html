@@ -122,15 +122,13 @@
      <img src="https://cdn.rawgit.com/jordan-melendez/gsum/c85d832b/docs/logos/gsum.png" width="30%" alt="gsum logo" hspace="20"/>
      <img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo" hspace="20"/>
 </p><a class="reference external image-reference" href="https://mybinder.org/v2/gh/jordan-melendez/gsum/master"><img alt="https://mybinder.org/badge_logo.svg" src="https://mybinder.org/badge_logo.svg" /></a>
-<p>The gsum package provides two classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
-Specifically, this is a conjugacy-based implementation of the statistical model developed in <a class="reference external" href="https://arxiv.org/abs/1506.01343">this paper</a>.</p>
+<p>The gsum package provides convenient classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
+Specifically, this is a conjugacy-based implementation of the statistical model developed in <a class="reference external" href="https://arxiv.org/abs/1506.01343">this paper</a>.
+Although the package is fully functional, we are still working on filling in all of the documentation.
+Examples of how it was used to generate results can be found in the <a class="reference external" href="https://buqeye.github.io/gsum">documentation</a>.</p>
 </div>
 <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>The latest release of gsum can be installed from PyPI using <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> pip install gsum
-</pre></div>
-</div>
 <p>The current working branch can be installed via</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> pip install git+https://github.com/jordan-melendez/gsum
 </pre></div>
@@ -142,6 +140,7 @@ Specifically, this is a conjugacy-based implementation of the statistical model 
 </pre></div>
 </div>
 <p>This will install the package as is, but if you want to make edits to the code for testing you can exchange the last line with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code>, which will allow you to edit the package without reinstalling.</p>
+<p>Soon, an up-to-date version of this package will be added to <cite>pip</cite>, for an easier installation process.</p>
 </div>
 <div class="section" id="dependencies">
 <h1>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h1>
@@ -168,7 +167,6 @@ Specifically, this is a conjugacy-based implementation of the statistical model 
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="notebooks/bq_test.html">BUQEYE Model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/truncation_recap.html">Bayesian truncation errors in chiral effective field theory: A Pointwise Approach</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/correlated_EFT_publication.html">Correlated Truncation Errors in Effective Field Theory: The code behind the manuscript</a></li>
 </ul>

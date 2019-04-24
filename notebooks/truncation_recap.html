@@ -27,7 +27,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Correlated Truncation Errors in Effective Field Theory: The code behind the manuscript" href="correlated_EFT_publication.html" />
-    <link rel="prev" title="BUQEYE Model" href="bq_test.html" />
+    <link rel="prev" title="Examples" href="../examples.html" />
   
    
 
@@ -45,7 +45,7 @@
           <a href="correlated_EFT_publication.html" title="Correlated Truncation Errors in Effective Field Theory: The code behind the manuscript"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="bq_test.html" title="BUQEYE Model"
+          <a href="../examples.html" title="Examples"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">gsum 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../examples.html" accesskey="U">Examples</a> &#187;</li> 
@@ -69,7 +69,6 @@
       <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../examples.html">Examples</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="bq_test.html">BUQEYE Model</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Bayesian truncation errors in chiral effective field theory: A Pointwise Approach</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correlated_EFT_publication.html">Correlated Truncation Errors in Effective Field Theory: The code behind the manuscript</a></li>
 </ul>
@@ -347,9 +346,10 @@ div.rendered_html tbody tr:hover {
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="kn">as</span> <span class="nn">stats</span>
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">Image</span>
 
+<span class="c1"># Required for importing scattering data</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">import</span> <span class="nn">urllib.request</span>
 <span class="kn">import</span> <span class="nn">tables</span>
 
@@ -363,6 +363,12 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;text.usetex&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.dpi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">150</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;font.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.direction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;in&#39;</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.direction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;in&#39;</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.labelsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.labelsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
 <span class="n">WIDE_IMG_WIDTH</span> <span class="o">=</span> <span class="mi">800</span>
 <span class="n">NARROW_IMG_WIDTH</span> <span class="o">=</span> <span class="mi">400</span>
 </pre></div>
@@ -372,40 +378,40 @@ div.rendered_html tbody tr:hover {
 <h1>Bayesian truncation errors in chiral effective field theory: A Pointwise Approach<a class="headerlink" href="#Bayesian-truncation-errors-in-chiral-effective-field-theory:-A-Pointwise-Approach" title="Permalink to this headline">¶</a></h1>
 <p>Here we reproduce, using the improved truncation error model based on conjugate priors, some of the results in the following papers (with some notational changes)</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://arxiv.org/abs/1506.01343">Furnstahl et al.</a>, Quantifying Truncation Errors in Effective Field Theory</p></li>
-<li><p><a class="reference external" href="https://arxiv.org/abs/1704.03308">Melendez et al.</a>, Bayesian truncation errors in chiral effective field theory: Nucleon-nucleon observables</p></li>
+<li><p>Furnstahl et al., <a class="reference external" href="https://arxiv.org/abs/1506.01343">Quantifying Truncation Errors in Effective Field Theory</a></p></li>
+<li><p>Melendez et al., <a class="reference external" href="https://arxiv.org/abs/1704.03308">Bayesian truncation errors in chiral effective field theory: Nucleon-nucleon observables</a></p></li>
 </ul>
 <p>In these papers, the convergence pattern of nucleon-nucleon scattering observables, including the total and differential cross sections and a set of spin scattering observables, were studied to infer the effective field theory (EFT) truncation error. Given the <span class="math notranslate nohighlight">\(k\)</span> lowest order EFTs, a sequence of observable calculations <span class="math notranslate nohighlight">\(\\{y_0, ..., y_k\\}\)</span> can be computed for a generic observable <span class="math notranslate nohighlight">\(y\)</span>. It is assumed in the above papers that one can write the sum of all contributions as</p>
 <div class="math notranslate nohighlight">
-\begin{align}
+\begin{align*}
 y = y_{\mathrm{ref}}\sum_{n=0}^\infty c_n Q^n
-\end{align}</div><p>for iid observable coefficients <span class="math notranslate nohighlight">\(c_n\)</span>. Hence, the <span class="math notranslate nohighlight">\(k\)</span> lowest orders can be conditioned upon to estimate the remaining higher orders, and the full summation. The expansion parameter <span class="math notranslate nohighlight">\(Q\)</span> is considered a ratio of low- and high-energy scales, with the low energy scale a combination of the relative scattering momentum <span class="math notranslate nohighlight">\(p\)</span> and pion mass <span class="math notranslate nohighlight">\(m_\pi\)</span>, and the high energy scale is <span class="math notranslate nohighlight">\(\Lambda_b\)</span>, also known as the breakdown scale. The specific parameterization is</p>
+\end{align*}</div><p>for iid observable coefficients <span class="math notranslate nohighlight">\(c_n\)</span>. Hence, the <span class="math notranslate nohighlight">\(k\)</span> lowest orders can be conditioned upon to estimate the remaining higher orders, and the full summation. The expansion parameter <span class="math notranslate nohighlight">\(Q\)</span> is considered a ratio of low- and high-energy scales, with the low energy scale a combination of the relative scattering momentum <span class="math notranslate nohighlight">\(p\)</span> and pion mass <span class="math notranslate nohighlight">\(m_\pi\)</span>, and the high energy scale is <span class="math notranslate nohighlight">\(\Lambda_b\)</span>, also known as the breakdown scale. The specific parameterization is</p>
 <div class="math notranslate nohighlight">
-\begin{align}
+\begin{align*}
 Q = \frac{m_\pi^n + p^n}{m_\pi^{n-1} + p^{n-1}} \frac{1}{\Lambda_b}
-\end{align}</div><p>with <span class="math notranslate nohighlight">\(n=8\)</span> used in Melendez et al.</p>
+\end{align*}</div><p>with <span class="math notranslate nohighlight">\(n=8\)</span> used in Melendez et al.</p>
 <p>The hierarchical model from the above papers considered the following prior sets, and Melendez et al. focused on set C with <span class="math notranslate nohighlight">\(\bar c_&lt; = 0.25\)</span> and <span class="math notranslate nohighlight">\(\bar c_&gt; = 10\)</span>.</p>
 <!--- | Set | $pr(c_n | \bar c)$ | $pr(\bar c)$ |
 | :---: | :------------------: | :------------: |
 | A   | $\frac{1}{2\bar c}\theta(\bar c - |c_n|)$ |  $\frac{1}{\bar c\ln\bar c_> /\bar c_<}\theta(\bar c - \bar c_<) \theta(\bar c_> - \bar c)$ |
 | B   | $\frac{1}{2\bar c}\theta(\bar c - |c_n|)$ | $\frac{1}{\sqrt{2\pi}\bar c \sigma} e^{-(\ln \bar c)^2/2\sigma^2}$ |
 | C  | $\frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c}$ | $\frac{1}{\bar c\ln\bar c_> /\bar c_<}\theta(\bar c - \bar c_<) \theta(\bar c_> - \bar c)$ | ---><div class="math notranslate nohighlight">
-\begin{array}{ccc}
+\begin{array}{ccc} \hline
+\mathrm{Set} &amp; pr(c_n | \bar c) &amp; pr(\bar c) \\
 \hline
-\mathrm{Set} &amp; pr(c_n | \bar c) &amp; pr(\bar c) \\ \hline
 A &amp; \frac{1}{2\bar c}\theta(\bar c - |c_n|) &amp;  \frac{1}{\bar c\ln\bar c_&gt; /\bar c_&lt;}\theta(\bar c - \bar c_&lt;) \theta(\bar c_&gt; - \bar c) \\
 B &amp; \frac{1}{2\bar c}\theta(\bar c - |c_n|) &amp;  \frac{1}{\sqrt{2\pi}\bar c \sigma} e^{-(\ln \bar c)^2/2\sigma^2} \\
 C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln\bar c_&gt; /\bar c_&lt;}\theta(\bar c - \bar c_&lt;) \theta(\bar c_&gt; - \bar c) \\
 \hline
 \end{array}</div><p>This package instead employs a conjugate prior set, where the <span class="math notranslate nohighlight">\(c_n\)</span> are Gaussian and an inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> is placed on <span class="math notranslate nohighlight">\(\bar c^2\)</span>,</p>
 <div class="math notranslate nohighlight">
-\begin{align}
+\begin{align*}
 \bar c^2 \sim \chi^{-2}(\nu_0, \tau_0^2)
-\end{align}</div><p>where <span class="math notranslate nohighlight">\(\nu_0\)</span> and <span class="math notranslate nohighlight">\(\tau_0\)</span> are the prior degrees of freedom and scale parameters, respectively. The inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> density is given by</p>
+\end{align*}</div><p>where <span class="math notranslate nohighlight">\(\nu_0\)</span> and <span class="math notranslate nohighlight">\(\tau_0\)</span> are the prior degrees of freedom and scale parameters, respectively. The inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> density is given by</p>
 <div class="math notranslate nohighlight">
-\begin{align}
+\begin{align*}
 \chi^{-2}(z; \nu, \tau^2) = \frac{(\nu\tau^2/2)^{\nu/2}}{\Gamma(\nu/2)} z^{-\nu/2-1} e^{-\frac{\nu\tau^2}{2z}}
-\end{align}</div><p>Here we compare the results of the very convenient conjugate formulation to the prior published results.</p>
+\end{align*}</div><p>Here we compare the results of the very convenient conjugate formulation to the prior published results.</p>
 <div class="section" id="Proof-of-Concept">
 <h2>Proof of Concept<a class="headerlink" href="#Proof-of-Concept" title="Permalink to this headline">¶</a></h2>
 <p>Many proof of concept tests were performed in Furnstahl et al. Here we reproduce some of those tests with this package. Since setting <span class="math notranslate nohighlight">\(\nu = 0\)</span> is equivalent to prior set <span class="math notranslate nohighlight">\(C\)</span> with <span class="math notranslate nohighlight">\(\bar c_&lt; = 1/\bar c_&gt; = 0\)</span>, the results should be identical in this case.</p>
@@ -434,6 +440,7 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 <span class="c1"># The truncation model accepts *partial sums*,</span>
 <span class="c1"># i.e., order-by-order predictions y_n, not the coefficients!</span>
 <span class="n">y1</span> <span class="o">=</span> <span class="n">gm</span><span class="o">.</span><span class="n">partials</span><span class="p">(</span><span class="n">coeffs</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="n">Q</span><span class="p">)</span>
+<span class="n">y_best</span> <span class="o">=</span> <span class="n">y1</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
 <span class="c1"># Set up a scale-invariant truncation object</span>
 <span class="n">test1</span> <span class="o">=</span> <span class="n">gm</span><span class="o">.</span><span class="n">TruncationPointwise</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df0</span><span class="p">)</span>
@@ -441,39 +448,34 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 <span class="c1"># Fit the model to data. Hyperparameters get updated here</span>
 <span class="n">test1</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y1</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="n">Q</span><span class="p">)</span>
 
-<span class="c1"># Get a scipy.stats.t distribution object for the truncation error</span>
-<span class="n">dist</span> <span class="o">=</span> <span class="n">test1</span><span class="o">.</span><span class="n">dist_</span>
-
+<span class="c1"># Compute degree of belief (dob) intervals, aka credible intervals</span>
+<span class="n">dob68</span> <span class="o">=</span> <span class="n">lower68</span><span class="p">,</span> <span class="n">upper68</span> <span class="o">=</span> <span class="n">test1</span><span class="o">.</span><span class="n">interval</span><span class="p">(</span><span class="mf">0.68</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">pdf_heights68</span> <span class="o">=</span> <span class="n">test1</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">lower68</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">],</span> <span class="n">orders</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">dob95</span> <span class="o">=</span> <span class="n">lower95</span><span class="p">,</span> <span class="n">upper95</span> <span class="o">=</span> <span class="n">test1</span><span class="o">.</span><span class="n">interval</span><span class="p">(</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">pdf_heights95</span> <span class="o">=</span> <span class="n">test1</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">lower95</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">],</span> <span class="n">orders</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
 <span class="c1"># Plot the results</span>
 <span class="n">delta_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>  <span class="c1"># Differences from the true y</span>
-<span class="n">pdfs</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">delta_k</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">y1</span><span class="p">)</span>
+<span class="n">pdfs</span> <span class="o">=</span> <span class="n">test1</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">delta_k</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">y1</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
-<span class="n">dob68</span> <span class="o">=</span> <span class="n">lower68</span><span class="p">,</span> <span class="n">upper68</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">interval</span><span class="p">(</span><span class="mf">0.68</span><span class="p">)</span>
-<span class="n">pdf_heights68</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">lower68</span><span class="p">)</span>
-<span class="n">dob95</span> <span class="o">=</span> <span class="n">lower95</span><span class="p">,</span> <span class="n">upper95</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">interval</span><span class="p">(</span><span class="mf">0.95</span><span class="p">)</span>
-<span class="n">pdf_heights95</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">lower95</span><span class="p">)</span>
-
-<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">coeffs</span><span class="p">),</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">coeffs</span><span class="p">),</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">))</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">axs</span><span class="o">.</span><span class="n">ravel</span><span class="p">()):</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">delta_k</span><span class="p">,</span> <span class="n">pdfs</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">delta_k</span><span class="p">,</span> <span class="n">pdfs</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
 
     <span class="c1"># Plot dob intervals as vertical lines</span>
-    <span class="k">for</span> <span class="n">dob</span> <span class="ow">in</span> <span class="n">dob68</span><span class="o">-</span><span class="n">y1</span><span class="p">:</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="n">dob</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pdf_heights68</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;-.&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">dob</span> <span class="ow">in</span> <span class="n">dob95</span><span class="o">-</span><span class="n">y1</span><span class="p">:</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="n">dob</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pdf_heights95</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">dob</span> <span class="ow">in</span> <span class="n">dob68</span><span class="o">-</span><span class="n">y_best</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="n">dob</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pdf_heights68</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;-.&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">dob</span> <span class="ow">in</span> <span class="n">dob95</span><span class="o">-</span><span class="n">y_best</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="n">dob</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pdf_heights95</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 
     <span class="c1"># Format the plot as in Furnstahl et al. for comparison</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;pr($\Delta_2 \,\vert\, c=[{},\, {},\, {}]$)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\mathrm{{pr}}(\Delta_2 \,\vert\, c=[{},\, {},\, {}])$&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\Delta_2$&quot;</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">17</span><span class="p">])</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="o">-</span><span class="mf">0.13</span><span class="p">,</span> <span class="mf">0.13</span><span class="p">])</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">mpl</span><span class="o">.</span><span class="n">ticker</span><span class="o">.</span><span class="n">FixedLocator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">18</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">mpl</span><span class="o">.</span><span class="n">ticker</span><span class="o">.</span><span class="n">FixedLocator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">mpl</span><span class="o">.</span><span class="n">ticker</span><span class="o">.</span><span class="n">FixedLocator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mi">31</span><span class="p">)))</span>
-    <span class="c1"># ax.grid(axis=&#39;y&#39;)</span>
-
 </pre></div>
 </div>
 </div>
@@ -511,10 +513,10 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 <h3>Choose Hyperparameters<a class="headerlink" href="#Choose-Hyperparameters" title="Permalink to this headline">¶</a></h3>
 <p>First let’s figure out the hyperparameters of the inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> distribution that best reproduce the “Set C” prior with <span class="math notranslate nohighlight">\(\bar c_&gt; = 10\)</span> and <span class="math notranslate nohighlight">\(\bar c_&lt; = 0.25\)</span>, which was the most extensively used prior set of Melendez et al. Scipy has an inverse gamma distribution, which is equivalent to the inverse <span class="math notranslate nohighlight">\(\chi^2\)</span> distribution, with hyperparameters defined by</p>
 <div class="math notranslate nohighlight">
-\begin{align}
+\begin{align*}
     a &amp; = \frac{\nu}{2} \\
     b &amp; = \frac{\nu \tau^2}{2}
-\end{align}</div><div class="nbinput docutils container">
+\end{align*}</div><div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
@@ -534,11 +536,11 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 <span class="n">cbarsq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.1</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
 <span class="n">prior_vals</span> <span class="o">=</span> <span class="n">cbar_sq_prior_melendez_etal</span><span class="p">(</span><span class="n">cbarsq</span><span class="p">,</span> <span class="mf">0.25</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 
-<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">3.4</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">))</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cbarsq</span><span class="p">,</span> <span class="n">ig</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">cbarsq</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\chi^{-2}$&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cbarsq</span><span class="p">,</span> <span class="n">prior_vals</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Set C&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\bar c^2$&quot;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$pr(\bar c^2)$&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\mathrm{pr}(\bar c^2)$&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 </pre></div>
 </div>
@@ -608,7 +610,7 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 </pre></div>
 </div>
 </div>
-<p>Now import the relevant data for each observable from a precomputed hdf5 file (this requires the <code class="docutils literal notranslate"><span class="pre">h5py</span></code> package). Here we use Epelbaum, Krebs, and Meißner’s <span class="math notranslate nohighlight">\(R=0.9\)</span> fm potential up to N<span class="math notranslate nohighlight">\(^4\)</span>LO as the order-by-order predictions, and the pwa93 as experimental data.</p>
+<p>Now import the relevant data for each observable from a precomputed hdf5 file (this requires the <code class="docutils literal notranslate"><span class="pre">h5py</span></code> package). Here we use Epelbaum, Krebs, and Meißner’s <span class="math notranslate nohighlight">\(R=0.9\)</span> fm potential up to N4LO as the order-by-order predictions, and the pwa93 as experimental data.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
@@ -700,9 +702,9 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 <h3>Total Cross Section<a class="headerlink" href="#Total-Cross-Section" title="Permalink to this headline">¶</a></h3>
 <p>In Melendez et al., we produced plots of residuals with statistical error bands for various EFT regulators and also ran model checking tests. The residual is defined as</p>
 <div class="math notranslate nohighlight">
-\begin{align}
+\begin{align*}
     y_{\mathrm{res}} \equiv y_{\mathrm{th}} - y_{\mathrm{exp}}
-\end{align}</div><p>First let’s define the values of energies to be used in the analysis and get the imported data</p>
+\end{align*}</div><p>First let’s define the values of energies to be used in the analysis and get the imported data</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
@@ -732,9 +734,10 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 <span></span><span class="n">sgt_truncation</span> <span class="o">=</span> <span class="n">gm</span><span class="o">.</span><span class="n">TruncationPointwise</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">excluded</span><span class="o">=</span><span class="n">nn_excluded</span><span class="p">)</span>
 <span class="n">sgt_truncation</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">SGT</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="n">sgt_ratio</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="n">sgt_ref</span><span class="p">,</span> <span class="n">orders</span><span class="o">=</span><span class="n">orders</span><span class="p">)</span>
 
-<span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">orders</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">sgt_truncation</span><span class="o">.</span><span class="n">coeffs_</span><span class="o">.</span><span class="n">T</span><span class="p">):</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_lab</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$c_{n}$&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">));</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">3.4</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">coeff</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">orders</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">sgt_truncation</span><span class="o">.</span><span class="n">coeffs_</span><span class="o">.</span><span class="n">T</span><span class="p">)):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_lab</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$c_{n}$&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">),</span> <span class="n">c</span><span class="o">=</span><span class="n">medium_colors</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -751,7 +754,7 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">3.4</span><span class="p">,</span> <span class="mf">3.2</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">orders</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
     <span class="c1"># Compute truncation errors for all orders less than y_i, skipping i=0</span>
     <span class="n">sgt_truncation</span> <span class="o">=</span> <span class="n">gm</span><span class="o">.</span><span class="n">TruncationPointwise</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df_test</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">tau_test</span><span class="p">,</span> <span class="n">excluded</span><span class="o">=</span><span class="n">nn_excluded</span><span class="p">)</span>
@@ -775,7 +778,7 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
     <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">mpl</span><span class="o">.</span><span class="n">ticker</span><span class="o">.</span><span class="n">FixedLocator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mf">10.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">)))</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">which</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;in&#39;</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s1">&#39;N$^{}$LO&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">();</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">h_pad</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">w_pad</span><span class="o">=</span><span class="mf">0.2</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -837,7 +840,7 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">3.4</span><span class="p">,</span> <span class="mf">3.2</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">orders</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
     <span class="c1"># Compute truncation errors for all orders less than y_i, skipping i=0</span>
     <span class="n">dsg_truncation</span> <span class="o">=</span> <span class="n">gm</span><span class="o">.</span><span class="n">TruncationPointwise</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df_test</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">tau_test</span><span class="p">,</span> <span class="n">excluded</span><span class="o">=</span><span class="n">nn_excluded</span><span class="p">)</span>
@@ -864,7 +867,7 @@ C &amp; \frac{1}{\sqrt{2\pi}\bar c} e^{-c_n^2/2\bar c} &amp;  \frac{1}{\bar c\ln
     <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">which</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;in&#39;</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\theta$ (deg)&#39;</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\theta$ (deg)&#39;</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">();</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">h_pad</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">w_pad</span><span class="o">=</span><span class="mf">0.3</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -912,7 +915,7 @@ diagonal in the plot below. The 68% and 95% gray uncertainty bands allow for dev
 <span class="n">dobs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
 <span class="n">beta</span> <span class="o">=</span> <span class="bp">False</span>
 
-<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">3.4</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">))</span>
 <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
@@ -969,7 +972,7 @@ diagonal in the plot below. The 68% and 95% gray uncertainty bands allow for dev
 </div>
 </div>
 <p>Each curve shows a slight discrepancy (only a few points) with Fig. 12, but that is expected since the priors are not identical between the figures. Now let’s move on to pr(<span class="math notranslate nohighlight">\(\Lambda_b | c\)</span>). The <span class="math notranslate nohighlight">\(\Lambda_b\)</span> posteriors were computed with uninformative Set C prior, which corresponds exactly to <span class="math notranslate nohighlight">\(\nu_0 = 0\)</span> for the inverse chi squared prior. Thus, the figures generated below should correspond exactly with those in the paper. Below, are some helper functions, including one to call
-the <code class="docutils literal notranslate"><span class="pre">log_likelihood</span></code> method, multiply by a prior, normalize the posterior, and extract summary statistics for the <code class="docutils literal notranslate"><span class="pre">Lambda_b</span></code> parameter. Since the posteriors can be quite skewed, a highest probability density interval is calculated using the <code class="docutils literal notranslate"><span class="pre">HPD_pdf</span></code> function, rather than a simple symmetric credible interval.</p>
+the <code class="docutils literal notranslate"><span class="pre">log_likelihood</span></code> method, multiply by a prior, normalize the posterior, and extract summary statistics for the <code class="docutils literal notranslate"><span class="pre">Lambda_b</span></code> parameter. Since the posteriors can be quite skewed, a highest probability density interval is calculated using the <code class="docutils literal notranslate"><span class="pre">hpd_pdf</span></code> function, rather than a simple symmetric credible interval.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
@@ -1068,7 +1071,7 @@ the <code class="docutils literal notranslate"><span class="pre">log_likelihood<
 <span class="p">]</span>
 
 <span class="c1"># Plot each posterior and its summary statistics</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">3.4</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">))</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">posterior</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">median</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
     <span class="n">posterior</span> <span class="o">=</span> <span class="n">posterior</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">posterior</span><span class="p">))</span>  <span class="c1"># Scale so they&#39;re all the same height</span>
     <span class="c1"># Make the lines taper off</span>
@@ -1142,7 +1145,7 @@ the <code class="docutils literal notranslate"><span class="pre">log_likelihood<
   <div class="footer-relations">
     
       <div class="pull-left">
-        <a class="btn btn-default" href="bq_test.html" title="previous chapter (use the left arrow)">BUQEYE Model</a>
+        <a class="btn btn-default" href="../examples.html" title="previous chapter (use the left arrow)">Examples</a>
       </div>
     
       <div class="pull-right">
@@ -1167,7 +1170,7 @@ the <code class="docutils literal notranslate"><span class="pre">log_likelihood<
           <a href="correlated_EFT_publication.html" title="Correlated Truncation Errors in Effective Field Theory: The code behind the manuscript"
              >next</a> |</li>
         <li class="right" >
-          <a href="bq_test.html" title="BUQEYE Model"
+          <a href="../examples.html" title="Examples"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">gsum 0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../examples.html" >Examples</a> &#187;</li> 
