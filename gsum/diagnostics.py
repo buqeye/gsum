@@ -22,6 +22,16 @@ __all__ = ['Diagnostic', 'GraphicalDiagnostic']
 class Diagnostic:
     R"""A class for quickly testing model checking methods discussed in Bastos & O'Hagan.
 
+    Parameters
+    ----------
+    mean : array, shape = (n_samples,)
+        The mean
+    cov : array, shape = (n_samples, n_samples)
+        The covariance
+    df : int, optional
+        The degrees of freedom. Defaults to `None`, which treats the distribution as Gaussian
+    random_state : int, optional
+        The random state for the random number generator
     """
 
     def __init__(self, mean, cov, df=None, random_state=1):
@@ -49,10 +59,20 @@ class Diagnostic:
         # i.e., eigenvalues ordered from largest to smallest
         e, v = e[::-1], v[:, ::-1]
         ee = np.diag(np.sqrt(e))
-        self._eig = (v @ ee)
-        # self._eig = ee @ v
+        self._eig = v @ ee
 
     def samples(self, n):
+        R"""Sample random variables
+
+        Parameters
+        ----------
+        n : int
+            The number of curves to sample
+
+        Returns
+        -------
+        array, shape = (n_samples, n_curves)
+        """
         return self.dist.rvs(n).T
 
     def individual_errors(self, y):
@@ -88,7 +108,29 @@ class Diagnostic:
         return mahalanobis(y.T, self.mean, self._chol) ** 2
 
     def kl(self, mean, cov):
-        R"""The Kullbeck-Leibler divergence"""
+        R"""The Kullback-Leibler divergence between two multivariate normal distributions
+
+        .. math::
+            D_{KL}(N_0 | N_1) = \frac{1}{2} \left [
+                \mathrm{Tr}(\Sigma_1^{-1}\Sigma_0)
+              + (\mu_1 - \mu_0)^T \Sigma_1^{-1} (\mu_1 - \mu_0)
+              - k + \log\left(\frac{\det \Sigma_1}{\det \Sigma_0}\right)
+            \right]
+
+        where :math:`k` is the dimension of Normal distributions. The :math:`\mu_1` and :math:`\Sigma_1` are those
+        fed during the initialization of the Diagnostic object, and :math:`\mu_0` and :math:`\Sigma_0` are the
+        arguments of this function.
+
+        Parameters
+        ----------
+        mean : array, shape = (n_samples,)
+        cov : array, shape = (n_samples, n_samples)
+
+        Returns
+        -------
+        float
+            The KL divergence
+        """
         m1, c1, chol1 = self.mean, self.cov, self._chol
         m0, c0 = mean, cov
         tr = np.trace(cho_solve((chol1, True), c0))
@@ -119,6 +161,18 @@ class Diagnostic:
 
     @staticmethod
     def variogram(X, y, bin_bounds):
+        R"""
+
+        Parameters
+        ----------
+        X
+        y
+        bin_bounds
+
+        Returns
+        -------
+
+        """
         v = VariogramFourthRoot(X, y, bin_bounds)
         bin_locations = v.bin_locations
         gamma, lower, upper = v.compute(rt_scale=False)
@@ -126,26 +180,37 @@ class Diagnostic:
 
 
 class GraphicalDiagnostic:
-    R"""A class for plotting diagnostics and their reference distributions
+    R"""A class for plotting diagnostics and their reference distributions.
 
     Parameters
     ----------
-    diagnostic : Diagnostic
-        A diagnostic object
     data : array, shape = (n_samples, n_curves)
         The data to compute diagnostics against
+    mean : array
+        The mean for the diagnostic object
+    cov : array
+        The covariance of the diagnostic object
+    df : int, optional
+        If a Student-t distribution, then this is the degrees of freedom. If `None`, it is
+        treated as Gaussian
+    random_state : int, optional
     nref : int
         The number of samples to use in computing a reference distribution by simulation
     colors : list
         The colors to use for each curve
     markers : list
         The markers to use for each curve, where applicable.
+
+    Examples
+    --------
+
     """
 
     # See: https://ianstormtaylor.com/design-tip-never-use-black/
-    soft_black = '#262626'
+    # soft_black = '#262626'
 
-    def __init__(self, data, mean, cov, df=None, random_state=1, nref=1000, colors=None, markers=None, labels=None):
+    def __init__(self, data, mean, cov, df=None, random_state=1, nref=1000, colors=None, markers=None, labels=None,
+                 gray='lightgray', black='#262626'):
         self.diagnostic = Diagnostic(mean=mean, cov=cov, df=df, random_state=random_state)
         self.data = data
         self.samples = self.diagnostic.samples(nref)
@@ -162,21 +227,23 @@ class GraphicalDiagnostic:
         self.marker_cycle = cycler('marker', colors)
         self.colors = colors
         self.color_cycle = cycler('color', colors)
+        self.gray = gray
+        self.black = black
 
         n = len(cov)
         if df is None:
             self.md_ref_dist = stats.chi2(df=n)
         else:
-            self.md_ref_dist = stats.chi2(dfn=n, dfd=df, scale=(df-2)*n/df)
+            self.md_ref_dist = stats.f(dfn=n, dfd=df, scale=(df-2)*n/df)
 
     def error_plot(self, err, title=None, xlabel='Index', ylabel=None, ax=None):
         if ax is None:
             ax = plt.gca()
-        ax.axhline(0, 0, 1, linestyle='-', color=self.soft_black, lw=1, zorder=0)
+        ax.axhline(0, 0, 1, linestyle='-', color=self.black, lw=1, zorder=0)
         # The standardized 2 sigma bands since the sd has been divided out.
         sd = self.diagnostic.std_udist.std()
-        ax.axhline(-2 * sd, 0, 1, color='lightgray', label=r'$2\sigma$', zorder=0, lw=1)
-        ax.axhline(2 * sd, 0, 1, color='lightgray', zorder=0, lw=1)
+        ax.axhline(-2 * sd, 0, 1, color=self.gray, label=r'$2\sigma$', zorder=0, lw=1)
+        ax.axhline(2 * sd, 0, 1, color=self.gray, zorder=0, lw=1)
         index = np.arange(1, self.data.shape[0]+1)
 
         if err.ndim == 1:
@@ -227,7 +294,7 @@ class GraphicalDiagnostic:
             lower_95 = ref.ppf(0.975)
             upper_95 = ref.ppf(0.025)
             x = np.linspace(lower_95, upper_95, 100)
-            ax.plot(x, ref.pdf(x), label='ref', color=self.soft_black)
+            ax.plot(x, ref.pdf(x), label='ref', color=self.black)
         else:
             ref_stats = stats.describe(ref)
             ref_sd = np.sqrt(ref_stats.variance)
@@ -235,7 +302,7 @@ class GraphicalDiagnostic:
             # This doesn't exactly match 95% intervals from distribution
             lower_95 = ref_mean - 2 * ref_sd
             upper_95 = ref_mean + 2 * ref_sd
-            ax.hist(ref, density=1, label='ref', histtype='step', color=self.soft_black)
+            ax.hist(ref, density=1, label='ref', histtype='step', color=self.black)
 
         if ax is None:
             ax = plt.gca()
@@ -272,7 +339,7 @@ class GraphicalDiagnostic:
         tidy_data = np.hstack((orders[:, None], data[:, None]))
         data_df = pd.DataFrame(tidy_data, columns=['orders', label])
         sns.violinplot(x=np.zeros(2 * nref, dtype=int), y=label, data=ref_df,
-                       color='lightgrey', hue='fake', split=True, inner='box', ax=ax)
+                       color=self.gray, hue='fake', split=True, inner='box', ax=ax)
         with sns.color_palette(self.colors):
             sns.swarmplot(x=zero, y=label, data=data_df, hue='orders', ax=ax)
         ax.set_ylabel(ylabel)
@@ -363,7 +430,7 @@ class GraphicalDiagnostic:
             ax.plot(q_theory, dat, c=self.colors[i], label=self.labels[i])
         yl, yu = ax.get_ylim()
         xl, xu = ax.get_xlim()
-        ax.plot([xl, xu], [xl, xu], c=self.soft_black)
+        ax.plot([xl, xu], [xl, xu], c=self.black)
         ax.set_ylim([yl, yu])
         ax.set_xlim([xl, xu])
         if title is not None:
@@ -429,7 +496,7 @@ class GraphicalDiagnostic:
                             color=greys((len(band_perc) - i) / (len(band_perc) + 2.5)),
                             zorder=-perc)
 
-        ax.plot([0, 1], [0, 1], c=self.soft_black)
+        ax.plot([0, 1], [0, 1], c=self.black)
         for i, data in enumerate(dci_data):
             ax.plot(intervals, data, color=self.colors[i], label=self.labels[i])
         ax.set_xlim([0, 1])
@@ -458,6 +525,9 @@ class GraphicalDiagnostic:
         return ax
 
     def plotzilla(self, X, gp=None, predict=False, vlines=True):
+        R"""A convenience method for plotting a lot of diagnostics at once.
+
+        """
         if gp is None:
             pass
         fig, axes = plt.subplots(4, 3, figsize=(12, 12))
@@ -477,6 +547,17 @@ class GraphicalDiagnostic:
         return fig, axes
 
     def essentials(self, vlines=True, bare=False):
+        R"""A convenience method for plotting the essential diagnostics quickly.
+
+        Parameters
+        ----------
+        vlines
+        bare
+
+        Returns
+        -------
+
+        """
         if bare:
             fig, axes = plt.subplots(1, 3, figsize=(7, 3))
             self.md_squared(vlines=vlines, ax=axes[0])
@@ -492,15 +573,12 @@ class GraphicalDiagnostic:
             axes[1].set_ylabel('')
             axes[2].set_title('')
             axes[2].set_ylabel('')
-            # axes[2].set_yticks([])
             axes[2].set_xticks([0, 0.5, 1])
             axes[2].set_xticklabels(['0', '0.5', '1'])
             axes[2].yaxis.tick_right()
             axes[2].text(0.05, 0.94, r'$\mathrm{D}_{\mathrm{CI}}$', transform=axes[2].transAxes,
                          verticalalignment='top',
                          bbox=dict(boxstyle='round', facecolor='white', alpha=0.5, ec='grey'))
-            # axes[2].legend(title=r'$\mathrm{D}_{\mathrm{CI}}$')
-            # plt.tight
             fig.tight_layout(h_pad=0.01, w_pad=0.1)
         else:
             fig, axes = plt.subplots(2, 3, figsize=(12, 6))
