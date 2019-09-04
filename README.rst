@@ -9,7 +9,7 @@
 .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/jordan-melendez/gsum/master
 
-The gsum package provides convenient classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
+The `gsum` package provides convenient classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
 Specifically, this is a conjugacy-based implementation of the statistical model developed in `this paper <https://arxiv.org/abs/1506.01343>`_.
 Although the package is fully functional, we are still working on filling in all of the documentation.
 Examples of how it was used to generate results can be found in the `documentation <https://buqeye.github.io/gsum>`_.
@@ -52,7 +52,7 @@ See the requirements.txt for the full list of dependencies.
 Citing gsum
 ============
 
-If you have found this package helpful, please cite our paper Melendez et al. (2019), "Correlated Truncation Errors in Effective Field Theory".
+If you have found this package helpful, please cite our paper Melendez et al. (2019), "Quantifying Correlated Truncation Errors in Effective Field Theory" `arXiv:1904.10581 <https://arxiv.org/abs/1904.10581>`_.
 
 Contact
 =======
