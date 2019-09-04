@@ -35,7 +35,7 @@ Additionally, one can clone the repository and install using
 
 This will install the package as is, but if you want to make edits to the code for testing you can exchange the last line with ``pip install -e .``, which will allow you to edit the package without reinstalling.
 
-For some Mac users, the build might fail when using the ``pip install .`` method. This may be due to the removal of the `usr/include` from new MacOS versions.
+For some Mac users, the build might fail when using the ``pip install .`` method. This may be due to the removal of the `usr/include` directory from new MacOS versions.
 Running the following command will fix this problem:
 
 .. code-block:: console
