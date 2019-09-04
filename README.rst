@@ -37,9 +37,8 @@ This will install the package as is, but if you want to make edits to the code f
 
 For some Mac users, the build might fail when using the ``pip install .`` method. This may be due to the removal of the `usr/include` from new MacOS versions.
 Running the following command will fix this problem:
-```
-open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
-```
+.. code-block:: console
+    $ open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
 
 Soon, an up-to-date version of this package will be added to `pip`, for an easier installation process.
 
