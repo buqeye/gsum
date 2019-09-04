@@ -39,6 +39,7 @@ For some Mac users, the build might fail when using the ``pip install .`` method
 Running the following command will fix this problem:
 
 .. code-block:: console
+
     $ open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
 
 Soon, an up-to-date version of this package will be added to `pip`, for an easier installation process.
