@@ -1,4 +1,5 @@
 from __future__ import division
+import docrep
 from .helpers import coefficients, hpd, mahalanobis, geometric_sum
 import numpy as np
 from numpy.linalg import solve, cholesky
@@ -22,10 +23,14 @@ __all__ = [
     'TruncationGP', 'TruncationTP', 'TruncationPointwise'
 ]
 
+docstrings = docrep.DocstringProcessor()
 
-class ConjugateProcess:
-    R"""A conjugate Gaussian Process model.
 
+@docstrings.get_sectionsf('BaseConjugateProcess')
+@docstrings.dedent
+class BaseConjugateProcess:
+    """
+    The base class for the stochastic process estimator.
 
     Parameters
     ----------
@@ -711,10 +716,14 @@ class ConjugateProcess:
 
         return theta_opt, func_min
 
-        
-class ConjugateGaussianProcess(ConjugateProcess):
+
+@docstrings.dedent
+class ConjugateGaussianProcess(BaseConjugateProcess):
     R"""A conjugacy-based Gaussian Process class.
 
+    Parameters
+    ----------
+    %(BaseConjugateProcess.parameters)s
     """
 
     def log_marginal_likelihood(self, theta=None, eval_gradient=False, y=None):
@@ -856,9 +865,12 @@ class ConjugateGaussianProcess(ConjugateProcess):
         return np.exp(log_like)
 
 
-class ConjugateStudentProcess(ConjugateProcess):
+class ConjugateStudentProcess(BaseConjugateProcess):
     R"""A conjugacy-based Student-t Process class.
 
+    Parameters
+    ----------
+    %(BaseConjugateProcess.parameters)s
     """
 
     def cov(self, X, Xp=None):
@@ -1045,9 +1057,9 @@ class TruncationProcess:
         else:
             self.ratio = ratio
 
-        # self.coeffs_process_class = ConjugateProcess
+        # self.coeffs_process_class = BaseConjugateProcess
         # self.coeffs_process = self.coeffs_process_class(kernel=kernel, **kwargs)
-        self.coeffs_process = ConjugateProcess(kernel=kernel, **kwargs)
+        self.coeffs_process = BaseConjugateProcess(kernel=kernel, **kwargs)
         self.kernel = kernel
         self._log_like = None
 
