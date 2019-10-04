@@ -127,6 +127,7 @@ class BaseConjugateProcess:
         self.df_ = None
         self.scale_ = None
         self.cov_factor_ = None
+        self.cbar_sq_mean_ = None
         self.kernel_ = None
         self._rng = None
 
@@ -509,6 +510,8 @@ class BaseConjugateProcess:
             return np.copy(y)
         elif y.ndim == 2:
             return np.average(y, axis=1)
+        else:
+            raise ValueError(f'y must be two-dimensional, not shape={y.shape}')
 
     def _calibrate_kernel(self):
         if self.optimizer is not None and self.kernel_.n_dims > 0:
@@ -587,7 +590,7 @@ class BaseConjugateProcess:
         scale_sq = self.compute_scale_sq(y=self.y_train_, chol=self.corr_L_, basis=self.basis_train_,
                                          center0=self.center0, disp0=self.disp0, df0=self.df0, scale0=self.scale0)
         self.scale_ = np.sqrt(scale_sq)
-        self.cov_factor_ = self.compute_cov_factor(scale_sq=scale_sq, df=self.df_)
+        self.cov_factor_ = self.cbar_sq_mean_ = self.compute_cov_factor(scale_sq=scale_sq, df=self.df_)
         self._fit = True
         return self
 
@@ -694,7 +697,7 @@ class BaseConjugateProcess:
             y_samples = np.hstack(y_samples)
         return y_samples
 
-    def log_marginal_likelihood(self, theta=None, eval_gradient=False, y=None):
+    def log_marginal_likelihood(self, theta=None, eval_gradient=False, X=None, y=None):
         raise NotImplementedError
 
     # def likelihood(self, log=True, X=None, y=None, **kernel_kws):
@@ -726,19 +729,20 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
     %(BaseConjugateProcess.parameters)s
     """
 
-    def log_marginal_likelihood(self, theta=None, eval_gradient=False, y=None):
+    def log_marginal_likelihood(self, theta=None, eval_gradient=False, X=None, y=None):
         """Returns log-marginal likelihood of theta for training data.
 
         Parameters
         ----------
         theta : array-like, shape = (n_kernel_params,) or None
             Kernel hyperparameters for which the log-marginal likelihood is
-            evaluated. If None, the precomputed log_marginal_likelihood
-            of ``self.kernel_.theta`` is returned.
+            evaluated. If `None`, and fit() has been called, the precomputed
+            log_marginal_likelihood of ``self.kernel_.theta`` is returned.
         eval_gradient : bool, default: False
             If True, the gradient of the log-marginal likelihood with respect
             to the kernel hyperparameters at position theta is returned
             additionally. If True, theta must not be None.
+        X : array
         y : array, shape = (n_samples, [n_curves]), optional
             The observed data to use. Defaults to `y` passed in `fit`.
         Returns
@@ -750,18 +754,28 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
             hyperparameters at position theta.
             Only returned when eval_gradient is True.
         """
-        if theta is None:
+        if theta is None and self._fit:
             if eval_gradient:
                 raise ValueError(
-                    "Gradient can only be evaluated for theta!=None")
+                    "Gradient can only be evaluated for theta!=None"
+                )
             return self.log_marginal_likelihood_value_
 
-        kernel = self.kernel_.clone_with_theta(theta)
+        if not hasattr(self, 'kernel_') or self.kernel_ is None:
+            if self.kernel is None:
+                kernel = self._default_kernel
+            else:
+                kernel = self.kernel
+        else:
+            kernel = self.kernel_
+        kernel = kernel.clone_with_theta(theta)
+        X = self.X_train_ if X is None else X
+        y = self.y_train_ if y is None else y
 
         if eval_gradient:
-            R, R_gradient = kernel(self.X_train_, eval_gradient=True)
+            R, R_gradient = kernel(X, eval_gradient=True)
         else:
-            R = kernel(self.X_train_)
+            R = kernel(X)
             R_gradient = None
 
         R[np.diag_indices_from(R)] += self.nugget
@@ -771,29 +785,27 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
             return (-np.inf, np.zeros_like(theta)) \
                 if eval_gradient else -np.inf
 
-        y_train = self.y_train_ if y is None else y
-        X = self.X_train_
         # Support multi-dimensional output of self.y_train_
-        if y_train.ndim == 1:
-            y_train = y_train[:, np.newaxis]
+        if y.ndim == 1:
+            y = y[:, np.newaxis]
 
         # ---------------------------------
         # Conjugacy-specific code.
         center0, disp0, df0, scale0 = self.center0, self.disp0, self.df0, self.scale0
-        df = self.compute_df(y=y_train, df0=df0, eval_gradient=False)
+        df = self.compute_df(y=y, df0=df0, eval_gradient=False)
         basis = self.basis(X)
         if eval_gradient:
-            center, grad_center = self.compute_center(y_train, corr_L, basis, center0=center0, disp0=disp0,
+            center, grad_center = self.compute_center(y, corr_L, basis, center0=center0, disp0=disp0,
                                                       eval_gradient=eval_gradient, dR=R_gradient)
             scale2, dscale2 = self.compute_scale_sq(
-                y=y_train, chol=corr_L, basis=basis, center0=center0, disp0=disp0,
+                y=y, chol=corr_L, basis=basis, center0=center0, disp0=disp0,
                 df0=df0, scale0=scale0, eval_gradient=eval_gradient, dR=R_gradient)
             grad_var = self.compute_cov_factor(scale_sq=dscale2, df=df)
             grad_mean = basis @ grad_center
         else:
-            center = self.compute_center(y_train, corr_L, basis, center0=center0, disp0=disp0)
+            center = self.compute_center(y, corr_L, basis, center0=center0, disp0=disp0)
             scale2 = self.compute_scale_sq(
-                y=y_train, chol=corr_L, basis=basis, center0=center0, disp0=disp0,
+                y=y, chol=corr_L, basis=basis, center0=center0, disp0=disp0,
                 df0=df0, scale0=scale0)
             grad_center, grad_var, grad_mean = None, None, None
         mean = basis @ center
@@ -805,7 +817,7 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
         K, K_gradient = var * R, None
         if eval_gradient:
             K_gradient = var * R_gradient + grad_var * R[:, :, None]
-        y_train = y_train - mean[:, None]
+        y_train = y - mean[:, None]
         # ---------------------------------
         # Resume likelihood calculation
 
@@ -933,13 +945,14 @@ class ConjugateStudentProcess(BaseConjugateProcess):
             return mean, cov
         return pred
 
-    def log_marginal_likelihood(self, theta=None, eval_gradient=False, y=None):
+    def log_marginal_likelihood(self, theta=None, eval_gradient=False, X=None, y=None):
         if y is None:
             y = self.y_train_
-        X = self.X_train_
+        if X is None:
+            X = self.X_train_
 
         ny = self.num_y(y)
-        kernel = self.kernel_.clone_with_theta(theta)
+        kernel = self.kernel.clone_with_theta(theta)  # TODO: Use kernel_ if exists
         if eval_gradient:
             R, dR = kernel(X, eval_gradient)
         else:
@@ -1025,6 +1038,14 @@ class ConjugateStudentProcess(BaseConjugateProcess):
     #     if log:
     #         return log_like
     #     return np.exp(log_like)
+
+
+def _default_ref(X, ref):
+    return ref * np.ones(X.shape[0])
+
+
+def _default_ratio(X, ratio):
+    return ratio * np.ones(X.shape[0])
 
 
 class TruncationProcess:
@@ -1217,16 +1238,19 @@ class TruncationProcess:
             return m_pred, np.sqrt(np.diag(K_pred))
         return m_pred
 
-    def log_marginal_likelihood(self, theta, eval_gradient=False, **ratio_kws):
-        X = self.X_train_
-        y = self.y_train_
-        orders = self.orders_
+    def log_marginal_likelihood(self, theta, eval_gradient=False, X=None, y=None, orders=None, **ratio_kws):
+        if X is None:
+            X = self.X_train_
+        if y is None:
+            y = self.y_train_
+        if orders is None:
+            orders = self.orders_
         ref = self.ref(X)
         ratio = self.ratio(X, **ratio_kws)
 
         orders_mask = ~ np.isin(orders, self.excluded)
         coeffs = coefficients(y=y, ratio=ratio, ref=ref, orders=orders)[:, orders_mask]
-        result = self.coeffs_process.log_marginal_likelihood(theta, eval_gradient=eval_gradient, y=coeffs)
+        result = self.coeffs_process.log_marginal_likelihood(theta, eval_gradient=eval_gradient, X=X, y=coeffs)
         if eval_gradient:
             coeff_log_like, coeff_log_like_gradient = result
         else:
