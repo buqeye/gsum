@@ -6,7 +6,7 @@
         <img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo" hspace="20"/>
    </p>
 
-.. image:: https://mybinder.org/badge_logo.svg
+.. .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/jordan-melendez/gsum/master
 
 The `gsum` package provides convenient classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
@@ -23,13 +23,13 @@ The current working branch can be installed via
 
 .. code-block:: console
 
-  $ pip install git+https://github.com/jordan-melendez/gsum
+  $ pip install git+https://github.com/buqeye/gsum
 
 Additionally, one can clone the repository and install using
 
 .. code-block:: console
 
-  $ git clone https://github.com/jordan-melendez/gsum.git
+  $ git clone https://github.com/buqeye/gsum.git
   $ cd gsum
   $ pip install .
 
@@ -58,9 +58,9 @@ If you have found this package helpful, please cite our paper Melendez et al. (2
 Contact
 =======
 
-To report an issue please use the `issue tracker <https://github.com/jordan-melendez/gsum/issues>`_.
+To report an issue please use the `issue tracker <https://github.com/buqeye/gsum/issues>`_.
 
 License
 =======
 
-`MIT License <https://github.com/jordan-melendez/gsum/blob/master/LICENSE.txt>`_.
+`MIT License <https://github.com/buqeye/gsum/blob/master/LICENSE.txt>`_.
