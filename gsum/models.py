@@ -511,7 +511,7 @@ class BaseConjugateProcess:
         elif y.ndim == 2:
             return np.average(y, axis=1)
         else:
-            raise ValueError(f'y must be two-dimensional, not shape={y.shape}')
+            raise ValueError('y must be two-dimensional, not shape={}'.format(y.shape))
 
     def _calibrate_kernel(self):
         if self.optimizer is not None and self.kernel_.n_dims > 0:
