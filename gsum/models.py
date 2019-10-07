@@ -952,7 +952,14 @@ class ConjugateStudentProcess(BaseConjugateProcess):
             X = self.X_train_
 
         ny = self.num_y(y)
-        kernel = self.kernel.clone_with_theta(theta)  # TODO: Use kernel_ if exists
+        if not hasattr(self, 'kernel_') or self.kernel_ is None:
+            if self.kernel is None:
+                kernel = self._default_kernel
+            else:
+                kernel = self.kernel
+        else:
+            kernel = self.kernel_
+        kernel = kernel.clone_with_theta(theta)
         if eval_gradient:
             R, dR = kernel(X, eval_gradient)
         else:
