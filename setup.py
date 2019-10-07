@@ -54,7 +54,7 @@ setup(
     author='Jordan Melendez',
     author_email='jmelendez1992@gmail.com',
     license='MIT',
-    url='https://github.com/jordan-melendez/gsum.git',
+    url='https://github.com/buqeye/gsum.git',
     download_url='',
     keywords='EFT nuclear model gaussian process uncertainty quantification buqeyemodel buqeye',
     classifiers=[
