@@ -1,6 +1,5 @@
 from __future__ import division
-from .helpers import cholesky_errors, mahalanobis, lazy_property, \
-    VariogramFourthRoot
+from .helpers import cholesky_errors, mahalanobis, VariogramFourthRoot
 from .cutils import pivoted_cholesky
 import numpy as np
 from numpy.linalg import solve, cholesky
@@ -21,6 +20,8 @@ __all__ = ['Diagnostic', 'GraphicalDiagnostic']
 
 class Diagnostic:
     R"""A class for quickly testing model checking methods discussed in Bastos & O'Hagan.
+
+    This class is under construction and the implementation may change in the future.
 
     Parameters
     ----------
@@ -83,11 +84,11 @@ class Diagnostic:
 
         Parameters
         ----------
-        y : array, shape = (n_samples, n_curves)
+        y : array, shape = (n_samples, [n_curves])
 
         Returns
         -------
-        array : shape = (n_samples, n_curves)
+        array : shape = (n_samples, [n_curves])
         """
         return ((y.T - self.mean) / np.sqrt(np.diag(self.cov))).T
 
@@ -104,7 +105,7 @@ class Diagnostic:
         return np.sum(self.individual_errors(y), axis=0)
 
     def md_squared(self, y):
-        R"""The squared Mahalanobis distance"""
+        R"""Computes the squared Mahalanobis distance"""
         return mahalanobis(y.T, self.mean, self._chol) ** 2
 
     def kl(self, mean, cov):
@@ -144,7 +145,7 @@ class Diagnostic:
 
         Parameters
         ----------
-        y : (n_c, d) shaped array
+        y : (n_curves, d) shaped array
         intervals : 1d array
             The credible intervals at which to perform the test
         """
@@ -161,7 +162,7 @@ class Diagnostic:
 
     @staticmethod
     def variogram(X, y, bin_bounds):
-        R"""
+        R"""Computes the variogram for the data y at input points X.
 
         Parameters
         ----------
@@ -171,7 +172,11 @@ class Diagnostic:
 
         Returns
         -------
-
+        v : array
+        bin_locations :
+        gamma :
+        lower :
+        upper :
         """
         v = VariogramFourthRoot(X, y, bin_bounds)
         bin_locations = v.bin_locations
@@ -181,6 +186,8 @@ class Diagnostic:
 
 class GraphicalDiagnostic:
     R"""A class for plotting diagnostics and their reference distributions.
+
+    This class is under construction and the implementation may change in the future.
 
     Parameters
     ----------
