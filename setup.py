@@ -49,7 +49,7 @@ setup(
     packages=['gsum'],
     cmdclass={'build_ext': CustomBuildExtCommand},
     ext_modules=ext_modules,
-    version='0.1',
+    version='0.2',
     description='A Bayesian model of series convergence using Gaussian sums',
     author='Jordan Melendez',
     author_email='jmelendez1992@gmail.com',
@@ -58,7 +58,7 @@ setup(
     download_url='',
     keywords='EFT nuclear model gaussian process uncertainty quantification buqeyemodel buqeye',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
