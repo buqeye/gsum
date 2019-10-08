@@ -22,6 +22,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -63,7 +64,6 @@
     
     
       <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a></li>
@@ -109,7 +109,7 @@
 <span id="helpers"></span><h1>Helpers<a class="headerlink" href="#module-gsum.helpers" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="gsum.helpers.cartesian">
-<code class="descclassname">gsum.helpers.</code><code class="descname">cartesian</code><span class="sig-paren">(</span><em>*arrays</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#cartesian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.cartesian" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">cartesian</code><span class="sig-paren">(</span><em class="sig-param">*arrays</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#cartesian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.cartesian" title="Permalink to this definition">¶</a></dt>
 <dd><p>Makes the Cartesian product of arrays.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -120,7 +120,7 @@
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>array, shape = (N_1 * N_2 * … * N_p, p)</strong></dt><dd><p>The cartesian product</p>
+<dt>array, shape = (N_1 * N_2 * … * N_p, p)</dt><dd><p>The cartesian product</p>
 </dd>
 </dl>
 </dd>
@@ -129,7 +129,7 @@
 
 <dl class="function">
 <dt id="gsum.helpers.coefficients">
-<code class="descclassname">gsum.helpers.</code><code class="descname">coefficients</code><span class="sig-paren">(</span><em>y</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.coefficients" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">coefficients</code><span class="sig-paren">(</span><em class="sig-param">y</em>, <em class="sig-param">ratio</em>, <em class="sig-param">ref=1</em>, <em class="sig-param">orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#coefficients"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.coefficients" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the coefficients of a power series</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -143,7 +143,7 @@
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>An (n_samples, n_curves) array of the extracted coefficients</strong></dt><dd></dd>
+<dt>An (n_samples, n_curves) array of the extracted coefficients</dt><dd></dd>
 </dl>
 </dd>
 </dl>
@@ -151,7 +151,7 @@
 
 <dl class="function">
 <dt id="gsum.helpers.partials">
-<code class="descclassname">gsum.helpers.</code><code class="descname">partials</code><span class="sig-paren">(</span><em>coeffs</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#partials"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.partials" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">partials</code><span class="sig-paren">(</span><em class="sig-param">coeffs</em>, <em class="sig-param">ratio</em>, <em class="sig-param">ref=1</em>, <em class="sig-param">orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#partials"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.partials" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the partial sums of a power series given the coefficients</p>
 <p>The <a href="#id1"><span class="problematic" id="id2">``</span></a>k``th partial sum is given by</p>
 <div class="math notranslate nohighlight">
@@ -175,7 +175,7 @@ assumes that the n lowest order coefficients are given:
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>(n_samples, n_curves) array</strong></dt><dd><p>The partial sums</p>
+<dt>(n_samples, n_curves) array</dt><dd><p>The partial sums</p>
 </dd>
 </dl>
 </dd>
@@ -184,7 +184,7 @@ assumes that the n lowest order coefficients are given:
 
 <dl class="function">
 <dt id="gsum.helpers.geometric_sum">
-<code class="descclassname">gsum.helpers.</code><code class="descname">geometric_sum</code><span class="sig-paren">(</span><em>x</em>, <em>start</em>, <em>end</em>, <em>excluded=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#geometric_sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.geometric_sum" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">geometric_sum</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">start</em>, <em class="sig-param">end</em>, <em class="sig-param">excluded=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#geometric_sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.geometric_sum" title="Permalink to this definition">¶</a></dt>
 <dd><p>The geometric sum of x from <cite>i=start</cite> to <cite>i=end</cite> (inclusive)</p>
 <div class="math notranslate nohighlight">
 \[S = \sum_{i=start}^{end} x^i\]</div>
@@ -213,7 +213,7 @@ assumes that the n lowest order coefficients are given:
 
 <dl class="function">
 <dt id="gsum.helpers.predictions">
-<code class="descclassname">gsum.helpers.</code><code class="descname">predictions</code><span class="sig-paren">(</span><em>dist</em>, <em>dob=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.predictions" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">predictions</code><span class="sig-paren">(</span><em class="sig-param">dist</em>, <em class="sig-param">dob=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.predictions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the mean and set of degree of belief intervals for a distribution</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -224,7 +224,7 @@ assumes that the n lowest order coefficients are given:
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>array or tuple</strong></dt><dd><p>If dob is None, just the mean is returned, else a tuple of the mean and
+<dt>array or tuple</dt><dd><p>If dob is None, just the mean is returned, else a tuple of the mean and
 degree of belief intervals is returned. The interval array is shaped
 (len(dob), 2, len(mean)) and is then squeezed to remove all axes of
 length 1.</p>
@@ -236,7 +236,7 @@ length 1.</p>
 
 <dl class="function">
 <dt id="gsum.helpers.gaussian">
-<code class="descclassname">gsum.helpers.</code><code class="descname">gaussian</code><span class="sig-paren">(</span><em>X</em>, <em>Xp=None</em>, <em>ls=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#gaussian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.gaussian" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">gaussian</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Xp=None</em>, <em class="sig-param">ls=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#gaussian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.gaussian" title="Permalink to this definition">¶</a></dt>
 <dd><p>A gaussian correlation function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -251,14 +251,14 @@ length 1.</p>
 
 <dl class="function">
 <dt id="gsum.helpers.hpd">
-<code class="descclassname">gsum.helpers.</code><code class="descname">hpd</code><span class="sig-paren">(</span><em>dist</em>, <em>alpha</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#hpd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.hpd" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">hpd</code><span class="sig-paren">(</span><em class="sig-param">dist</em>, <em class="sig-param">alpha</em>, <em class="sig-param">*args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#hpd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.hpd" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the highest probability density interval of scipy dist.</p>
 <p>Inspired by this answer <a class="reference external" href="https://stackoverflow.com/a/25777507">https://stackoverflow.com/a/25777507</a></p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gsum.helpers.kl_gauss">
-<code class="descclassname">gsum.helpers.</code><code class="descname">kl_gauss</code><span class="sig-paren">(</span><em>mu0</em>, <em>cov0</em>, <em>mu1</em>, <em>cov1=None</em>, <em>chol1=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#kl_gauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.kl_gauss" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">kl_gauss</code><span class="sig-paren">(</span><em class="sig-param">mu0</em>, <em class="sig-param">cov0</em>, <em class="sig-param">mu1</em>, <em class="sig-param">cov1=None</em>, <em class="sig-param">chol1=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#kl_gauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.kl_gauss" title="Permalink to this definition">¶</a></dt>
 <dd><p>The Kullbeck-Liebler divergence between two mv Gaussians</p>
 <p>The divergence from <span class="math notranslate nohighlight">\(\mathcal{N}_1\)</span> to <span class="math notranslate nohighlight">\(\mathcal{N}_0\)</span> is given by</p>
 <div class="math notranslate nohighlight">
@@ -286,13 +286,13 @@ is used to approximate <span class="math notranslate nohighlight">\(\mathcal{N}_
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>number</strong></dt><dd><p>The KL divergence</p>
+<dt>number</dt><dd><p>The KL divergence</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-odd">Raises</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>ValueError</strong></dt><dd><p>Exactly one of cov1 or chol1 must be given</p>
+<dt>ValueError</dt><dd><p>Exactly one of cov1 or chol1 must be given</p>
 </dd>
 </dl>
 </dd>
@@ -301,7 +301,7 @@ is used to approximate <span class="math notranslate nohighlight">\(\mathcal{N}_
 
 <dl class="function">
 <dt id="gsum.helpers.default_attributes">
-<code class="descclassname">gsum.helpers.</code><code class="descname">default_attributes</code><span class="sig-paren">(</span><em>**kws</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#default_attributes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.default_attributes" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">default_attributes</code><span class="sig-paren">(</span><em class="sig-param">**kws</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#default_attributes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.default_attributes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets <cite>None</cite> or empty <cite>*args</cite>/<cite>**kwargs</cite> arguments to attributes already stored in a class.</p>
 <p>This is a handy decorator to avoid <cite>if</cite> statements at the beginning of method
 calls:</p>
@@ -330,7 +330,7 @@ corresponds to the name of the attribute to use as the default</p>
 
 <dl class="class">
 <dt id="gsum.helpers.VariogramFourthRoot">
-<em class="property">class </em><code class="descclassname">gsum.helpers.</code><code class="descname">VariogramFourthRoot</code><span class="sig-paren">(</span><em>X</em>, <em>z</em>, <em>bin_bounds</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">VariogramFourthRoot</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">z</em>, <em class="sig-param">bin_bounds</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the empirical semivariogram and uncertainties via the fourth root transformation.</p>
 <p>Based mostly on the theory developed in Bowman &amp; Crujeiras (2013) and Cressie &amp; Hawkins (1980).
 Their original code was implemented in the <cite>sm</cite> R package, but was rewritten in Python as a check
@@ -351,7 +351,7 @@ bin location is computed as the average of all distances within the bin.</p>
 </dl>
 <dl class="method">
 <dt id="gsum.helpers.VariogramFourthRoot.compute">
-<code class="descname">compute</code><span class="sig-paren">(</span><em>rt_scale=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">compute</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">rt_scale=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the mean semivariogram and approximate 68% confidence intervals.</p>
 <p>Can be given on the 4th root scale or the variogram scale (default).</p>
 <dl class="field-list simple">
@@ -363,7 +363,7 @@ bin location is computed as the average of all distances within the bin.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>gamma, lower, upper</strong></dt><dd><p>The semivariogram estimate and its lower and upper 68% bands</p>
+<dt>gamma, lower, upper</dt><dd><p>The semivariogram estimate and its lower and upper 68% bands</p>
 </dd>
 </dl>
 </dd>
@@ -372,7 +372,7 @@ bin location is computed as the average of all distances within the bin.</p>
 
 <dl class="method">
 <dt id="gsum.helpers.VariogramFourthRoot.corr_ijkl">
-<code class="descname">corr_ijkl</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>k</em>, <em>l</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.corr_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.corr_ijkl" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">corr_ijkl</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">i</em>, <em class="sig-param">j</em>, <em class="sig-param">k</em>, <em class="sig-param">l</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.corr_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.corr_ijkl" title="Permalink to this definition">¶</a></dt>
 <dd><p>The correlation between <span class="math notranslate nohighlight">\(\sqrt(|Z_i - Z_j|)\)</span> and <span class="math notranslate nohighlight">\(\sqrt(|Z_k - Z_l|)\)</span>, estimated by gamma tilde</p>
 <p>This is estimated using gamma tilde, the estimate of the variogram via the 4th root transform.
 Because the estimate can exceed the bounds [-1, 1], any correlation outside this range is
@@ -381,20 +381,20 @@ manually set to +/-1.</p>
 
 <dl class="method">
 <dt id="gsum.helpers.VariogramFourthRoot.cov_ijkl">
-<code class="descname">cov_ijkl</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>k</em>, <em>l</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.cov_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.cov_ijkl" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">cov_ijkl</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">i</em>, <em class="sig-param">j</em>, <em class="sig-param">k</em>, <em class="sig-param">l</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.cov_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.cov_ijkl" title="Permalink to this definition">¶</a></dt>
 <dd><p>The covariance between <span class="math notranslate nohighlight">\(\sqrt(|Z_i - Z_j|)\)</span> and <span class="math notranslate nohighlight">\(\sqrt(|Z_k - Z_l|)\)</span>, estimated by gamma tilde</p>
 <p>Only estimates the correlation when <cite>(i,j) != (k,l)</cite>, otherwise uses 1.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gsum.helpers.VariogramFourthRoot.rho_ijkl">
-<code class="descname">rho_ijkl</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>k</em>, <em>l</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.rho_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.rho_ijkl" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">rho_ijkl</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">i</em>, <em class="sig-param">j</em>, <em class="sig-param">k</em>, <em class="sig-param">l</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.rho_ijkl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.rho_ijkl" title="Permalink to this definition">¶</a></dt>
 <dd><p>The correlation between <span class="math notranslate nohighlight">\((Z_i - Z_j)\)</span> and <span class="math notranslate nohighlight">\((Z_k - Z_l)\)</span>, estimated by gamma tilde</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gsum.helpers.VariogramFourthRoot.var_ij">
-<code class="descname">var_ij</code><span class="sig-paren">(</span><em>i</em>, <em>j</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.var_ij"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.var_ij" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">var_ij</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">i</em>, <em class="sig-param">j</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#VariogramFourthRoot.var_ij"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.VariogramFourthRoot.var_ij" title="Permalink to this definition">¶</a></dt>
 <dd><p>The variance of sqrt(<a href="#id3"><span class="problematic" id="id4">|Z_i - Z_j|</span></a>), estimated by gamma tilde</p>
 </dd></dl>
 
@@ -402,13 +402,13 @@ manually set to +/-1.</p>
 
 <dl class="function">
 <dt id="gsum.helpers.median_pdf">
-<code class="descclassname">gsum.helpers.</code><code class="descname">median_pdf</code><span class="sig-paren">(</span><em>pdf</em>, <em>x</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#median_pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.median_pdf" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">median_pdf</code><span class="sig-paren">(</span><em class="sig-param">pdf</em>, <em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#median_pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.median_pdf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the median given the pdf.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gsum.helpers.hpd_pdf">
-<code class="descclassname">gsum.helpers.</code><code class="descname">hpd_pdf</code><span class="sig-paren">(</span><em>pdf</em>, <em>alpha</em>, <em>x</em>, <em>x0=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#hpd_pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.hpd_pdf" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">gsum.helpers.</code><code class="sig-name descname">hpd_pdf</code><span class="sig-paren">(</span><em class="sig-param">pdf</em>, <em class="sig-param">alpha</em>, <em class="sig-param">x</em>, <em class="sig-param">x0=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/helpers.html#hpd_pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.helpers.hpd_pdf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the highest probability density interval given the pdf.</p>
 <p>Inspired by this answer <a class="reference external" href="https://stackoverflow.com/a/22290087">https://stackoverflow.com/a/22290087</a></p>
 </dd></dl>

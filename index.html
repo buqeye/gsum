@@ -22,11 +22,12 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Introduction" href="intro.html" />
+    <link rel="next" title="Examples" href="examples.html" />
   
    
 
@@ -41,7 +42,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="intro.html" title="Introduction"
+          <a href="examples.html" title="Examples"
              accesskey="N">next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">gsum 0.1 documentation</a> &#187;</li> 
       </ul>
@@ -62,7 +63,6 @@
     
     
       <ul>
-<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
 </ul>
@@ -121,51 +121,53 @@
 <p style="text-align:center;">
      <img src="https://cdn.rawgit.com/jordan-melendez/gsum/c85d832b/docs/logos/gsum.png" width="30%" alt="gsum logo" hspace="20"/>
      <img src="https://cdn.rawgit.com/jordan-melendez/buqeyemodel/af4da985/BUQEYE_fig.png" width="30%" alt="BUQEYE logo" hspace="20"/>
-</p><a class="reference external image-reference" href="https://mybinder.org/v2/gh/jordan-melendez/gsum/master"><img alt="https://mybinder.org/badge_logo.svg" src="https://mybinder.org/badge_logo.svg" /></a>
-<p>The gsum package provides convenient classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
-Specifically, this is a conjugacy-based implementation of the statistical model developed in <a class="reference external" href="https://arxiv.org/abs/1506.01343">this paper</a>.
+</p><p>The <cite>gsum</cite> package provides convenient classes that allow one to analyze the convergence pattern of Effective Field Theory (EFT) observables.
+Specifically, this is a conjugacy-based implementation of the statistical model developed in <a class="reference external" href="https://arxiv.org/abs/1904.10581">this paper</a>.
 Although the package is fully functional, we are still working on filling in all of the documentation.
-Examples of how it was used to generate results can be found in the <a class="reference external" href="https://buqeye.github.io/gsum">documentation</a>.</p>
+Examples of how it was used to generate results can be found in the <a class="reference external" href="https://buqeye.github.io/gsum">documentation</a>.
+The notebooks used in the documentation can be found in <a class="reference external" href="https://github.com/buqeye/gsum/tree/master/docs/notebooks">docs/notebooks</a>.</p>
 </div>
 <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
 <p>The current working branch can be installed via</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> pip install git+https://github.com/jordan-melendez/gsum
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> pip install git+https://github.com/buqeye/gsum
 </pre></div>
 </div>
 <p>Additionally, one can clone the repository and install using</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> git clone https://github.com/jordan-melendez/gsum.git
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> git clone https://github.com/buqeye/gsum.git
 <span class="gp">$</span> <span class="nb">cd</span> gsum
 <span class="gp">$</span> pip install .
 </pre></div>
 </div>
 <p>This will install the package as is, but if you want to make edits to the code for testing you can exchange the last line with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code>, which will allow you to edit the package without reinstalling.</p>
+<p>For some Mac users, the build might fail when using the <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> method. This may be due to the removal of the <cite>usr/include</cite> directory from new MacOS versions.
+Running the following command will fix this problem:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
+</pre></div>
+</div>
 <p>Soon, an up-to-date version of this package will be added to <cite>pip</cite>, for an easier installation process.</p>
 </div>
 <div class="section" id="dependencies">
 <h1>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h1>
-<p>gsum is compatible with python 3, but has not been tested with python 2.</p>
+<p>gsum is compatible with python 3, but has not been tested with python 2.
+See the requirements.txt for the full list of dependencies.</p>
 </div>
 <div class="section" id="citing-gsum">
 <h1>Citing gsum<a class="headerlink" href="#citing-gsum" title="Permalink to this headline">¶</a></h1>
-<p>If you have found this package helpful, please cite our paper Melendez et al. (2019), “Correlated Truncation Errors in Effective Field Theory”.</p>
+<p>If you have found this package helpful, please cite our paper Melendez et al. (2019), “Quantifying Correlated Truncation Errors in Effective Field Theory” <a class="reference external" href="https://arxiv.org/abs/1904.10581">arXiv:1904.10581</a>.</p>
 </div>
 <div class="section" id="contact">
 <h1>Contact<a class="headerlink" href="#contact" title="Permalink to this headline">¶</a></h1>
-<p>To report an issue please use the <a class="reference external" href="https://github.com/jordan-melendez/gsum/issues">issue tracker</a>.</p>
+<p>To report an issue please use the <a class="reference external" href="https://github.com/buqeye/gsum/issues">issue tracker</a>.</p>
 </div>
 <div class="section" id="license">
 <h1>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h1>
-<p><a class="reference external" href="https://github.com/jordan-melendez/gsum/blob/master/LICENSE.txt">MIT License</a>.</p>
+<p><a class="reference external" href="https://github.com/buqeye/gsum/blob/master/LICENSE.txt">MIT License</a>.</p>
 </div>
 <div class="section" id="contents">
 <h1>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#purpose">Purpose</a></li>
-</ul>
-</li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/truncation_recap.html">Bayesian truncation errors in chiral effective field theory: A Pointwise Approach</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebooks/correlated_EFT_publication.html">Correlated Truncation Errors in Effective Field Theory: The code behind the manuscript</a></li>
@@ -194,7 +196,7 @@ Examples of how it was used to generate results can be found in the <a class="re
   <div class="footer-relations">
     
       <div class="pull-right">
-        <a class="btn btn-default" href="intro.html" title="next chapter (use the right arrow)">Introduction</a>
+        <a class="btn btn-default" href="examples.html" title="next chapter (use the right arrow)">Examples</a>
       </div>
     </div>
     <div class="clearer"></div>
@@ -212,7 +214,7 @@ Examples of how it was used to generate results can be found in the <a class="re
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="intro.html" title="Introduction"
+          <a href="examples.html" title="Examples"
              >next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">gsum 0.1 documentation</a> &#187;</li> 
       </ul>

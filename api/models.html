@@ -22,6 +22,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -67,7 +68,6 @@
     
     
       <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Models</a></li>
@@ -113,23 +113,99 @@
 <span id="models"></span><h1>Models<a class="headerlink" href="#module-gsum.models" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="gsum.models.ConjugateGaussianProcess">
-<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">ConjugateGaussianProcess</code><span class="sig-paren">(</span><em>kernel=None</em>, <em>center=0</em>, <em>disp=1</em>, <em>df=1</em>, <em>scale=1</em>, <em>sd=None</em>, <em>basis=None</em>, <em>nugget=1e-10</em>, <em>optimizer='fmin_l_bfgs_b'</em>, <em>n_restarts_optimizer=0</em>, <em>copy_X_train=True</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateGaussianProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateGaussianProcess" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">gsum.models.</code><code class="sig-name descname">ConjugateGaussianProcess</code><span class="sig-paren">(</span><em class="sig-param">kernel=None</em>, <em class="sig-param">center=0</em>, <em class="sig-param">disp=1</em>, <em class="sig-param">df=1</em>, <em class="sig-param">scale=1</em>, <em class="sig-param">sd=None</em>, <em class="sig-param">basis=None</em>, <em class="sig-param">nugget=1e-10</em>, <em class="sig-param">optimizer='fmin_l_bfgs_b'</em>, <em class="sig-param">n_restarts_optimizer=0</em>, <em class="sig-param">copy_X_train=True</em>, <em class="sig-param">random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateGaussianProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateGaussianProcess" title="Permalink to this definition">¶</a></dt>
 <dd><p>A conjugacy-based Gaussian Process class.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>kernel</strong><span class="classifier">callable</span></dt><dd><p>The kernel for the correlation matrix. The covariance matrix is the kernel multiplied by the squared scale.</p>
+</dd>
+<dt><strong>center</strong><span class="classifier">float</span></dt><dd><p>The prior central values for the parameters of the mean function.</p>
+</dd>
+<dt><strong>disp</strong><span class="classifier">float &gt;= 0</span></dt><dd><p>The dispersion parameter for the normal prior placed on the mean. This, multiplied by the squared scale
+parameter from the inverse chi squared prior, determines the variance of the mean.
+The smaller the dispersion, the better determined is the mean.
+Set this to zero for a mean that is known to be <cite>mean</cite>.</p>
+</dd>
+<dt><strong>df</strong><span class="classifier">float &gt; 0</span></dt><dd><p>The degrees of freedom parameter for the inverse chi squared prior placed on the marginal variance.
+This is a measure of how well the marginal standard deviation (or variance) is known, with
+larger degrees of freedom implying a better known standard deviation. Set this to infinity for a
+standard deviation that is known to be <cite>scale</cite>, or use the <cite>sd</cite> keyword argument.</p>
+</dd>
+<dt><strong>scale</strong><span class="classifier">float &gt; 0</span></dt><dd><p>The scale parameter of the scaled inverse chi squared prior placed on the marginal variance
+of the Gaussian process. Approximately the prior standard deviation for the Gaussian process.</p>
+</dd>
+<dt><strong>sd</strong><span class="classifier">float &gt; 0, optional</span></dt><dd><p>A convenience argument that sets the marginal standard deviation for the Gaussian process.
+This is equivalent to setting df0 to infinity and scale0 to sd
+(i.e., a delta function prior on the standard deviation).</p>
+</dd>
+<dt><strong>nugget</strong><span class="classifier">float, optional (default: 1e-10)</span></dt><dd><p>Value added to the diagonal of the correlation matrix during fitting.
+Larger values correspond to increased noise level in the observations.
+This can also prevent a potential numerical issue during fitting, by
+ensuring that the calculated values form a positive definite matrix.</p>
+</dd>
+<dt><strong>optimizer</strong><span class="classifier">string or callable, optional (default: “fmin_l_bfgs_b”)</span></dt><dd><p>Can either be one of the internally supported optimizers for optimizing
+the kernel’s parameters, specified by a string, or an externally
+defined optimizer passed as a callable. If a callable is passed, it
+must have the signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">optimizer</span><span class="p">(</span><span class="n">obj_func</span><span class="p">,</span> <span class="n">initial_theta</span><span class="p">,</span> <span class="n">bounds</span><span class="p">):</span>
+    <span class="c1"># * &#39;obj_func&#39; is the objective function to be minimized, which</span>
+    <span class="c1">#   takes the hyperparameters theta as parameter and an</span>
+    <span class="c1">#   optional flag eval_gradient, which determines if the</span>
+    <span class="c1">#   gradient is returned additionally to the function value</span>
+    <span class="c1"># * &#39;initial_theta&#39;: the initial value for theta, which can be</span>
+    <span class="c1">#   used by local optimizers</span>
+    <span class="c1"># * &#39;bounds&#39;: the bounds on the values of theta</span>
+    <span class="o">....</span>
+    <span class="c1"># Returned are the best found hyperparameters theta and</span>
+    <span class="c1"># the corresponding value of the target function.</span>
+    <span class="k">return</span> <span class="n">theta_opt</span><span class="p">,</span> <span class="n">func_min</span>
+</pre></div>
+</div>
+<p>Per default, the ‘fmin_l_bfgs_b’ algorithm from scipy.optimize
+is used. If None is passed, the kernel’s parameters are kept fixed.
+Available internal optimizers are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;fmin_l_bfgs_b&#39;</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>n_restarts_optimizer</strong><span class="classifier">int, optional (default: 0)</span></dt><dd><p>The number of restarts of the optimizer for finding the kernel’s
+parameters which maximize the log-marginal likelihood. The first run
+of the optimizer is performed from the kernel’s initial parameters,
+the remaining ones (if any) from thetas sampled log-uniform randomly
+from the space of allowed theta-values. If greater than 0, all bounds
+must be finite. Note that n_restarts_optimizer == 0 implies that one
+run is performed.</p>
+</dd>
+<dt><strong>copy_X_train</strong><span class="classifier">bool, optional (default: True)</span></dt><dd><p>If True, a persistent copy of the training data is stored in the
+object. Otherwise, just a reference to the training data is stored,
+which might cause predictions to change if the data is modified
+externally.</p>
+</dd>
+<dt><strong>random_state</strong><span class="classifier">int, RandomState instance or None, optional (default: None)</span></dt><dd><p>The generator used to initialize the centers. If int, random_state is
+the seed used by the random number generator; If RandomState instance,
+random_state is the random number generator; If None, the random number
+generator is the RandomState instance used by <cite>np.random</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 <dl class="method">
 <dt id="gsum.models.ConjugateGaussianProcess.log_marginal_likelihood">
-<code class="descname">log_marginal_likelihood</code><span class="sig-paren">(</span><em>theta=None</em>, <em>eval_gradient=False</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateGaussianProcess.log_marginal_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateGaussianProcess.log_marginal_likelihood" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">log_marginal_likelihood</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">theta=None</em>, <em class="sig-param">eval_gradient=False</em>, <em class="sig-param">X=None</em>, <em class="sig-param">y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateGaussianProcess.log_marginal_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateGaussianProcess.log_marginal_likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns log-marginal likelihood of theta for training data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>theta</strong><span class="classifier">array-like, shape = (n_kernel_params,) or None</span></dt><dd><p>Kernel hyperparameters for which the log-marginal likelihood is
-evaluated. If None, the precomputed log_marginal_likelihood
-of <code class="docutils literal notranslate"><span class="pre">self.kernel_.theta</span></code> is returned.</p>
+evaluated. If <cite>None</cite>, and fit() has been called, the precomputed
+log_marginal_likelihood of <code class="docutils literal notranslate"><span class="pre">self.kernel_.theta</span></code> is returned.</p>
 </dd>
 <dt><strong>eval_gradient</strong><span class="classifier">bool, default: False</span></dt><dd><p>If True, the gradient of the log-marginal likelihood with respect
 to the kernel hyperparameters at position theta is returned
 additionally. If True, theta must not be None.</p>
 </dd>
+<dt><strong>X</strong><span class="classifier">array</span></dt><dd></dd>
 <dt><strong>y</strong><span class="classifier">array, shape = (n_samples, [n_curves]), optional</span></dt><dd><p>The observed data to use. Defaults to <cite>y</cite> passed in <cite>fit</cite>.</p>
 </dd>
 <dt><strong>Returns</strong></dt><dd></dd>
@@ -149,11 +225,18 @@ Only returned when eval_gradient is True.</p>
 
 <dl class="class">
 <dt id="gsum.models.ConjugateStudentProcess">
-<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">ConjugateStudentProcess</code><span class="sig-paren">(</span><em>kernel=None</em>, <em>center=0</em>, <em>disp=1</em>, <em>df=1</em>, <em>scale=1</em>, <em>sd=None</em>, <em>basis=None</em>, <em>nugget=1e-10</em>, <em>optimizer='fmin_l_bfgs_b'</em>, <em>n_restarts_optimizer=0</em>, <em>copy_X_train=True</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateStudentProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateStudentProcess" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">gsum.models.</code><code class="sig-name descname">ConjugateStudentProcess</code><span class="sig-paren">(</span><em class="sig-param">kernel=None</em>, <em class="sig-param">center=0</em>, <em class="sig-param">disp=1</em>, <em class="sig-param">df=1</em>, <em class="sig-param">scale=1</em>, <em class="sig-param">sd=None</em>, <em class="sig-param">basis=None</em>, <em class="sig-param">nugget=1e-10</em>, <em class="sig-param">optimizer='fmin_l_bfgs_b'</em>, <em class="sig-param">n_restarts_optimizer=0</em>, <em class="sig-param">copy_X_train=True</em>, <em class="sig-param">random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateStudentProcess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateStudentProcess" title="Permalink to this definition">¶</a></dt>
 <dd><p>A conjugacy-based Student-t Process class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>%(BaseConjugateProcess.parameters)s</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
 <dl class="method">
 <dt id="gsum.models.ConjugateStudentProcess.predict">
-<code class="descname">predict</code><span class="sig-paren">(</span><em>X</em>, <em>return_std=False</em>, <em>return_cov=False</em>, <em>Xc=None</em>, <em>y=None</em>, <em>pred_noise=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateStudentProcess.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateStudentProcess.predict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">X</em>, <em class="sig-param">return_std=False</em>, <em class="sig-param">return_cov=False</em>, <em class="sig-param">Xc=None</em>, <em class="sig-param">y=None</em>, <em class="sig-param">pred_noise=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#ConjugateStudentProcess.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.ConjugateStudentProcess.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the predictive GP at the points X</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -193,17 +276,17 @@ Only returned when return_cov is True.</p>
 
 <dl class="class">
 <dt id="gsum.models.TruncationGP">
-<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">TruncationGP</code><span class="sig-paren">(</span><em>kernel=None</em>, <em>ratio=0.5</em>, <em>ref=1</em>, <em>excluded=None</em>, <em>ratio_kws=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationGP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationGP" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">gsum.models.</code><code class="sig-name descname">TruncationGP</code><span class="sig-paren">(</span><em class="sig-param">kernel=None</em>, <em class="sig-param">ratio=0.5</em>, <em class="sig-param">ref=1</em>, <em class="sig-param">excluded=None</em>, <em class="sig-param">ratio_kws=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationGP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationGP" title="Permalink to this definition">¶</a></dt>
 <dd><p>A Gaussian Process Truncation class</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="gsum.models.TruncationTP">
-<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">TruncationTP</code><span class="sig-paren">(</span><em>kernel=None</em>, <em>ratio=0.5</em>, <em>ref=1</em>, <em>excluded=None</em>, <em>ratio_kws=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationTP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationTP" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">gsum.models.</code><code class="sig-name descname">TruncationTP</code><span class="sig-paren">(</span><em class="sig-param">kernel=None</em>, <em class="sig-param">ratio=0.5</em>, <em class="sig-param">ref=1</em>, <em class="sig-param">excluded=None</em>, <em class="sig-param">ratio_kws=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationTP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationTP" title="Permalink to this definition">¶</a></dt>
 <dd><p>A Student-t Process Truncation class</p>
 <dl class="method">
 <dt id="gsum.models.TruncationTP.predict">
-<code class="descname">predict</code><span class="sig-paren">(</span><em>X</em>, <em>order</em>, <em>return_std=False</em>, <em>return_cov=False</em>, <em>Xc=None</em>, <em>y=None</em>, <em>pred_noise=False</em>, <em>kind='both'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationTP.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationTP.predict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">X</em>, <em class="sig-param">order</em>, <em class="sig-param">return_std=False</em>, <em class="sig-param">return_cov=False</em>, <em class="sig-param">Xc=None</em>, <em class="sig-param">y=None</em>, <em class="sig-param">pred_noise=False</em>, <em class="sig-param">kind='both'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationTP.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationTP.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the predictive GP at the points X</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -229,7 +312,7 @@ affect the <cite>y</cite> used to update hyperparameters.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>mean, (mean, std), or (mean, cov), depending on `return_std` and `return_cov`</strong></dt><dd></dd>
+<dt>mean, (mean, std), or (mean, cov), depending on <cite>return_std</cite> and <cite>return_cov</cite></dt><dd></dd>
 </dl>
 </dd>
 </dl>
@@ -239,7 +322,7 @@ affect the <cite>y</cite> used to update hyperparameters.</p>
 
 <dl class="class">
 <dt id="gsum.models.TruncationPointwise">
-<em class="property">class </em><code class="descclassname">gsum.models.</code><code class="descname">TruncationPointwise</code><span class="sig-paren">(</span><em>df=1</em>, <em>scale=1</em>, <em>excluded=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">gsum.models.</code><code class="sig-name descname">TruncationPointwise</code><span class="sig-paren">(</span><em class="sig-param">df=1</em>, <em class="sig-param">scale=1</em>, <em class="sig-param">excluded=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise" title="Permalink to this definition">¶</a></dt>
 <dd><p>A conjugacy-based implementation of the pointwise convergence model from Furnstahl et al. (2015)</p>
 <p>Implements the following model</p>
 <div class="math notranslate nohighlight">
@@ -266,7 +349,7 @@ Defaults to <cite>None</cite>.</p>
 </dl>
 <dl class="method">
 <dt id="gsum.models.TruncationPointwise.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>y</em>, <em>ratio</em>, <em>ref=1</em>, <em>orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.fit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">y</em>, <em class="sig-param">ratio</em>, <em class="sig-param">ref=1</em>, <em class="sig-param">orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.fit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
@@ -281,7 +364,7 @@ Defaults to <cite>None</cite>.</p>
 
 <dl class="method">
 <dt id="gsum.models.TruncationPointwise.interval">
-<code class="descname">interval</code><span class="sig-paren">(</span><em>alpha</em>, <em>orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.interval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.interval" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">interval</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">alpha</em>, <em class="sig-param">orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.interval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.interval" title="Permalink to this definition">¶</a></dt>
 <dd><p>A convenience method to call <cite>interval</cite> on the truncation error distribution object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -295,7 +378,7 @@ Defaults to <cite>None</cite>.</p>
 
 <dl class="method">
 <dt id="gsum.models.TruncationPointwise.log_likelihood">
-<code class="descname">log_likelihood</code><span class="sig-paren">(</span><em>ratio=None</em>, <em>ref=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.log_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.log_likelihood" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">log_likelihood</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">ratio=None</em>, <em class="sig-param">ref=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.log_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.log_likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the log likelihood for the ratio and ref parameters given the data passed to <cite>fit</cite>.</p>
 <p>That is</p>
 <div class="math notranslate nohighlight">
@@ -313,7 +396,7 @@ pr(\vec{c}_k) &amp; = \frac{\Gamma(\nu/2)}{\Gamma(\nu_0/2)}
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>float</strong></dt><dd><p>The log likelihood</p>
+<dt>float</dt><dd><p>The log likelihood</p>
 </dd>
 </dl>
 </dd>
@@ -322,7 +405,7 @@ pr(\vec{c}_k) &amp; = \frac{\Gamma(\nu/2)}{\Gamma(\nu_0/2)}
 
 <dl class="method">
 <dt id="gsum.models.TruncationPointwise.logpdf">
-<code class="descname">logpdf</code><span class="sig-paren">(</span><em>y</em>, <em>orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.logpdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.logpdf" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">logpdf</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">y</em>, <em class="sig-param">orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.logpdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.logpdf" title="Permalink to this definition">¶</a></dt>
 <dd><p>A convenience method to call <cite>logpdf</cite> on the truncation error distribution object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -336,7 +419,7 @@ pr(\vec{c}_k) &amp; = \frac{\Gamma(\nu/2)}{\Gamma(\nu_0/2)}
 
 <dl class="method">
 <dt id="gsum.models.TruncationPointwise.pdf">
-<code class="descname">pdf</code><span class="sig-paren">(</span><em>y</em>, <em>orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.pdf" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">pdf</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">y</em>, <em class="sig-param">orders=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.pdf" title="Permalink to this definition">¶</a></dt>
 <dd><p>A convenience method to call <cite>pdf</cite> on the truncation error distribution object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -350,7 +433,7 @@ pr(\vec{c}_k) &amp; = \frac{\Gamma(\nu/2)}{\Gamma(\nu_0/2)}
 
 <dl class="method">
 <dt id="gsum.models.TruncationPointwise.std">
-<code class="descname">std</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.std"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.std" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">std</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gsum/models.html#TruncationPointwise.std"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gsum.models.TruncationPointwise.std" title="Permalink to this definition">¶</a></dt>
 <dd><p>A convenience method to call <cite>std</cite> on the truncation error distribution object.</p>
 </dd></dl>
 
