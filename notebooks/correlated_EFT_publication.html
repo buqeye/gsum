@@ -443,9 +443,9 @@ div.rendered_html tbody tr:hover {
 <h3>Figure 1: Predictions to Coefficients<a class="headerlink" href="#Figure-1:-Predictions-to-Coefficients" title="Permalink to this headline">¶</a></h3>
 <p>First we set up our toy data. Each coefficient in the EFT is a sample from a GP, with a squared exponential kernel, and the same correlation length (0.2) and standard deviation (1) at each order. The expansion parameter is 0.5 (quite large). The code below first generates the coefficients, and then creates predictions that are a sum of these order-by-order pieces by following</p>
 <div class="math notranslate nohighlight">
-\[ \begin{align}\begin{aligned}  \begin{align}
-  y_k = y_{ref} \sum_{n=0}^k c_n Q^n
-  \end{align}\\Note that within the toy model, one is guaranteed to recover the individual realizations of the GP :math:`c_n` by inverting this relation *if one has chosen the correct expansion parameter*.\end{aligned}\end{align} \]</div>
+\begin{align*}
+y_k = y_{ref} \sum_{n=0}^k c_n Q^n
+\end{align*}</div><p>Note that within the toy model, one is guaranteed to recover the individual realizations of the GP <span class="math notranslate nohighlight">\(c_n\)</span> by inverting this relation <em>if one has chosen the correct expansion parameter</em>.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
