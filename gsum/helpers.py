@@ -252,33 +252,21 @@ def hpd(dist, alpha, *args):
     return dist.ppf([start, alpha + start])
 
 
-def hpd_pdf(pdf, alpha, x, x0=None, **kwargs):
+def hpd_pdf(pdf, alpha, x):
     R"""Returns the highest probability density interval given the pdf.
 
     Inspired by this answer https://stackoverflow.com/a/22290087
     """
-    if x0 is None:
-        x0 = 0
 
-    # if opt_kwargs is None:
-    #     opt_kwargs = {}
+    def err_fn(p):
+        prob = np.trapz(pdf[pdf >= p], x=x[pdf >= p])
+        return (prob - alpha) ** 2
 
-    # if callable(pdf):
-    #     pdf_array = pdf(x, *args)
-    # else:
-    #     pdf_array = pdf
-    pdf_array = pdf
-
-    def err_fn(p, alpha_):
-        f = np.zeros(len(pdf_array))
-        mask_ = pdf_array > p
-        f[mask_] = pdf_array[mask_]
-        prob = np.trapz(f, x)
-        return (prob - alpha_) ** 2
-
-    horizontal = fmin(err_fn, x0=x0, args=(alpha,), **kwargs)[0]
-    interval = np.asarray(x)[pdf_array > horizontal]
-    return np.min(interval), np.max(interval)
+    heights = np.unique(pdf)
+    errs = np.array([err_fn(h) for h in heights])
+    horizontal = heights[np.argmin(errs)]
+    interval = np.asarray(x)[pdf > horizontal]
+    return np.array([np.min(interval), np.max(interval)])
 
 
 def median_pdf(pdf, x):
@@ -287,7 +275,7 @@ def median_pdf(pdf, x):
     """
     i = 0
     for i in range(len(x)):
-        p = np.trapz(pdf[:i], x[:i])
+        p = np.trapz(pdf[:i+1], x[:i+1])
         if p > 0.5:
             break
     return x[i]
