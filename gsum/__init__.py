@@ -27,3 +27,7 @@ from .helpers import VariogramFourthRoot
 from .helpers import geometric_sum
 
 from .cutils import pivoted_cholesky
+
+from .datasets import make_gaussian_partial_sums
+from .datasets import make_gaussian_partial_sums_on_grid
+from .datasets import make_gaussian_partial_sums_uniform
