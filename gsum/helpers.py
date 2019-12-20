@@ -312,7 +312,7 @@ def kl_gauss(mu0, cov0, mu1, cov1=None, chol1=None):
     
     Returns
     -------
-    number
+    float
         The KL divergence
     
     Raises
