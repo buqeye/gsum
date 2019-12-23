@@ -145,9 +145,13 @@ class Diagnostic:
 
         Parameters
         ----------
-        y : (n_curves, d) shaped array
+        y : (n_samples, [n_curves]) shaped array
         intervals : 1d array
             The credible intervals at which to perform the test
+
+        Returns
+        -------
+        array, shape = ([n_curves], n_intervals)
         """
         lower, upper = self.udist.interval(np.atleast_2d(intervals).T)
 
@@ -157,7 +161,8 @@ class Diagnostic:
 
         dci = np.apply_along_axis(
             diagnostic, axis=1, arr=np.atleast_2d(y).T, lower_=lower, upper_=upper)
-        dci = np.squeeze(dci)
+        if y.ndim == 1:
+            dci = np.squeeze(dci)  # If y didn't have n_curves dim, then remove it now.
         return dci
 
     @staticmethod
@@ -219,6 +224,8 @@ class GraphicalDiagnostic:
     def __init__(self, data, mean, cov, df=None, random_state=1, nref=1000, colors=None, markers=None, labels=None,
                  gray='lightgray', black='#262626'):
         self.diagnostic = Diagnostic(mean=mean, cov=cov, df=df, random_state=random_state)
+        if data.ndim == 1:
+            data = np.atleast_2d(data).T  # Add n_curves dim if it doesn't exist
         self.data = data
         self.samples = self.diagnostic.samples(nref)
         prop_list = list(mpl.rcParams['axes.prop_cycle'])

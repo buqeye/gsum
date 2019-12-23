@@ -34,8 +34,11 @@ class BaseConjugateProcess:
 
     Parameters
     ----------
-    kernel : callable
-        The kernel for the correlation matrix. The covariance matrix is the kernel multiplied by the squared scale.
+    kernel : kernel object
+        The kernel specifying the correlation function of the GP.
+        The covariance matrix is the kernel multiplied by the squared scale.
+        If None is passed, the kernel "RBF(1.0)" is used as default.
+        Note that the kernel’s hyperparameters are optimized during fitting.
     center : float
         The prior central values for the parameters of the mean function.
     disp : float >= 0
@@ -176,8 +179,10 @@ class BaseConjugateProcess:
             The prior regression coefficients for the mean
         disp0 : scalar or array, shape = (n_param, n_param)
             The prior dispersion for the regression coefficients
-        eval_gradient : bool
-        dR
+        eval_gradient : bool, optional
+            Whether to return the gradient with respect to the kernel hyperparameters. Defaults to False.
+        dR : array, shape = (n_samples, n_samples, n_kernel_params), optional
+            The gradient of the correlation matrix. This is required if eval_gradient is True.
 
         Returns
         -------
@@ -226,8 +231,10 @@ class BaseConjugateProcess:
             The basis for the `p` regression coefficients `beta`
         disp0 : (n_param, n_param)-shaped array
             The prior dispersion
-        eval_gradient : bool
-        dR
+        eval_gradient : bool, optional
+            Whether to return the gradient with respect to the kernel hyperparameters. Defaults to False.
+        dR : array, shape = (n_samples, n_samples, n_kernel_params), optional
+            The gradient of the correlation matrix. This is required if eval_gradient is True.
 
         Returns
         -------
@@ -265,8 +272,10 @@ class BaseConjugateProcess:
             The data to condition upon
         df0 : scalar
             The prior degrees of freedom
-        eval_gradient
-        dR
+        eval_gradient : bool, optional
+            Whether to return the gradient with respect to the kernel hyperparameters. Defaults to False.
+        dR : array, shape = (n_samples, n_samples, n_kernel_params), optional
+            The gradient of the correlation matrix. This is required if eval_gradient is True.
 
         Returns
         -------
@@ -303,9 +312,9 @@ class BaseConjugateProcess:
         scale0 : scalar
             The prior scale hyperparameter
         eval_gradient : bool, optional
-            Whether to return to the gradient with respect to kernel hyperparameters. Optional, defaults to False.
+            Whether to return to the gradient with respect to kernel hyperparameters. Defaults to False.
         dR : array, shape = (n_samples, n_samples, n_kernel_params), optional
-            The gradient of the correlation matrix
+            The gradient of the correlation matrix. This is required if eval_gradient is True.
 
         Returns
         -------
@@ -358,24 +367,24 @@ class BaseConjugateProcess:
 
         Parameters
         ----------
-        y : array, shape = (n_samples, [n_curves])
+        y : ndarray, shape = (n_samples, [n_curves])
             The data to condition upon
-        chol : array, shape = (n_samples, n_samples)
+        chol : ndarray, shape = (n_samples, n_samples)
             The lower Cholesky decomposition of the correlation matrix
-        basis : array, shape = (n_samples, n_param)
+        basis : ndarray, shape = (n_samples, n_param)
             The basis for the `p` regression coefficients `beta`
-        center0 : scalar or array, shape = (n_param)
+        center0 : int or float or array, shape = (n_param)
             The prior regression coefficients for the mean
-        disp0 : array, shape = (n_param, n_param)
+        disp0 : ndarray, shape = (n_param, n_param)
             The prior dispersion
-        df0 : scalar
+        df0 : int or float
             The prior degrees of freedom hyperparameter
-        scale0 : scalar
+        scale0 : int or float
             The prior scale hyperparameter
-        eval_gradient : bool
-            Whether to return to the gradient with respect to kernel hyperparameters. Optional, defaults to False.
+        eval_gradient : bool, optional
+            Whether to return to the gradient with respect to kernel hyperparameters. Defaults to False.
         dR : array, shape = (n_samples, n_samples, n_kernel_params)
-            The gradient of the correlation matrix
+            The gradient of the correlation matrix. This is required if eval_gradient is True.
 
         Returns
         -------
@@ -467,6 +476,26 @@ class BaseConjugateProcess:
         return self.basis(X) @ center
 
     def cov(self, X, Xp=None):
+        R"""Computes the covariance matrix.
+
+        If `fit` has not been called, then this uses the prior values of `df` and `scale` and the default
+        unoptimized kernel. Otherwise it uses the posterior values of `df` and `scale`, and the optimized kernel.
+        This does not return the conditional covariance matrix. For that, use `predict`.
+
+        Parameters
+        ----------
+        X : array, shape = (n_samples, n_features)
+        Xp : array, optional, shape = (n_samples2, n_features)
+
+        Returns
+        -------
+        array, shape = (n_samples, n_samples2)
+
+        Raises
+        ------
+        ValueError if the degrees of freedom is less than 2, since the covariance does not exist in this case.
+        This could happen if `fit` is not called and the provided `df` is less than 2.
+        """
         if Xp is None:
             Xp = X
 
@@ -605,16 +634,23 @@ class BaseConjugateProcess:
         else:
             return y_mean
 
+    @docstrings.get_sectionsf('BaseConjugateProcess_predict')
+    @docstrings.dedent
     def predict(self, X, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False):
-        """Returns the predictive GP at the points X
+        """
+        Predict using the Gaussian process regression model at the points `X`
+
+        Calling `predict` before calling `fit` will use the GP prior.
+        In addition to the mean of the predictive distribution, its standard deviation (return_std=True)
+        or covariance (return_cov=True) can be returned. Note that at most one of the two can be requested.
 
         Parameters
         ----------
         X : array, shape = (n_samples, n_features)
             Locations at which to predict the new y values
-        return_std : bool
+        return_std : bool, optional (default = False)
             Whether the marginal standard deviation of the predictive process is to be returned
-        return_cov : bool
+        return_cov : bool, optional (default = False)
             Whether the covariance matrix of the predictive process is to be returned
         Xc : array, shape = (n_conditional_samples, n_features)
             Locations at which to condition. Defaults to `X` used in fit. This *does not*
@@ -623,7 +659,7 @@ class BaseConjugateProcess:
             Points upon which to condition. Defaults to the `y` used in `fit`. This *does not*
             affect the `y` used to update hyperparameters.
         pred_noise : bool, optional
-            Adds `noise_sd` to the diagonal of the covariance matrix if `return_cov == True`.
+            Adds `nugget` to the diagonal of the covariance matrix if `return_cov == True`.
 
         Returns
         -------
@@ -679,7 +715,22 @@ class BaseConjugateProcess:
         return m_pred
 
     def sample_y(self, X, n_samples=1, random_state=0, underlying=False):
-        """Taken from scikit-learn's gp module"""
+        """Draw samples from Gaussian process and evaluate at X. (Taken from scikit-learn's gp module)
+
+        Parameters
+        ----------
+        X : array, shape = (n_samples, n_features)
+        n_samples : int, optional (default = 1)
+        random_state : int, RandomState instance or None, optional (default=0)
+            If int, random_state is the seed used by the random number generator;
+            If RandomState instance, random_state is the random number generator;
+            If None, the random number generator is the RandomState instance used by np.random.
+
+        Returns
+        -------
+        y_samples : array, shape = (n_samples, [n_curves])
+            Output samples from the GP at input points X.
+        """
         rng = check_random_state(random_state)
 
         if underlying:
@@ -700,10 +751,9 @@ class BaseConjugateProcess:
     def log_marginal_likelihood(self, theta=None, eval_gradient=False, X=None, y=None):
         raise NotImplementedError
 
-    # def likelihood(self, log=True, X=None, y=None, **kernel_kws):
-    #     raise NotImplementedError
-
     def _constrained_optimization(self, obj_func, initial_theta, bounds):
+        R"""A method to find the best kernel hyperparameters. Taken from scikit-learn.
+        """
         if self.optimizer == "fmin_l_bfgs_b":
             theta_opt, func_min, convergence_dict = \
                 fmin_l_bfgs_b(obj_func, initial_theta, bounds=bounds)
@@ -742,9 +792,11 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
             If True, the gradient of the log-marginal likelihood with respect
             to the kernel hyperparameters at position theta is returned
             additionally. If True, theta must not be None.
-        X : array
+        X : array, shape = (n_samples, n_features), optional
+            The input data to use for the kernel. Defaults to `X` passed in `fit`.
         y : array, shape = (n_samples, [n_curves]), optional
             The observed data to use. Defaults to `y` passed in `fit`.
+
         Returns
         -------
         log_likelihood : float
@@ -877,6 +929,7 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
         return np.exp(log_like)
 
 
+@docstrings.dedent
 class ConjugateStudentProcess(BaseConjugateProcess):
     R"""A conjugacy-based Student-t Process class.
 
@@ -910,7 +963,15 @@ class ConjugateStudentProcess(BaseConjugateProcess):
         corr = kernel(X, Xp)
         return var * (corr + self.basis(X) @ disp @ self.basis(Xp).T)
 
+    @docstrings.dedent
     def predict(self, X, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False):
+        R"""
+
+        Parameters
+        ----------
+        %(BaseConjugateProcess_predict.parameters)s
+        """
+
         pred = super(ConjugateStudentProcess, self).predict(
             X=X, return_std=return_std, return_cov=return_cov, Xc=Xc, y=y, pred_noise=pred_noise)
 
@@ -1055,22 +1116,27 @@ def _default_ratio(X, ratio):
     return ratio * np.ones(X.shape[0])
 
 
+@docstrings.dedent
 class TruncationProcess:
     R"""
 
     Parameters
     ----------
-    kernel
-    ratio
-    ref
-    excluded : 1d array
+    kernel : sklearn.Kernel
+
+    ratio : scalar or callable
+    ref : scalar or callable
+    excluded : 1d array, optional
         The set of orders to ignore when constructing process for y_order and dy_order, i.e., the geometric sum
         will not include these values
-    ratio_kws
-    kernel_kws
-    nugget
-    verbose
-    kwargs
+    ratio_kws : dict, optional
+    kernel_kws : dict, optional
+    nugget : float, optional
+    verbose : bool, optional
+
+    Other Parameters
+    ----------------
+    %(BaseConjugateProcess.parameters)s
     """
 
     def __init__(self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs):
@@ -1143,7 +1209,12 @@ class TruncationProcess:
 
         # Extract the coefficients based on best ratio value and setup/fit the iid coefficient process
         ratio = self.ratio(X, **self.ratio_kws)
-        self.coeffs_ = coefficients(y=y, ratio=ratio, ref=self.ref(X), orders=orders)[:, orders_mask]
+        ref = self.ref(X)
+        if np.atleast_1d(ratio).ndim > 1:
+            raise ValueError('ratio must return a 1d array or a scalar')
+        if np.atleast_1d(ref).ndim > 1:
+            raise ValueError('ref must return a 1d array or a scalar')
+        self.coeffs_ = coefficients(y=y, ratio=ratio, ref=ref, orders=orders)[:, orders_mask]
         # self.coeffs_process_ = self.coeffs_process_class(kernel=self.kernel, **self.coeffs_process_kwargs)
         self.coeffs_process.fit(X=X, y=self.coeffs_)
         self._fit = True
