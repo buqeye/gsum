@@ -8,9 +8,10 @@ def add_pdf_metadata(pdf_file, metadata_dict):
     """
     Adds a Python dict to the metadata in a pdf_file.
     Uses PyPDF2 and a temporary file.
-    There are no doubt better ways to do this! 
-    PyPDF2 needs the keys in the dict to have a "/" in front; these are added
-     automagically by this function. 
+    This is an alternative to using PdfPages from matplotlib.backends.backend_pdf 
+    PyPDF2 needs the keys in the dict to have a "/" in front;  these are added
+     automagically by this function. Furthermore the keys can't have whitespace and
+     the values must be strings.
     
     Parameters
     ----------
@@ -18,7 +19,7 @@ def add_pdf_metadata(pdf_file, metadata_dict):
         The pdf file to be modified.
     metadata_dict : dict
         dict to be added to the pdf metadata (without "/" in front of names,
-          no spaces in names, and only strings for keys).
+          no spaces in names, and only strings for values).
     """
     
     assert isinstance(metadata_dict, dict), \
