@@ -25,27 +25,28 @@ def add_pdf_metadata(pdf_file, metadata_dict):
     assert isinstance(metadata_dict, dict), \
                       "2nd argument must be a dict"
     
-    fin = open(pdf_file, 'rb')
-    reader = PdfFileReader(fin)
+    # Initialize the Reader object with the pdf file passed to the function
+    fin = open(pdf_file, 'rb')  # 'rb' is read, binary
+    reader = PdfFileReader(fin)  
     
+    # Copy to the Writer object the pages from the input pdf file
     writer = PdfFileWriter()
-    writer.appendPagesFromReader(reader)
-            
+    writer.appendPagesFromReader(reader)          
         
+    # Copy over the existing metadata    
     metadata = reader.getDocumentInfo()
     writer.addMetadata(metadata)
     
-    # Append the custom metadata dict
+    # Append the custom metadata dict with user entries, prefixing "/" to keys
     metadata_dict_added = {}
     for key, value in metadata_dict.items():
         new_key = "/" + key
         metadata_dict_added[new_key] = value
-
     writer.addMetadata(metadata_dict_added)
     
     # Write out the full pdf file to a temporary file
     _, temp_file_path = tempfile.mkstemp()
-    fout = open(temp_file_path, 'wb')
+    fout = open(temp_file_path, 'wb')  # 'wb' is write, binary
     writer.write(fout)
     
     # Close up the input and output streams 
@@ -71,11 +72,12 @@ def get_pdf_metadata(pdf_file, exclude=True):
 
     fin = open(pdf_file, 'rb')
     reader = PdfFileReader(fin)
-    metadata = reader.getDocumentInfo()
+    metadata = reader.getDocumentInfo()  # gets *all* of the metadata
     
     # Close up the input stream 
     fin.close()
     
+    # Standard pdf keys according to Adobe.  Removed if exclude=True
     if exclude:
         pdf_keys = ["/Producer", "/CreationDate", "/Creator", "/Author",
                     "/Subject", "/Title", "/Keywords", "/ModDate"]
@@ -83,9 +85,10 @@ def get_pdf_metadata(pdf_file, exclude=True):
             if key in metadata:
                 del metadata[key]
 
+    # Remove leading "/"s and convert from PyPDF2 object to a simple dict
     stripped_metadata = {}
     for key, value in metadata.items():
-        new_key = key.replace("/", "", 1)
+        new_key = key.replace("/", "", 1)  # only replace if at front of string
         stripped_metadata[new_key] = value
                 
     return stripped_metadata
