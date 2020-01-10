@@ -1171,20 +1171,21 @@ class TruncationProcess:
 
     def mean(self, X, start=0, end=np.inf):
         coeff_mean = self.coeffs_process.mean(X=X)
-        ratio_sum = geometric_sum(x=self.ratio(X), start=start, end=end, excluded=self.excluded)
+        ratio_sum = geometric_sum(x=self.ratio(X, **self.ratio_kws), start=start, end=end, excluded=self.excluded)
         return self.ref(X) * ratio_sum * coeff_mean
 
     def cov(self, X, Xp=None, start=0, end=np.inf):
         Xp = X if Xp is None else Xp
         coeff_cov = self.coeffs_process.cov(X=X, Xp=Xp)
-        ratio_mat = self.ratio(X)[:, None] * self.ratio(Xp)
+        ratio_mat = self.ratio(X, **self.ratio_kws)[:, None] * self.ratio(Xp, **self.ratio_kws)
         ratio_sum = geometric_sum(x=ratio_mat, start=start, end=end, excluded=self.excluded)
         ref_mat = self.ref(X)[:, None] * self.ref(Xp)
         return ref_mat * ratio_sum * coeff_cov
 
     def basis(self, X, start=0, end=np.inf):
         cn_basis = self.coeffs_process.basis(X=X)
-        ratio_sum = geometric_sum(x=self.ratio(X)[:, None], start=start, end=end, excluded=self.excluded)
+        ratio = self.ratio(X, **self.ratio_kws)[:, None]
+        ratio_sum = geometric_sum(x=ratio, start=start, end=end, excluded=self.excluded)
         return self.ref(X)[:, None] * ratio_sum * cn_basis
 
     def underlying_properties(self, X, order, return_std=False, return_cov=False):
