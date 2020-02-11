@@ -222,7 +222,7 @@ class GraphicalDiagnostic:
     # soft_black = '#262626'
 
     def __init__(self, data, mean, cov, df=None, random_state=1, nref=1000, colors=None, markers=None, labels=None,
-                 gray='lightgray', black='#262626'):
+                 gray='lightgray', black='#262626', markeredgecolors=None, markerfillstyles=None):
         self.diagnostic = Diagnostic(mean=mean, cov=cov, df=df, random_state=random_state)
         if data.ndim == 1:
             data = np.atleast_2d(data).T  # Add n_curves dim if it doesn't exist
@@ -234,10 +234,16 @@ class GraphicalDiagnostic:
             colors = [c['color'] for c in prop_list]
         if markers is None:
             markers = ['o' for c in prop_list]
+        if markeredgecolors is None:
+            markeredgecolors = [None for c in prop_list]
+        if markerfillstyles is None:
+            markerfillstyles = ['full' for c in prop_list]
         if labels is None:
             labels = np.array([r'$c_{{{}}}$'.format(i) for i in range(data.shape[-1])])
         self.labels = labels
         self.markers = markers
+        self.markeredgecolors = markeredgecolors
+        self.markerfillstyles = markerfillstyles
         self.marker_cycle = cycler('marker', colors)
         self.colors = colors
         self.color_cycle = cycler('color', colors)
@@ -259,11 +265,22 @@ class GraphicalDiagnostic:
         ax.axhline(-2 * sd, 0, 1, color=self.gray, label=r'$2\sigma$', zorder=0, lw=1)
         ax.axhline(2 * sd, 0, 1, color=self.gray, zorder=0, lw=1)
         index = np.arange(1, self.data.shape[0]+1)
+        size = 8
 
         if err.ndim == 1:
             err = err[:, None]
         for i, error in enumerate(err.T):
-            ax.plot(index, error, ls='', color=self.colors[i], marker=self.markers[i])
+            ax.plot(
+                index, error, ls='', color=self.colors[i],
+                marker=self.markers[i], markeredgecolor=self.markeredgecolors[i],
+                fillstyle=self.markerfillstyles[i], markersize=size, markeredgewidth=0.5
+            )
+            # ax.scatter(
+            #     index, error, color=self.colors[i], marker=self.markers[i],
+            #     edgecolor=self.markeredgecolors[i], linestyle=self.markerlinestyles[i]
+            # )
+        from matplotlib.ticker import MaxNLocator
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         ax.set_xlabel(xlabel)
         ax.margins(x=0.05)
         ax.set_ylabel(ylabel)
@@ -366,7 +383,7 @@ class GraphicalDiagnostic:
         if ax is None:
             ax = plt.gca()
 
-        label = 'label_'  # Placeholder
+        label = 'labelll'  # Placeholder
 
         # Plot reference dist
         if hasattr(ref, 'ppf'):
@@ -397,8 +414,45 @@ class GraphicalDiagnostic:
         zero = np.zeros(len(data), dtype=int)
         tidy_data = np.array([orders, data], dtype=np.object).T
         data_df = pd.DataFrame(tidy_data, columns=['orders', label])
+        data_df[label] = data_df[label].astype(float)
+        # print(data_df)
+        from matplotlib.markers import MarkerStyle
         with sns.color_palette(self.colors):
-            sns.swarmplot(x=zero, y=label, data=data_df, hue='orders', ax=ax, size=size)
+            # Only use this to get the right positions
+            ss = sns.swarmplot(
+                x=zero, y=label, data=data_df,
+                hue='orders',
+                ax=ax, size=size,
+                linewidth=0.5,
+                # marker=[MarkerStyle('o', fillstyle=style) for style in self.markerfillstyles]
+                # marker='left'
+                # marker=MarkerStyle('o', fillstyle='left')
+                # marker=MarkerStyle('o', fillstyle='top'),
+                # facecolor='none',
+                # facecoloralt='w',
+                # color='none',
+                # alpha=0
+            )
+            # Swarmplot plots markers in an order from smallest to largest
+            # This rearranges the marker line styles to be in that order
+            positions = ss.collections[0].get_offsets()  # These are ordered by swarmplot
+            ss.collections[0].remove()  # Don't show swarmplot, we will plot below
+            _, idx, inv = np.unique(data_df[label].values, return_index=True, return_inverse=True)
+            # positions = positions[idx]
+            positions = positions[inv]
+            assert np.allclose(positions[:, -1], data_df[label].values)
+        for i, (x, y) in enumerate(positions):
+            ax.plot(
+                [x], [y],
+                marker=self.markers[i], ls='', markersize=size,
+                zorder=5+i,
+                c=self.colors[i], fillstyle=self.markerfillstyles[i],
+                markeredgecolor=self.markeredgecolors[i], markeredgewidth=0.5
+            )
+            # linestyles_new = np.array(self.markerlinestyles)[inv]
+            # print(ss.collections[0].get_fill())
+            # # collections[0] *should* be the markers created by swarmplot... but might not always be?
+            # ss.collections[0].set_dashes(linestyles_new)
 
         ax.set_ylabel(ylabel)
         ax.set_xticks([])
