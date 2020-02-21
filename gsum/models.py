@@ -4,7 +4,7 @@ from .helpers import coefficients, hpd, mahalanobis, geometric_sum
 import numpy as np
 from numpy.linalg import solve, cholesky
 import scipy as sp
-from scipy.linalg import cho_solve, solve_triangular, inv
+from scipy.linalg import cho_solve, solve_triangular, inv, eigh
 from scipy.special import loggamma
 import scipy.stats as st
 from scipy.optimize import fmin_l_bfgs_b
@@ -104,8 +104,9 @@ class BaseConjugateProcess:
         generator is the RandomState instance used by `np.random`.
     """
     
-    def __init__(self, kernel=None, center=0, disp=1, df=1, scale=1, sd=None, basis=None, nugget=1e-10,
-                 optimizer='fmin_l_bfgs_b', n_restarts_optimizer=0, copy_X_train=True, random_state=None):
+    def __init__(self, kernel=None, center=0, disp=0, df=1, scale=1, sd=None, basis=None, nugget=1e-10,
+                 optimizer='fmin_l_bfgs_b', n_restarts_optimizer=0, copy_X_train=True, random_state=None,
+                 decomposition='cholesky'):
         self.kernel = kernel
 
         # Setup hyperparameters
@@ -123,7 +124,7 @@ class BaseConjugateProcess:
         self._fit = False
         self.X_train_ = None
         self.y_train_ = None
-        self.corr_L_ = None
+        self.corr_L_ = self.corr_sqrt_ = None
         self.corr_ = None
         self.center_ = None
         self.disp_ = None
@@ -133,12 +134,14 @@ class BaseConjugateProcess:
         self.cbar_sq_mean_ = None
         self.kernel_ = None
         self._rng = None
+        self._eigh_tuple_ = None
 
         self.nugget = nugget
         self.copy_X_train = copy_X_train
         self.random_state = random_state
         self.n_restarts_optimizer = n_restarts_optimizer
         self.optimizer = optimizer
+        self.decomposition = decomposition
 
         self._default_kernel = ConstantKernel(1.0, constant_value_bounds='fixed') * \
             RBF(1.0, length_scale_bounds='fixed')
@@ -164,21 +167,23 @@ class BaseConjugateProcess:
         return self._scale_0
 
     @classmethod
-    def compute_center(cls, y, chol, basis, center0, disp0, eval_gradient=False, dR=None):
+    def compute_center(cls, y, sqrt_R, basis, center0, disp0, decomposition, eval_gradient=False, dR=None):
         R"""Computes the regression coefficients' center hyperparameter :math:`\eta` updated based on data
 
         Parameters
         ----------
         y : array, shape = (n_curves, n_samples)
             The data to condition upon
-        chol : array, shape = (n_samples, n_samples)
-            The cholesky decomposition of the correlation matrix
+        sqrt_R : array, shape = (n_samples, n_samples)
+            The decomposition of the correlation matrix. Its value depends on `decomposition`
         basis : array, shape = (n_samples, n_param)
             The basis matrix that multiplies the regression coefficients beta to create the GP mean.
         center0 : scalar or array, shape = (n_param)
             The prior regression coefficients for the mean
         disp0 : scalar or array, shape = (n_param, n_param)
             The prior dispersion for the regression coefficients
+        decomposition : str
+            The way that R has been decomposed into sqrt_R: either 'cholesky' or 'eig'.
         eval_gradient : bool, optional
             Whether to return the gradient with respect to the kernel hyperparameters. Defaults to False.
         dR : array, shape = (n_samples, n_samples, n_kernel_params), optional
@@ -203,29 +208,37 @@ class BaseConjugateProcess:
         y_avg = cls.avg_y(y)
         ny = cls.num_y(y)
 
-        invR_y_avg = cho_solve((chol, True), y_avg)
-        disp = cls.compute_disp(y=y, chol=chol, basis=basis, disp0=disp0)
+        # if decomposition == 'cholesky':
+        #     invR_y_avg = cho_solve((sqrt_R, True), y_avg)
+        # elif decomposition == 'eig':
+        #     invR_y_avg = solve(sqrt_R, y_avg)
+        # else:
+        #     raise ValueError('decomposition must be either "cholesky" or "eig"')
+        invR_y_avg = cls.solve_sqrt(sqrt_R, y=y_avg, decomposition=decomposition)
+        disp = cls.compute_disp(y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0, decomposition=decomposition)
         factor = solve(disp0, center0) + ny * basis.T @ invR_y_avg
         center = disp @ factor
 
         if eval_gradient:
             if dR is None:
                 raise ValueError('dR must be given if eval_gradient is True')
-            invR_basis = cho_solve((chol, True), basis)
-            invR_diff = cho_solve((chol, True), basis @ center - y_avg)
+            # invR_basis = cho_solve((chol, True), basis)
+            # invR_diff = cho_solve((chol, True), basis @ center - y_avg)
+            invR_basis = cls.solve_sqrt(sqrt_R, y=basis, decomposition=decomposition)
+            invR_diff = cls.solve_sqrt(sqrt_R, y=basis @ center - y_avg, decomposition=decomposition)
             d_center = ny * disp @ np.einsum('ji,jkp,k->ip', invR_basis, dR, invR_diff)
             return center, d_center
         return center
 
     @classmethod
-    def compute_disp(cls, y, chol, basis, disp0, eval_gradient=False, dR=None):
+    def compute_disp(cls, y, sqrt_R, basis, disp0, decomposition, eval_gradient=False, dR=None):
         R"""The dispersion hyperparameter :math:`V` updated based on data.
 
         Parameters
         ----------
         y : array, shape = (n_curves, n_samples)
             The data to condition upon
-        chol : (n_samples, n_samples)-shaped array
+        sqrt_R : (n_samples, n_samples)-shaped array
             The lower Cholesky decomposition of the correlation matrix
         basis : (n_samples, n_param)-shaped array
             The basis for the `p` regression coefficients `beta`
@@ -252,12 +265,14 @@ class BaseConjugateProcess:
             return np.zeros_like(disp0)
 
         ny = cls.num_y(y)
-        quad = mahalanobis(basis.T, 0, chol) ** 2
+        # quad = mahalanobis(basis.T, 0, chol) ** 2
+        quad = basis.T @ cls.solve_sqrt(sqrt_R, y=basis, decomposition=decomposition)
         disp = inv(inv(disp0) + ny * quad)
         if eval_gradient:
             if dR is None:
                 raise ValueError('dR must be given if eval_gradient is True')
-            invRBV = cho_solve((chol, True), basis) @ disp
+            # invRBV = cho_solve((chol, True), basis) @ disp
+            invRBV = cls.solve_sqrt(sqrt_R, y=basis, decomposition=decomposition) @ disp
             dV = ny * np.einsum('ji,jkp,kl->ilp', invRBV, dR, invRBV)
             return disp, dV
         return disp
@@ -292,7 +307,8 @@ class BaseConjugateProcess:
         return df
 
     @classmethod
-    def compute_scale_sq_v2(cls, y, chol, basis, center0, disp0, df0, scale0, eval_gradient=False, dR=None):
+    def compute_scale_sq_v2(cls, y, sqrt_R, basis, center0, disp0, df0, scale0, decomposition,
+                            eval_gradient=False, dR=None):
         R"""The squared scale hyperparameter :math:`\tau^2` updated based on data.
 
         Parameters
@@ -311,6 +327,7 @@ class BaseConjugateProcess:
             The prior degrees of freedom hyperparameter
         scale0 : scalar
             The prior scale hyperparameter
+        decomposition
         eval_gradient : bool, optional
             Whether to return to the gradient with respect to kernel hyperparameters. Defaults to False.
         dR : array, shape = (n_samples, n_samples, n_kernel_params), optional
@@ -325,8 +342,8 @@ class BaseConjugateProcess:
         """
         if df0 == np.inf:
             if eval_gradient:
-                return scale0, np.zeros(dR.shape[-1])
-            return scale0
+                return scale0**2, np.zeros(dR.shape[-1])
+            return scale0**2
 
         avg_y, ny = cls.avg_y(y), cls.num_y(y)
 
@@ -334,17 +351,20 @@ class BaseConjugateProcess:
         if np.all(disp0 == 0):
             # The disp -> 0 limit must be taken carefully to find these terms
             center = center0
-            invR_diff0 = cho_solve((chol, True), 2 * avg_y - basis @ center)
+            # invR_diff0 = cho_solve((chol, True), 2 * avg_y - basis @ center)
+            invR_diff0 = cls.solve_sqrt(sqrt_R, 2 * avg_y - basis @ center, decomposition=decomposition)
             mean_terms = - ny * center0 @ basis.T @ invR_diff0
         else:
-            center = cls.compute_center(y=y, chol=chol, basis=basis, center0=center0, disp0=disp0)
-            disp = cls.compute_disp(y=y, chol=chol, basis=basis, disp0=disp0)
+            center = cls.compute_center(
+                y=y, sqrt_R=sqrt_R, basis=basis, center0=center0, disp0=disp0, decomposition=decomposition)
+            disp = cls.compute_disp(y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0, decomposition=decomposition)
             mean_terms = center0 @ inv(disp0) @ center0 - center @ inv(disp) @ center
 
         # Combine the prior info, quadratic form, and mean contributions to find scale**2
         if y.ndim == 1:
             y = y[:, None]
-        invR_y = cho_solve((chol, True), y)
+        # invR_y = cho_solve((chol, True), y)
+        invR_y = cls.solve_sqrt(sqrt_R, y=y, decomposition=decomposition)
         quad = np.trace(y.T @ invR_y)
         df = cls.compute_df(y=y, df0=df0)
         scale_sq = (df0 * scale0**2 + mean_terms + quad) / df
@@ -354,22 +374,25 @@ class BaseConjugateProcess:
                 raise ValueError('dR must be given if eval_gradient is true')
             # Both the disp -> 0 and non-zero forms have the same gradient formula
             d_scale_sq = - np.einsum('ij,jkp,ki->p', invR_y.T, dR, invR_y)  # From the quadratic form
-            invR_diff = cho_solve((chol, True), 2 * avg_y - basis @ center)
-            invR_basis_center = cho_solve((chol, True), basis) @ center
+            # invR_diff = cho_solve((chol, True), 2 * avg_y - basis @ center)
+            # invR_basis_center = cho_solve((chol, True), basis) @ center
+            invR_diff = cls.solve_sqrt(sqrt_R, 2 * avg_y - basis @ center, decomposition=decomposition)
+            invR_basis_center = cls.solve_sqrt(sqrt_R, basis, decomposition=decomposition) @ center
             d_scale_sq += ny * np.einsum('i,ijp,j->p', invR_basis_center, dR, invR_diff)
             d_scale_sq /= df
             return scale_sq, d_scale_sq
         return scale_sq
 
     @classmethod
-    def compute_scale_sq(cls, y, chol, basis, center0, disp0, df0, scale0, eval_gradient=False, dR=None):
+    def compute_scale_sq(cls, y, sqrt_R, basis, center0, disp0, df0, scale0, decomposition,
+                         eval_gradient=False, dR=None):
         R"""The squared scale hyperparameter :math:`\tau^2` updated based on data.
 
         Parameters
         ----------
         y : ndarray, shape = (n_samples, [n_curves])
             The data to condition upon
-        chol : ndarray, shape = (n_samples, n_samples)
+        sqrt_R : ndarray, shape = (n_samples, n_samples)
             The lower Cholesky decomposition of the correlation matrix
         basis : ndarray, shape = (n_samples, n_param)
             The basis for the `p` regression coefficients `beta`
@@ -395,22 +418,30 @@ class BaseConjugateProcess:
         """
         if df0 == np.inf:
             if eval_gradient:
-                return scale0, np.zeros(dR.shape[-1])
-            return scale0
+                return scale0**2, np.zeros(dR.shape[-1])
+            return scale0**2
 
         if y.ndim == 1:
             y = y[:, None]
         avg_y = cls.avg_y(y)
+        N = len(avg_y)
         ny = cls.num_y(y)
 
         y_centered = y - avg_y[:, None]
-        invR_yc = cho_solve((chol, True), y_centered)
+        # invR_yc = cho_solve((chol, True), y_centered)
+        invR_yc = cls.solve_sqrt(sqrt_R, y_centered, decomposition=decomposition)
         quad = np.trace(y_centered.T @ invR_yc)
 
         avg_y_centered = avg_y - basis @ center0
-        disp = cls.compute_disp(y=y, chol=chol, basis=basis, disp0=disp0, eval_gradient=False)
-        mat = np.eye(chol.shape[0]) - ny * cho_solve((chol, True), basis) @ disp @ basis.T
-        mat_invR_avg_yc = ny * mat @ cho_solve((chol, True), avg_y_centered)
+        disp = cls.compute_disp(
+            y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0, decomposition=decomposition, eval_gradient=False)
+        invR_basis = cls.solve_sqrt(sqrt_R, basis, decomposition=decomposition)
+        invR_avg_yc = cls.solve_sqrt(sqrt_R, avg_y_centered, decomposition=decomposition)
+        # Use the Woodbury matrix identity on Melendez et al Eq. (A31):
+        mat = np.eye(N) - ny * invR_basis @ disp @ basis.T
+        mat_invR_avg_yc = ny * mat @ invR_avg_yc
+        # mat = np.eye(N) - ny * cho_solve((chol, True), basis) @ disp @ basis.T
+        # mat_invR_avg_yc = ny * mat @ cho_solve((chol, True), avg_y_centered)
         quad2 = avg_y_centered @ mat_invR_avg_yc
 
         df = cls.compute_df(y=y, df0=df0)
@@ -424,6 +455,36 @@ class BaseConjugateProcess:
             d_scale_sq /= df
             return scale_sq, d_scale_sq
         return scale_sq
+
+    @staticmethod
+    def solve_sqrt(sqrt_mat, y, decomposition):
+        R"""Solves a system Mx = y given sqrt_M and y.
+
+        Parameters
+        ----------
+        sqrt_mat : array
+            The square root of a matrix. If decomposition is 'eig', then this can be a tuple (eig, Q) such that
+            M = Q @ np.diag(eig) @ Q.T. This can speed up the inversion due to the simple property that
+            M^-1 = Q @ np.diag(1/eig) @ Q.T.
+        y : array
+        decomposition : str
+            The way that the square root has been performed. Either 'cholesky' or 'eig'. If cholesky,
+            then it is assumed that sqrt_mat is the lower triangular matrix `L` such that `M = L L.T`.
+
+        Returns
+        -------
+        x
+        """
+        if decomposition == 'cholesky':
+            return cho_solve((sqrt_mat, True), y)
+        elif decomposition == 'eig':
+            if isinstance(sqrt_mat, tuple):
+                eig, Q = sqrt_mat
+                inv_mat = Q @ np.diag(1. / eig) @ Q.T
+                return inv_mat @ y
+            return solve(sqrt_mat.T, solve(sqrt_mat, y))
+        else:
+            raise ValueError('decomposition must be either "cholesky" or "eig"')
 
     @staticmethod
     def compute_cov_factor(scale_sq, df):
@@ -444,13 +505,28 @@ class BaseConjugateProcess:
     def center(self):
         """The regression coefficient hyperparameters for the mean updated by the call to `fit`.
         """
+        if self.decomposition == 'cholesky':
+            sqrt_R = self.corr_sqrt_
+        elif self.decomposition == 'eig':
+            sqrt_R = self._eigh_tuple_
+        else:
+            raise ValueError('decomposition must be either "cholesky" or "eig"')
         return self.compute_center(
-            y=self.y_train_, chol=self.corr_L_, basis=self.basis_train_, center0=self.center0, disp0=self.disp0)
+            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_,
+            center0=self.center0, disp0=self.disp0, decomposition=self.decomposition)
 
     def disp(self):
         """The dispersion hyperparameter updated by the call to `fit`.
         """
-        return self.compute_disp(y=self.y_train_, chol=self.corr_L_, basis=self.basis_train_, disp0=self.disp0)
+        if self.decomposition == 'cholesky':
+            sqrt_R = self.corr_sqrt_
+        elif self.decomposition == 'eig':
+            sqrt_R = self._eigh_tuple_
+        else:
+            raise ValueError('decomposition must be either "cholesky" or "eig"')
+        return self.compute_disp(
+            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_, disp0=self.disp0,
+            decomposition=self.decomposition)
 
     def df(self):
         """The degrees of freedom hyperparameter for the standard deviation updated by the call to `fit`
@@ -460,8 +536,16 @@ class BaseConjugateProcess:
     def scale(self):
         """The scale hyperparameter for the standard deviation updated by the call to `fit`
         """
-        scale_sq = self.compute_scale_sq(y=self.y_train_, chol=self.corr_L_, basis=self.basis_train_,
-                                         center0=self.center0, disp0=self.disp0, df0=self.df0, scale0=self.scale0)
+        if self.decomposition == 'cholesky':
+            sqrt_R = self.corr_sqrt_
+        elif self.decomposition == 'eig':
+            sqrt_R = self._eigh_tuple_
+        else:
+            raise ValueError('decomposition must be either "cholesky" or "eig"')
+        scale_sq = self.compute_scale_sq(
+            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_,
+            center0=self.center0, disp0=self.disp0, df0=self.df0, scale0=self.scale0,
+            decomposition=self.decomposition)
         return np.sqrt(scale_sq)
 
     def mean(self, X):
@@ -610,14 +694,32 @@ class BaseConjugateProcess:
 
         self._calibrate_kernel()
         self.corr_ = self.kernel_(X)
-        self.corr_L_ = cholesky(self.corr_ + self.nugget * np.eye(len(X)))
+
+        if self.decomposition == 'cholesky':
+            self.corr_L_ = self.corr_sqrt_ = cholesky(self.corr_ + self.nugget * np.eye(len(X)))
+            sqrt_R = self.corr_sqrt_
+        elif self.decomposition == 'eig':
+            eig, Q = eigh(self.corr_ + self.nugget * np.eye(len(X)))
+            self._eigh_tuple_ = eig, Q
+            sqrt_R = eig, Q  # Passing tuple makes matrix inversion easier later on
+            self.corr_L_ = self.corr_sqrt_ = Q @ np.diag(np.sqrt(eig))
+        else:
+            raise ValueError('decomposition must be "cholesky" or "eig"')
 
         self.center_ = self.compute_center(
-            y=self.y_train_, chol=self.corr_L_, basis=self.basis_train_, center0=self.center0, disp0=self.disp0)
-        self.disp_ = self.compute_disp(y=self.y_train_, chol=self.corr_L_, basis=self.basis_train_, disp0=self.disp0)
+            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_,
+            center0=self.center0, disp0=self.disp0, decomposition=self.decomposition
+        )
+        self.disp_ = self.compute_disp(
+            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_, disp0=self.disp0,
+            decomposition=self.decomposition
+        )
         self.df_ = self.compute_df(y=self.y_train_, df0=self.df0)
-        scale_sq = self.compute_scale_sq(y=self.y_train_, chol=self.corr_L_, basis=self.basis_train_,
-                                         center0=self.center0, disp0=self.disp0, df0=self.df0, scale0=self.scale0)
+        scale_sq = self.compute_scale_sq(
+            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_,
+            center0=self.center0, disp0=self.disp0, df0=self.df0, scale0=self.scale0,
+            decomposition=self.decomposition
+        )
         self.scale_ = np.sqrt(scale_sq)
         self.cov_factor_ = self.cbar_sq_mean_ = self.compute_cov_factor(scale_sq=scale_sq, df=self.df_)
         self._fit = True
@@ -678,11 +780,25 @@ class BaseConjugateProcess:
         if not self._fit:  # Unfitted; predict based on GP prior
             return self.underlying_properties(X=X, return_std=return_std, return_cov=return_cov)
 
+        decomp = self.decomposition
+
         if Xc is None:
             Xc = self.X_train_
-            corr_chol = self.corr_L_
+            if decomp == 'cholesky':
+                sqrt_R = self.corr_sqrt_
+            elif decomp == 'eig':
+                sqrt_R = self._eigh_tuple_
+            else:
+                raise ValueError('decomposition must be "cholesky" or "eig"')
         else:
-            corr_chol = cholesky(self.kernel_(Xc) + self.nugget * np.eye(len(Xc)))
+            # corr_chol = cholesky(self.kernel_(Xc) + self.nugget * np.eye(len(Xc)))
+            kk = self.kernel_(Xc) + self.nugget * np.eye(len(Xc))
+            if decomp == 'cholesky':
+                sqrt_R = cholesky(kk)
+            elif decomp == 'eig':
+                sqrt_R = eigh(kk)  # eig, Q
+            else:
+                raise ValueError('decomposition must be "cholesky" or "eig"')
         if y is None:
             y = self.y_train_
 
@@ -699,11 +815,13 @@ class BaseConjugateProcess:
             y = y[:, None]
 
         # Use given y for prediction
-        alpha = cho_solve((corr_chol, True), (y - m_old[:, None]))
+        # alpha = cho_solve((corr_chol, True), (y - m_old[:, None]))
+        alpha = self.solve_sqrt(sqrt_R, (y - m_old[:, None]), decomposition=decomp)
         m_pred = np.squeeze(m_new[:, None] + R_no @ alpha)
         if return_std or return_cov:
-            half_quad = solve_triangular(corr_chol, R_on, lower=True)
-            R_pred = R_nn - half_quad.T @ half_quad
+            # half_quad = solve_triangular(corr_chol, R_on, lower=True)
+            # R_pred = R_nn - half_quad.T @ half_quad
+            R_pred = R_nn - R_no @ self.solve_sqrt(sqrt_R, R_on, decomposition=decomp)
             if pred_noise:
                 R_pred += self.nugget * np.eye(len(X))
             # Use y from fit for hyperparameters
@@ -831,11 +949,20 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
             R_gradient = None
 
         R[np.diag_indices_from(R)] += self.nugget
-        try:
-            corr_L = cholesky(R)  # Line 2
-        except np.linalg.LinAlgError:
-            return (-np.inf, np.zeros_like(theta)) \
-                if eval_gradient else -np.inf
+
+        decomp = self.decomposition
+
+        if decomp == 'cholesky':
+            try:
+                sqrt_R = cholesky(R)  # Line 2
+            except np.linalg.LinAlgError:
+                return (-np.inf, np.zeros_like(theta)) \
+                    if eval_gradient else -np.inf
+        elif decomp == 'eig':
+            sqrt_R = eigh(R)  # eig, Q
+        else:
+            raise ValueError('decomposition must be "cholesky" or "eig"')
+
 
         # Support multi-dimensional output of self.y_train_
         if y.ndim == 1:
@@ -847,43 +974,62 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
         df = self.compute_df(y=y, df0=df0, eval_gradient=False)
         basis = self.basis(X)
         if eval_gradient:
-            center, grad_center = self.compute_center(y, corr_L, basis, center0=center0, disp0=disp0,
-                                                      eval_gradient=eval_gradient, dR=R_gradient)
+            center, grad_center = self.compute_center(
+                y, sqrt_R, basis, center0=center0, disp0=disp0,
+                eval_gradient=eval_gradient, dR=R_gradient, decomposition=decomp
+            )
             scale2, dscale2 = self.compute_scale_sq(
-                y=y, chol=corr_L, basis=basis, center0=center0, disp0=disp0,
-                df0=df0, scale0=scale0, eval_gradient=eval_gradient, dR=R_gradient)
+                y=y, sqrt_R=sqrt_R, basis=basis, center0=center0, disp0=disp0,
+                df0=df0, scale0=scale0, eval_gradient=eval_gradient, dR=R_gradient,
+                decomposition=decomp
+            )
             grad_var = self.compute_cov_factor(scale_sq=dscale2, df=df)
             grad_mean = basis @ grad_center
         else:
-            center = self.compute_center(y, corr_L, basis, center0=center0, disp0=disp0)
+            center = self.compute_center(y, sqrt_R, basis, center0=center0, disp0=disp0, decomposition=decomp)
             scale2 = self.compute_scale_sq(
-                y=y, chol=corr_L, basis=basis, center0=center0, disp0=disp0,
-                df0=df0, scale0=scale0)
+                y=y, sqrt_R=sqrt_R, basis=basis, center0=center0, disp0=disp0,
+                df0=df0, scale0=scale0, decomposition=decomp
+            )
             grad_center, grad_var, grad_mean = None, None, None
         mean = basis @ center
         var = self.compute_cov_factor(scale_sq=scale2, df=df)
 
         # Convert from correlation matrix to covariance and subtract mean
         # to make all calculations below identical to scikit learn implementation
-        L = np.sqrt(var) * corr_L
+        # L = np.sqrt(var) * corr_L
+        if decomp == 'cholesky':
+            L = np.sqrt(var) * sqrt_R
+            logdet_K = 2 * np.log(np.diag(L)).sum()
+        elif decomp == 'eig':
+            eig, Q = sqrt_R
+            L = var * eig, Q  # Technically not lower triangular, but use L anyways
+            logdet_K = np.log(var * eig).sum()
+        else:
+            raise ValueError('decomposition must be "cholesky" or "eig"')
+
         K, K_gradient = var * R, None
         if eval_gradient:
             K_gradient = var * R_gradient + grad_var * R[:, :, None]
         y_train = y - mean[:, None]
+        N = K.shape[0]
         # ---------------------------------
         # Resume likelihood calculation
 
-        alpha = cho_solve((L, True), y_train)  # Line 3
+        # alpha = cho_solve((L, True), y_train)  # Line 3
+        alpha = self.solve_sqrt(L, y_train, decomposition=decomp)
 
         # Compute log-likelihood (compare line 7)
         log_likelihood_dims = -0.5 * np.einsum("ik,ik->k", y_train, alpha)
-        log_likelihood_dims -= np.log(np.diag(L)).sum()
-        log_likelihood_dims -= K.shape[0] / 2 * np.log(2 * np.pi)
+        # log_likelihood_dims -= np.log(np.diag(L)).sum()
+        log_likelihood_dims -= 0.5 * logdet_K
+        log_likelihood_dims -= N / 2 * np.log(2 * np.pi)
         log_likelihood = log_likelihood_dims.sum(-1)  # sum over dimensions
 
         if eval_gradient:  # compare Equation 5.9 from GP for ML
             tmp = np.einsum("ik,jk->ijk", alpha, alpha)  # k: output-dimension
-            tmp -= cho_solve((L, True), np.eye(K.shape[0]))[:, :, np.newaxis]
+            # tmp -= cho_solve((L, True), np.eye(N))[:, :, np.newaxis]
+            tmp -= self.solve_sqrt(L, np.eye(N), decomposition=decomp)[:, :, np.newaxis]
             # Compute "0.5 * trace(tmp.dot(K_gradient))" without
             # constructing the full matrix tmp.dot(K_gradient) since only
             # its diagonal is required
@@ -975,6 +1121,7 @@ class ConjugateStudentProcess(BaseConjugateProcess):
         pred = super(ConjugateStudentProcess, self).predict(
             X=X, return_std=return_std, return_cov=return_cov, Xc=Xc, y=y, pred_noise=pred_noise)
 
+        decomp = self.decomposition
         if not self._fit:  # Unfitted; predict based on GP prior
             disp = self.disp0
             var = self.compute_cov_factor(scale_sq=self.scale0 ** 2, df=self.df0)
@@ -986,14 +1133,27 @@ class ConjugateStudentProcess(BaseConjugateProcess):
 
             if Xc is None:
                 basis_old = self.basis_train_
-                corr_chol = self.corr_L_
+                if decomp == 'cholesky':
+                    sqrt_R = self.corr_sqrt_
+                elif decomp == 'eig':
+                    sqrt_R = self._eigh_tuple_
+                else:
+                    raise ValueError('decomposition must be "cholesky" or "eig"')
                 R_no = self.kernel_(X, self.X_train_)
             else:
                 basis_old = self.basis(Xc)
                 R_no = self.kernel_(X, Xc)
-                corr_chol = cholesky(self.kernel_(Xc) + self.nugget * np.eye(len(Xc)))
+                kk = self.kernel_(Xc) + self.nugget * np.eye(len(Xc))
+                # corr_chol = cholesky(kk)
+                if decomp == 'cholesky':
+                    sqrt_R = cholesky(kk)
+                elif decomp == 'eig':
+                    sqrt_R = eigh(kk)  # eig, Q
+                else:
+                    raise ValueError('decomposition must be "cholesky" or "eig"')
             # The conditional basis
-            basis = basis_new - R_no @ cho_solve((corr_chol, True), basis_old)
+            # basis = basis_new - R_no @ cho_solve((corr_chol, True), basis_old)
+            basis = basis_new - R_no @ self.solve_sqrt(sqrt_R, basis_old, decomposition=decomp)
 
         mean_cov = var * (basis @ disp @ basis.T)  # From integrating out the mean
         if return_std:
@@ -1027,25 +1187,39 @@ class ConjugateStudentProcess(BaseConjugateProcess):
             R, dR = kernel(X), None
 
         R[np.diag_indices_from(R)] += self.nugget
-        try:
-            corr_L = cholesky(R)  # Line 2
-        except np.linalg.LinAlgError:
-            return (-np.inf, np.zeros_like(theta)) \
-                if eval_gradient else -np.inf
+        N = R.shape[0]
+
+        decomp = self.decomposition
+
+        if decomp == 'cholesky':
+            try:
+                sqrt_R = cholesky(R)  # Line 2
+            except np.linalg.LinAlgError:
+                return (-np.inf, np.zeros_like(theta)) \
+                    if eval_gradient else -np.inf
+        elif decomp == 'eig':
+            sqrt_R = eigh(R)  # eig, Q
+        else:
+            raise ValueError('decomposition must be "cholesky" or "eig"')
 
         center0, disp0, df0, scale0 = self.center0, self.disp0, self.df0, self.scale0
         df = self.compute_df(y=y, df0=df0)
         basis = self.basis(X)
         if eval_gradient:
-            disp, grad_disp = self.compute_disp(y=y, chol=corr_L, basis=basis, disp0=disp0,
-                                                eval_gradient=eval_gradient, dR=dR)
+            disp, grad_disp = self.compute_disp(
+                y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0,
+                eval_gradient=eval_gradient, dR=dR, decomposition=decomp
+            )
             scale_sq, grad_scale_sq = self.compute_scale_sq(
-                y=y, chol=corr_L, basis=basis, center0=center0, disp0=disp0,
-                df0=df0, scale0=scale0, eval_gradient=eval_gradient, dR=dR)
+                y=y, sqrt_R=sqrt_R, basis=basis, center0=center0, disp0=disp0,
+                df0=df0, scale0=scale0, eval_gradient=eval_gradient, dR=dR, decomposition=decomp
+            )
         else:
-            disp = self.compute_disp(y=y, chol=corr_L, basis=basis, disp0=disp0)
+            disp = self.compute_disp(y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0, decomposition=decomp)
             scale_sq = self.compute_scale_sq(
-                y=y, chol=corr_L, basis=basis, center0=center0, disp0=disp0, df0=df0, scale0=scale0)
+                y=y, sqrt_R=sqrt_R, basis=basis, center0=center0, disp0=disp0, df0=df0,
+                scale0=scale0, decomposition=decomp
+            )
             grad_disp, grad_scale_sq = None, None
         scale = np.sqrt(scale_sq)
 
@@ -1057,12 +1231,23 @@ class ConjugateStudentProcess(BaseConjugateProcess):
                 norm += 0.5 * log_det
             return norm
 
-        log_det_corr = 2 * np.sum(np.log(2 * np.pi * np.diagonal(corr_L)))
-        log_like = log_norm(df, scale, disp) - log_norm(df0, scale0, disp0) - ny / 2. * log_det_corr
+        if decomp == 'cholesky':
+            logdet_R = 2 * np.log(np.diag(sqrt_R)).sum()
+        elif decomp == 'eig':
+            eig, Q = sqrt_R
+            logdet_R = np.log(eig).sum()
+        else:
+            raise ValueError('decomposition must be "cholesky" or "eig"')
+
+        log_like = log_norm(df, scale, disp) - log_norm(df0, scale0, disp0) \
+            - ny / 2. * (N * np.log(2*np.pi) + logdet_R)
 
         if eval_gradient:
             # cho_solve only cares about first dimension of dR. Gradient parameters are in the last dimension.
-            log_like_gradient = - (ny / 2.) * np.trace(cho_solve((corr_L, True), dR), axis1=0, axis2=1)
+            # log_like_gradient = - (ny / 2.) * np.trace(cho_solve((corr_L, True), dR), axis1=0, axis2=1)
+            log_like_gradient = - (ny / 2.) * np.trace(
+                self.solve_sqrt(sqrt_R, dR, decomposition=decomp), axis1=0, axis2=1
+            )
             log_like_gradient -= (df / 2.) * grad_scale_sq / scale_sq
 
             if not np.all(disp == 0):
@@ -1071,41 +1256,6 @@ class ConjugateStudentProcess(BaseConjugateProcess):
             return log_like, log_like_gradient
 
         return log_like
-
-    # def likelihood(self, log=True, X=None, y=None, **kernel_kws):
-    #     if X is None:
-    #         X = self.X_train_
-    #     if y is None:
-    #         y = self.y_train_
-    #
-    #     ny = self.num_y(y)
-    #     corr = self.kernel(X, X, **kernel_kws)
-    #     corr_chol = cholesky(corr + self.nugget * np.eye(corr.shape[-1]))
-    #
-    #     beta0, disp0, df0, scale0 = self.beta0, self.disp0, self.df0, self.scale0
-    #     df = self.compute_df(y=y, df0=df0)
-    #     basis = self.basis(X)
-    #     disp = self.compute_disp(y=y, chol=corr_chol, basis=basis, disp0=disp0)
-    #     scale = self.compute_scale(y=y, chol=corr_chol, basis=basis, beta0=beta0, disp0=disp0, df0=df0, scale0=scale0)
-    #
-    #     def log_norm(df_, scale_, disp_):
-    #         """Normalization constant of the normal scaled inverse chi squared distribution"""
-    #         norm = loggamma(df_ / 2.) - df_ / 2. * np.log(df_ * scale_ / 2.)
-    #         log_det = np.linalg.slogdet(2 * np.pi * disp_)[1]
-    #         if log_det != -np.inf:
-    #             norm += 0.5 * log_det
-    #         return norm
-    #
-    #     log_det_corr = 2 * np.sum(np.log(2 * np.pi * np.diagonal(corr_chol)))
-    #     log_like = log_norm(df, scale, disp) - log_norm(df0, scale0, disp0) - ny / 2. * log_det_corr
-    #
-    #     # log_like = np.array([log_norm(df, scale, disp) for scale, disp in zip(scale_vec, disp_vec)])
-    #     # log_det_corr = 2 * np.sum(np.log(2 * np.pi * np.diagonal(corr_chol_vec, axis1=-2, axis2=-1)), axis=-1)
-    #     # log_like -= ny / 2. * log_det_corr + log_norm(df0, scale0, disp0)
-    #
-    #     if log:
-    #         return log_like
-    #     return np.exp(log_like)
 
 
 def _default_ref(X, ref):
