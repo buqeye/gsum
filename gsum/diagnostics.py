@@ -1,6 +1,6 @@
 from __future__ import division
-from .helpers import cholesky_errors, mahalanobis, VariogramFourthRoot
-from .cutils import pivoted_cholesky
+from . import cholesky_errors, mahalanobis, VariogramFourthRoot
+from . import pivoted_cholesky
 import numpy as np
 from numpy.linalg import solve, cholesky
 from scipy.linalg import cho_solve
@@ -40,7 +40,12 @@ class Diagnostic:
         self.cov = cov
         self.sd = sd = np.sqrt(np.diag(cov))
         if df is None:
+            # TODO: Handle when cov is ill-conditioned so multivariate_normal fails.
             self.dist = stats.multivariate_normal(mean=mean, cov=cov)
+            # try:
+            #     self.dist = stats.multivariate_normal(mean=mean, cov=cov)
+            # except np.linalg.LinAlgError:
+            #     self.dist = None
             self.udist = stats.norm(loc=mean, scale=sd)
             self.std_udist = stats.norm(loc=0., scale=1.)
         else:
@@ -447,7 +452,7 @@ class GraphicalDiagnostic:
                 marker=self.markers[i], ls='', markersize=size,
                 zorder=5+i,
                 c=self.colors[i], fillstyle=self.markerfillstyles[i],
-                markeredgecolor=self.markeredgecolors[i], markeredgewidth=0.5
+                markeredgecolor=self.markeredgecolors[i], markeredgewidth=0.5, clip_on=False
             )
             # linestyles_new = np.array(self.markerlinestyles)[inv]
             # print(ss.collections[0].get_fill())
