@@ -4,6 +4,8 @@ from scipy.stats import multivariate_normal
 # import unittest
 from gsum import ConjugateGaussianProcess
 from gsum.helpers import *
+from gsum.helpers import pivoted_cholesky
+from gsum.cutils import pivoted_cholesky as pivoted_cholesky_cython
 
 
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -18,6 +20,7 @@ from sklearn.utils.testing \
 
 import pytest
 
+
 def f(x):
     return x * np.sin(x)
 
@@ -27,20 +30,24 @@ X2 = np.atleast_2d([2., 4., 5.5, 6.5, 7.5]).T
 y = f(X).ravel()
 
 fixed_kernel = RBF(length_scale=1.0, length_scale_bounds="fixed")
-kernels = [RBF(length_scale=1.0),
-           fixed_kernel,
-           RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3)),
-           C(1.0, (1e-2, 1e2)) *
-           RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3)),
-           C(1.0, (1e-2, 1e2)) *
-           RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3)) +
-           C(1e-5, (1e-5, 1e2)),
-           C(0.1, (1e-2, 1e2)) *
-           RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3)) +
-           WhiteKernel(1e-2, (1e-5, 1e2))
-           ]
+kernel_ill_conditioned = RBF(length_scale=15.0, length_scale_bounds="fixed")
+kernels = [
+    RBF(length_scale=1.0),
+    fixed_kernel,
+    RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3)),
+    C(1.0, (1e-2, 1e2)) *
+    RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3)),
+    C(1.0, (1e-2, 1e2)) *
+    RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3)) +
+    C(1e-5, (1e-5, 1e2)),
+    # C(0.1, (1e-2, 1e2)) *
+    # RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3)) +
+    # WhiteKernel(1e-2, (1e-5, 1e2))
+]
 non_fixed_kernels = [kernel for kernel in kernels
                      if kernel != fixed_kernel]
+
+# kernels_ill_conditioned = [RBF(length_scale=20.0)]
 
 
 @pytest.mark.parametrize('kernel', kernels)
@@ -55,15 +62,100 @@ def test_gpr_interpolation(kernel):
 
 
 @pytest.mark.parametrize('kernel', kernels)
-def test_cgp_interpolation(kernel):
+@pytest.mark.parametrize('decomposition', ['cholesky', 'eig'])
+def test_cgp_interpolation(kernel, decomposition):
     # Test the interpolating property for different kernels.
     print(kernel)
-    gpr = ConjugateGaussianProcess(kernel=kernel).fit(X, y)
+    gpr = ConjugateGaussianProcess(kernel=kernel, nugget=0, decomposition=decomposition).fit(X, y)
     y_pred, y_cov = gpr.predict(X, return_cov=True)
 
     assert_almost_equal(y_pred, y)
     assert_almost_equal(np.diag(y_cov), 0., decimal=10)
 
+
+Ls = [
+    np.array([
+        [7., 0, 0, 0, 0, 0],
+        [9, 13, 0, 0, 0, 0],
+        [4, 10, 6, 0, 0, 0],
+        [18, 1, 2, 14, 0, 0],
+        [5, 11, 20, 3, 17, 0],
+        [19, 12, 16, 15, 8, 21]
+    ]),
+    np.array([
+        [1, 0, 0],
+        [2, 3, 0],
+        [4, 5, 6.]
+    ]),
+    np.array([
+        [6, 0, 0],
+        [3, 2, 0],
+        [4, 1, 5.]
+    ]),
+]
+
+pchols = [
+    np.array([
+        [3.4444, -1.3545, 4.084, 1.7674, -1.1789, 3.7562],
+        [8.4685, 1.2821, 3.1179, 12.9197, 0.0000, 0.0000],
+        [7.5621, 4.8603, 0.0634, 7.3942, 4.0637, 0.0000],
+        [15.435, -4.8864, 16.2137, 0.0000, 0.0000, 0.0000],
+        [18.8535, 22.103, 0.0000, 0.0000, 0.0000, 0.0000],
+        [38.6135, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]
+    ]),
+    np.array([
+        [0.4558, 0.3252, 0.8285],
+        [2.6211, 2.4759, 0.0000],
+        [8.7750, 0.0000, 0.0000]
+    ]),
+    np.array([
+        [3.7033, 4.7208, 0.0000],
+        [2.1602, 2.1183, 1.9612],
+        [6.4807, 0.0000, 0.0000]
+    ]),
+]
+
+
+@pytest.mark.parametrize('L,pchol', zip(Ls, pchols))
+def test_oracle_examples(L, pchol):
+    """Inputs taken from Tensorflow-Probability, which was taken from GPyTorch"""
+    mat = np.matmul(L, L.T)
+    # np.testing.assert_allclose(pchol, pivoted_cholesky_cython(mat), atol=1e-4)
+    np.testing.assert_allclose(pchol, pivoted_cholesky(mat), atol=1e-4)
+
+
+@pytest.mark.parametrize(
+    'cov',
+    [np.array([
+       [1.1072733475231495 , 1.08739145629774   , 1.029862219545639  ,
+        0.8286134266251773 , 0.7039334391266358 , 0.5767310930265864 ,
+        0.34725085649025655],
+       [1.08739145629774   , 1.1072733475231495 , 1.08739145629774   ,
+        0.940663897699325  , 0.8286134266251773 , 0.7039334391266358 ,
+        0.4556981608148422 ],
+       [1.029862219545639  , 1.08739145629774   , 1.1072733475231495 ,
+        1.029862219545639  , 0.9406638976993251 , 0.8286134266251776 ,
+        0.5767310930265866 ],
+       [0.8286134266251773 , 0.940663897699325  , 1.029862219545639  ,
+        1.1072733475231495 , 1.08739145629774   , 1.029862219545639  ,
+        0.8286134266251776 ],
+       [0.7039334391266358 , 0.8286134266251773 , 0.9406638976993251 ,
+        1.08739145629774   , 1.1072733475231495 , 1.08739145629774   ,
+        0.9406638976993251 ],
+       [0.5767310930265864 , 0.7039334391266358 , 0.8286134266251776 ,
+        1.029862219545639  , 1.08739145629774   , 1.1072733475231495 ,
+        1.029862219545639  ],
+       [0.34725085649025655, 0.4556981608148422 , 0.5767310930265866 ,
+        0.8286134266251776 , 0.9406638976993251 , 1.029862219545639  ,
+        1.1072733475231495 ]])
+    ]
+)
+def test_old_vs_pchol(cov):
+    # This fails because the implementations are not exactly the same
+    pchol_cython = pivoted_cholesky_cython(cov)
+    pchol_lapack = pivoted_cholesky(cov)
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(pchol_cython, pchol_lapack, atol=1e-15)
 
 # class TestGaussianKernel(unittest.TestCase):
 #     """Test the Gaussian kernel.
