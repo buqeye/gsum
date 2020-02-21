@@ -11,7 +11,8 @@ import inspect
 __all__ = [
     'cartesian', 'toy_data', 'coefficients', 'partials', 'stabilize', 'geometric_sum',
     'predictions', 'gaussian', 'hpd', 'kl_gauss', 'rbf', 'default_attributes',
-    'cholesky_errors', 'mahalanobis', 'VariogramFourthRoot', 'median_pdf', 'hpd_pdf'
+    'cholesky_errors', 'mahalanobis', 'VariogramFourthRoot', 'median_pdf', 'hpd_pdf',
+    'pivoted_cholesky',
 ]
 
 
@@ -171,6 +172,23 @@ def geometric_sum(x, start, end, excluded=None):
             if (n >= start) and (n <= end):
                 s -= x ** n
     return s
+
+
+def pivoted_cholesky(M):
+    from scipy.linalg.lapack import get_lapack_funcs
+    compute_pc, = get_lapack_funcs(('pstrf',), arrays=(M,))
+    c, p, _, info = compute_pc(M, lower=True)
+    if info > 0:
+        raise np.linalg.LinAlgError('M is not positive-semidefinite')
+    elif info < 0:
+        raise ValueError('LAPACK reported an illegal value in {}-th argument'
+                         'on entry to "pstrf".'.format(-info))
+
+    # Compute G where M = G @ G.T
+    L = np.tril(c)
+    p -= 1  # The returned indices start at 1
+    p_inv = np.arange(len(p))[np.argsort(p)]
+    return L[p_inv]
 
 
 def stabilize(M):
@@ -479,11 +497,18 @@ def cholesky_errors(y, mean, chol):
     return sp.linalg.solve_triangular(chol, (y - mean).T, lower=True).T
 
 
-def mahalanobis(y, mean, chol=None, inv=None):
-    if (chol is not None) and (inv is not None):
-        raise ValueError('Only one of chol and pinv can be given')
+def general_sqrt_errors(y, mean, sqrt_mat):
+    return np.linalg.solve(sqrt_mat, (y - mean).T, lower=True).T
+
+
+def mahalanobis(y, mean, chol=None, inv=None, sqrt_mat=None):
+    if (chol is not None) and (inv is not None) and (sqrt_mat is not None):
+        raise ValueError('Only one of chol, inv, or sqrt_mat can be given')
     if chol is not None:
         err = cholesky_errors(y, mean, chol)
+        return np.linalg.norm(err, axis=-1)
+    elif sqrt_mat is not None:
+        err = general_sqrt_errors(y, mean, sqrt_mat)
         return np.linalg.norm(err, axis=-1)
     y = np.atleast_2d(y)
     return np.squeeze(np.sqrt(np.diag((y - mean) @ inv @ (y - mean).T)))
