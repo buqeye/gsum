@@ -1,11 +1,3 @@
-from .models import ConjugateGaussianProcess
-from .models import ConjugateStudentProcess
-from .models import TruncationGP
-from .models import TruncationTP
-from .models import TruncationPointwise
-from .diagnostics import Diagnostic
-from .diagnostics import GraphicalDiagnostic
-
 from .helpers import cartesian
 from .helpers import toy_data
 from .helpers import generate_coefficients
@@ -25,8 +17,15 @@ from .helpers import mahalanobis
 from .helpers import lazy_property
 from .helpers import VariogramFourthRoot
 from .helpers import geometric_sum
+from .helpers import pivoted_cholesky
 
-from .cutils import pivoted_cholesky
+from .models import ConjugateGaussianProcess
+from .models import ConjugateStudentProcess
+from .models import TruncationGP
+from .models import TruncationTP
+from .models import TruncationPointwise
+from .diagnostics import Diagnostic
+from .diagnostics import GraphicalDiagnostic
 
 from .datasets import make_gaussian_partial_sums
 from .datasets import make_gaussian_partial_sums_on_grid
