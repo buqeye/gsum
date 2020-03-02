@@ -1387,7 +1387,7 @@ class TruncationProcess:
         Xc : (N, d) array
             Locations at which to condition. Defaults to `X` used in fit. This *does not*
             affect the `X` used to update hyperparameters.
-        y : (n, N) array
+        y : (N, n) array
             Points upon which to condition. Defaults to the `y` used in `fit`. This *does not*
             affect the `y` used to update hyperparameters.
         pred_noise : bool
