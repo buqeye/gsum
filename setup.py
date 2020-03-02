@@ -75,7 +75,7 @@ setup(
         'gsl',
         'numpy>=1.12.0',
         'pandas',
-        'scipy>=1.14.0',
+        'scipy>=1.4.0',
         'seaborn',
         'statsmodels',
         'matplotlib',
