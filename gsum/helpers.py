@@ -133,6 +133,14 @@ def partials(coeffs, ratio, ref=1, orders=None):
     if orders is None:
         orders = np.arange(coeffs.shape[-1])
 
+    ratio = np.atleast_1d(ratio)
+    if ratio.ndim == 1:
+        ratio = ratio[:, None]
+
+    ref = np.atleast_1d(ref)
+    if ref.ndim == 1:
+        ref = ref[:, None]
+
     # Convert coefficients to partial sums
     terms = ref * coeffs * ratio**orders
     return np.cumsum(terms, axis=-1)
