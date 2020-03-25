@@ -580,8 +580,9 @@ class BaseConjugateProcess:
         ValueError if the degrees of freedom is less than 2, since the covariance does not exist in this case.
         This could happen if `fit` is not called and the provided `df` is less than 2.
         """
-        if Xp is None:
-            Xp = X
+        # Don't fill in Xp because WhiteKernel will not work correctly
+        # if Xp is None:
+        #     Xp = X
 
         if not self._fit:  # Unfitted; predict based on GP prior
             if self.df0 <= 2:
@@ -809,7 +810,7 @@ class BaseConjugateProcess:
         # Now use X and y from arguments for conditioning/predictions
         R_on = self.kernel_(Xc, X)
         R_no = R_on.T
-        R_nn = self.kernel_(X, X)
+        R_nn = self.kernel_(X)  # Only use one argument, otherwise, e.g., WhiteKernel won't work right
 
         if y.ndim == 1:
             y = y[:, None]
@@ -1085,8 +1086,6 @@ class ConjugateStudentProcess(BaseConjugateProcess):
     """
 
     def cov(self, X, Xp=None):
-        if Xp is None:
-            Xp = X
 
         if not self._fit:  # Unfitted; predict based on GP prior
             df = self.df0
@@ -1105,8 +1104,13 @@ class ConjugateStudentProcess(BaseConjugateProcess):
         if df <= 2:
             raise ValueError('df must be greater than 2 for the covariance to exist')
 
-        var = self.compute_cov_factor(scale_sq=scale**2, df=df)
+        # Call kernel before potentially reassigning Xp, else, e.g., WhiteKernel will not work properly
         corr = kernel(X, Xp)
+
+        if Xp is None:
+            Xp = X
+
+        var = self.compute_cov_factor(scale_sq=scale**2, df=df)
         return var * (corr + self.basis(X) @ disp @ self.basis(Xp).T)
 
     @docstrings.dedent
@@ -1325,8 +1329,8 @@ class TruncationProcess:
         return self.ref(X) * ratio_sum * coeff_mean
 
     def cov(self, X, Xp=None, start=0, end=np.inf):
-        Xp = X if Xp is None else Xp
         coeff_cov = self.coeffs_process.cov(X=X, Xp=Xp)
+        Xp = X if Xp is None else Xp  # Must reassign *after* calling cov
         ratio_mat = self.ratio(X, **self.ratio_kws)[:, None] * self.ratio(Xp, **self.ratio_kws)
         ratio_sum = geometric_sum(x=ratio_mat, start=start, end=end, excluded=self.excluded)
         ref_mat = self.ref(X)[:, None] * self.ref(Xp)
