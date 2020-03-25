@@ -267,7 +267,7 @@ class GraphicalDiagnostic:
         ax.axhline(0, 0, 1, linestyle='-', color=self.black, lw=1, zorder=0)
         # The standardized 2 sigma bands since the sd has been divided out.
         sd = self.diagnostic.std_udist.std()
-        ax.axhline(-2 * sd, 0, 1, color=self.gray, label=r'$2\sigma$', zorder=0, lw=1)
+        ax.axhline(-2 * sd, 0, 1, color=self.gray, zorder=0, lw=1)
         ax.axhline(2 * sd, 0, 1, color=self.gray, zorder=0, lw=1)
         index = np.arange(1, self.data.shape[0]+1)
         size = 8
@@ -555,7 +555,7 @@ class GraphicalDiagnostic:
                          xlabel=xlabel, vlines=vlines, ax=ax)
 
     def credible_interval(self, intervals, band_perc, title='Credible Interval Diagnostic',
-                          xlabel='Credible Interval', ylabel='Empirical Coverage', ax=None):
+                          xlabel='Credible Interval', ylabel='Empirical Coverage', ax=None, linestyles=None):
         dci_data = self.diagnostic.credible_interval(self.data, intervals)
         dci_ref = self.diagnostic.credible_interval(self.samples, intervals)
         bands = np.array([np.percentile(dci_ref, [100 * (1. - bi) / 2, 100 * (1. + bi) / 2], axis=0)
@@ -571,7 +571,11 @@ class GraphicalDiagnostic:
 
         ax.plot([0, 1], [0, 1], c=self.black)
         for i, data in enumerate(dci_data):
-            ax.plot(intervals, data, color=self.colors[i], label=self.labels[i])
+            if linestyles is None:
+                ls = None
+            else:
+                ls = linestyles[i]
+            ax.plot(intervals, data, color=self.colors[i], ls=ls, label=self.labels[i])
         ax.set_xlim([0, 1])
         ax.set_ylim([0, 1])
         ax.set_ylabel(ylabel)
