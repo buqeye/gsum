@@ -688,9 +688,20 @@ class BaseConjugateProcess:
             self.kernel_ = clone(self.kernel)
         self._rng = check_random_state(self.random_state)
 
-        X, y = check_X_y(X, y, multi_output=True, y_numeric=True)
-        self.X_train_ = np.copy(X) if self.copy_X_train else X
-        self.y_train_ = np.copy(y) if self.copy_X_train else y
+        # X, y = check_X_y(X, y, multi_output=True, y_numeric=True)
+        if self.copy_X_train:
+            try:
+                self.X_train_ = X.copy()
+            except AttributeError:
+                self.X_train_ = np.copy(X)
+
+            try:
+                self.y_train_ = y.copy()
+            except AttributeError:
+                self.y_train_ = np.copy(y)
+        else:
+            self.X_train_ = X
+            self.y_train_ = y
         self.basis_train_ = self.basis(self.X_train_)
 
         self._calibrate_kernel()
