@@ -47,8 +47,8 @@ class CustomBuildExtCommand(build_ext):
 setup(
     name='gsum',
     packages=['gsum'],
-    cmdclass={'build_ext': CustomBuildExtCommand},
-    ext_modules=ext_modules,
+    # cmdclass={'build_ext': CustomBuildExtCommand},
+    # ext_modules=ext_modules,
     version='0.3',
     description='A Bayesian model of series convergence using Gaussian sums',
     author='Jordan Melendez',
@@ -69,8 +69,8 @@ setup(
         'Topic :: Scientific/Engineering :: Physics'
         ],
     install_requires=[
-        'Cython',
-        'CythonGSL',
+        # 'Cython',
+        # 'CythonGSL',
         'docrep',
         'gsl',
         'numpy>=1.12.0',
