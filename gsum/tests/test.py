@@ -5,7 +5,6 @@ from scipy.stats import multivariate_normal
 from gsum import ConjugateGaussianProcess
 from gsum.helpers import *
 from gsum.helpers import pivoted_cholesky
-from gsum.cutils import pivoted_cholesky as pivoted_cholesky_cython
 
 
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -120,42 +119,8 @@ pchols = [
 def test_oracle_examples(L, pchol):
     """Inputs taken from Tensorflow-Probability, which was taken from GPyTorch"""
     mat = np.matmul(L, L.T)
-    # np.testing.assert_allclose(pchol, pivoted_cholesky_cython(mat), atol=1e-4)
     np.testing.assert_allclose(pchol, pivoted_cholesky(mat), atol=1e-4)
 
-
-@pytest.mark.parametrize(
-    'cov',
-    [np.array([
-       [1.1072733475231495 , 1.08739145629774   , 1.029862219545639  ,
-        0.8286134266251773 , 0.7039334391266358 , 0.5767310930265864 ,
-        0.34725085649025655],
-       [1.08739145629774   , 1.1072733475231495 , 1.08739145629774   ,
-        0.940663897699325  , 0.8286134266251773 , 0.7039334391266358 ,
-        0.4556981608148422 ],
-       [1.029862219545639  , 1.08739145629774   , 1.1072733475231495 ,
-        1.029862219545639  , 0.9406638976993251 , 0.8286134266251776 ,
-        0.5767310930265866 ],
-       [0.8286134266251773 , 0.940663897699325  , 1.029862219545639  ,
-        1.1072733475231495 , 1.08739145629774   , 1.029862219545639  ,
-        0.8286134266251776 ],
-       [0.7039334391266358 , 0.8286134266251773 , 0.9406638976993251 ,
-        1.08739145629774   , 1.1072733475231495 , 1.08739145629774   ,
-        0.9406638976993251 ],
-       [0.5767310930265864 , 0.7039334391266358 , 0.8286134266251776 ,
-        1.029862219545639  , 1.08739145629774   , 1.1072733475231495 ,
-        1.029862219545639  ],
-       [0.34725085649025655, 0.4556981608148422 , 0.5767310930265866 ,
-        0.8286134266251776 , 0.9406638976993251 , 1.029862219545639  ,
-        1.1072733475231495 ]])
-    ]
-)
-def test_old_vs_pchol(cov):
-    # This fails because the implementations are not exactly the same
-    pchol_cython = pivoted_cholesky_cython(cov)
-    pchol_lapack = pivoted_cholesky(cov)
-    with pytest.raises(AssertionError):
-        np.testing.assert_allclose(pchol_cython, pchol_lapack, atol=1e-15)
 
 # class TestGaussianKernel(unittest.TestCase):
 #     """Test the Gaussian kernel.
