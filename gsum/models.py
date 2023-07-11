@@ -1240,7 +1240,7 @@ class ConjugateStudentProcess(BaseConjugateProcess):
 
         def log_norm(df_, scale_, disp_):
             """Normalization constant of the normal scaled inverse chi squared distribution"""
-            norm = loggamma(df_ / 2.) - df_ / 2. * np.log(df_ * scale_ / 2.)
+            norm = loggamma(df_ / 2.) - df_ / 2. * np.log(df_ * scale_**2 / 2.)
             log_det = np.linalg.slogdet(2 * np.pi * disp_)[1]
             if log_det != -np.inf:
                 norm += 0.5 * log_det
