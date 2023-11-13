@@ -1197,7 +1197,7 @@ class ConjugateStudentProcess(BaseConjugateProcess):
             kernel = self.kernel_
         kernel = kernel.clone_with_theta(theta)
         if eval_gradient:
-            R, dR = kernel(X, eval_gradient)
+            R, dR = kernel(X, eval_gradient=eval_gradient)
         else:
             R, dR = kernel(X), None
 
