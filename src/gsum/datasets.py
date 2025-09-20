@@ -6,8 +6,15 @@ from . import cartesian, partials
 
 
 def make_gaussian_partial_sums(
-        X, orders=5, kernel=None, mean=None, ratio=0.3,
-        ref=1., nugget=0, random_state=0, allow_singular=True
+    X,
+    orders=5,
+    kernel=None,
+    mean=None,
+    ratio=0.3,
+    ref=1.0,
+    nugget=0,
+    random_state=0,
+    allow_singular=True,
 ):
     R"""
     Generates a dataset of Gaussian partial sums at the input points X.
@@ -52,6 +59,7 @@ def make_gaussian_partial_sums(
     if kernel is None:
         kernel = RBF(0.5)
     if mean is None:
+
         def mean(a):
             return np.zeros(a.shape[0])
 
@@ -73,8 +81,16 @@ def make_gaussian_partial_sums(
 
 
 def make_gaussian_partial_sums_uniform(
-        n_samples=100, n_features=1, orders=5, kernel=None, mean=None, ratio=0.3, ref=1.,
-        nugget=0, random_state=0, allow_singular=True
+    n_samples=100,
+    n_features=1,
+    orders=5,
+    kernel=None,
+    mean=None,
+    ratio=0.3,
+    ref=1.0,
+    nugget=0,
+    random_state=0,
+    allow_singular=True,
 ):
     R"""
     Generates a dataset of Gaussian partial sums at random input locations.
@@ -123,15 +139,30 @@ def make_gaussian_partial_sums_uniform(
     generator = check_random_state(random_state)
     X = generator.rand(n_samples, n_features)
     y = make_gaussian_partial_sums(
-        X=X, orders=orders, kernel=kernel, mean=mean, ratio=ratio, ref=ref,
-        nugget=nugget, random_state=random_state, allow_singular=allow_singular
+        X=X,
+        orders=orders,
+        kernel=kernel,
+        mean=mean,
+        ratio=ratio,
+        ref=ref,
+        nugget=nugget,
+        random_state=random_state,
+        allow_singular=allow_singular,
     )
     return X, y
 
 
 def make_gaussian_partial_sums_on_grid(
-        n_samples=100, n_features=1, orders=5, kernel=None, mean=None, ratio=0.3, ref=1.,
-        nugget=0, random_state=0, allow_singular=True
+    n_samples=100,
+    n_features=1,
+    orders=5,
+    kernel=None,
+    mean=None,
+    ratio=0.3,
+    ref=1.0,
+    nugget=0,
+    random_state=0,
+    allow_singular=True,
 ):
     R"""
     Generates a dataset of Gaussian partial sums on a full grid.
@@ -184,7 +215,14 @@ def make_gaussian_partial_sums_on_grid(
         X = x[:, None]
 
     y = make_gaussian_partial_sums(
-        X=X, orders=orders, kernel=kernel, mean=mean, ratio=ratio, ref=ref,
-        nugget=nugget, random_state=random_state, allow_singular=allow_singular
+        X=X,
+        orders=orders,
+        kernel=kernel,
+        mean=mean,
+        ratio=ratio,
+        ref=ref,
+        nugget=nugget,
+        random_state=random_state,
+        allow_singular=allow_singular,
     )
     return X, y
