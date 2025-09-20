@@ -1,16 +1,12 @@
 import numpy as np
-import scipy as sp
-from scipy.stats import multivariate_normal
 # import unittest
 from gsum import ConjugateGaussianProcess
-from gsum.helpers import *
 from gsum.helpers import pivoted_cholesky
 
 
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels \
-    import RBF, ConstantKernel as C, WhiteKernel
-from sklearn.gaussian_process.kernels import DotProduct
+    import RBF, ConstantKernel as C
 
 from sklearn.utils.testing \
     import (assert_greater, assert_array_less,
