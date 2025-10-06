@@ -19,14 +19,17 @@ from operator import itemgetter
 
 
 __all__ = [
-    'ConjugateGaussianProcess', 'ConjugateStudentProcess',
-    'TruncationGP', 'TruncationTP', 'TruncationPointwise'
+    "ConjugateGaussianProcess",
+    "ConjugateStudentProcess",
+    "TruncationGP",
+    "TruncationTP",
+    "TruncationPointwise",
 ]
 
 docstrings = docrep.DocstringProcessor()
 
 
-@docstrings.get_sectionsf('BaseConjugateProcess')
+@docstrings.get_sectionsf("BaseConjugateProcess")
 @docstrings.dedent
 class BaseConjugateProcess:
     """
@@ -103,10 +106,23 @@ class BaseConjugateProcess:
         random_state is the random number generator; If None, the random number
         generator is the RandomState instance used by `np.random`.
     """
-    
-    def __init__(self, kernel=None, center=0, disp=0, df=1, scale=1, sd=None, basis=None, nugget=1e-10,
-                 optimizer='fmin_l_bfgs_b', n_restarts_optimizer=0, copy_X_train=True, random_state=None,
-                 decomposition='cholesky'):
+
+    def __init__(
+        self,
+        kernel=None,
+        center=0,
+        disp=0,
+        df=1,
+        scale=1,
+        sd=None,
+        basis=None,
+        nugget=1e-10,
+        optimizer="fmin_l_bfgs_b",
+        n_restarts_optimizer=0,
+        copy_X_train=True,
+        random_state=None,
+        decomposition="cholesky",
+    ):
         self.kernel = kernel
 
         # Setup hyperparameters
@@ -143,8 +159,9 @@ class BaseConjugateProcess:
         self.optimizer = optimizer
         self.decomposition = decomposition
 
-        self._default_kernel = ConstantKernel(1.0, constant_value_bounds='fixed') * \
-            RBF(1.0, length_scale_bounds='fixed')
+        self._default_kernel = ConstantKernel(1.0, constant_value_bounds="fixed") * RBF(
+            1.0, length_scale_bounds="fixed"
+        )
 
         if basis is None:
             self.basis = lambda X: np.ones((X.shape[0], 1))
@@ -167,7 +184,17 @@ class BaseConjugateProcess:
         return self._scale_0
 
     @classmethod
-    def compute_center(cls, y, sqrt_R, basis, center0, disp0, decomposition, eval_gradient=False, dR=None):
+    def compute_center(
+        cls,
+        y,
+        sqrt_R,
+        basis,
+        center0,
+        disp0,
+        decomposition,
+        eval_gradient=False,
+        dR=None,
+    ):
         R"""Computes the regression coefficients' center hyperparameter :math:`\eta` updated based on data
 
         Parameters
@@ -201,7 +228,7 @@ class BaseConjugateProcess:
         if np.all(disp0 == 0):
             if eval_gradient:
                 if dR is None:
-                    raise ValueError('dR must be given if eval_gradient is True')
+                    raise ValueError("dR must be given if eval_gradient is True")
                 return np.copy(center0), np.zeros((*center0.shape, dR.shape[-1]))
             return np.copy(center0)
 
@@ -215,23 +242,29 @@ class BaseConjugateProcess:
         # else:
         #     raise ValueError('decomposition must be either "cholesky" or "eig"')
         invR_y_avg = cls.solve_sqrt(sqrt_R, y=y_avg, decomposition=decomposition)
-        disp = cls.compute_disp(y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0, decomposition=decomposition)
+        disp = cls.compute_disp(
+            y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0, decomposition=decomposition
+        )
         factor = solve(disp0, center0) + ny * basis.T @ invR_y_avg
         center = disp @ factor
 
         if eval_gradient:
             if dR is None:
-                raise ValueError('dR must be given if eval_gradient is True')
+                raise ValueError("dR must be given if eval_gradient is True")
             # invR_basis = cho_solve((chol, True), basis)
             # invR_diff = cho_solve((chol, True), basis @ center - y_avg)
             invR_basis = cls.solve_sqrt(sqrt_R, y=basis, decomposition=decomposition)
-            invR_diff = cls.solve_sqrt(sqrt_R, y=basis @ center - y_avg, decomposition=decomposition)
-            d_center = ny * disp @ np.einsum('ji,jkp,k->ip', invR_basis, dR, invR_diff)
+            invR_diff = cls.solve_sqrt(
+                sqrt_R, y=basis @ center - y_avg, decomposition=decomposition
+            )
+            d_center = ny * disp @ np.einsum("ji,jkp,k->ip", invR_basis, dR, invR_diff)
             return center, d_center
         return center
 
     @classmethod
-    def compute_disp(cls, y, sqrt_R, basis, disp0, decomposition, eval_gradient=False, dR=None):
+    def compute_disp(
+        cls, y, sqrt_R, basis, disp0, decomposition, eval_gradient=False, dR=None
+    ):
         R"""The dispersion hyperparameter :math:`V` updated based on data.
 
         Parameters
@@ -260,7 +293,7 @@ class BaseConjugateProcess:
         if np.all(disp0 == 0):
             if eval_gradient:
                 if dR is None:
-                    raise ValueError('dR must be given if eval_gradient is True')
+                    raise ValueError("dR must be given if eval_gradient is True")
                 return np.zeros_like(disp0), np.zeros((*disp0.shape, dR.shape[-1]))
             return np.zeros_like(disp0)
 
@@ -270,10 +303,10 @@ class BaseConjugateProcess:
         disp = inv(inv(disp0) + ny * quad)
         if eval_gradient:
             if dR is None:
-                raise ValueError('dR must be given if eval_gradient is True')
+                raise ValueError("dR must be given if eval_gradient is True")
             # invRBV = cho_solve((chol, True), basis) @ disp
             invRBV = cls.solve_sqrt(sqrt_R, y=basis, decomposition=decomposition) @ disp
-            dV = ny * np.einsum('ji,jkp,kl->ilp', invRBV, dR, invRBV)
+            dV = ny * np.einsum("ji,jkp,kl->ilp", invRBV, dR, invRBV)
             return disp, dV
         return disp
 
@@ -302,13 +335,24 @@ class BaseConjugateProcess:
         df = df0 + y.size
         if eval_gradient:
             if dR is None:
-                raise ValueError('dR must be given if eval_gradient is True')
+                raise ValueError("dR must be given if eval_gradient is True")
             return df, np.zeros(dR.shape[-1])
         return df
 
     @classmethod
-    def compute_scale_sq_v2(cls, y, sqrt_R, basis, center0, disp0, df0, scale0, decomposition,
-                            eval_gradient=False, dR=None):
+    def compute_scale_sq_v2(
+        cls,
+        y,
+        sqrt_R,
+        basis,
+        center0,
+        disp0,
+        df0,
+        scale0,
+        decomposition,
+        eval_gradient=False,
+        dR=None,
+    ):
         R"""The squared scale hyperparameter :math:`\tau^2` updated based on data.
 
         Parameters
@@ -352,12 +396,26 @@ class BaseConjugateProcess:
             # The disp -> 0 limit must be taken carefully to find these terms
             center = center0
             # invR_diff0 = cho_solve((chol, True), 2 * avg_y - basis @ center)
-            invR_diff0 = cls.solve_sqrt(sqrt_R, 2 * avg_y - basis @ center, decomposition=decomposition)
-            mean_terms = - ny * center0 @ basis.T @ invR_diff0
+            invR_diff0 = cls.solve_sqrt(
+                sqrt_R, 2 * avg_y - basis @ center, decomposition=decomposition
+            )
+            mean_terms = -ny * center0 @ basis.T @ invR_diff0
         else:
             center = cls.compute_center(
-                y=y, sqrt_R=sqrt_R, basis=basis, center0=center0, disp0=disp0, decomposition=decomposition)
-            disp = cls.compute_disp(y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0, decomposition=decomposition)
+                y=y,
+                sqrt_R=sqrt_R,
+                basis=basis,
+                center0=center0,
+                disp0=disp0,
+                decomposition=decomposition,
+            )
+            disp = cls.compute_disp(
+                y=y,
+                sqrt_R=sqrt_R,
+                basis=basis,
+                disp0=disp0,
+                decomposition=decomposition,
+            )
             mean_terms = center0 @ inv(disp0) @ center0 - center @ inv(disp) @ center
 
         # Combine the prior info, quadratic form, and mean contributions to find scale**2
@@ -371,21 +429,38 @@ class BaseConjugateProcess:
 
         if eval_gradient:
             if dR is None:
-                raise ValueError('dR must be given if eval_gradient is true')
+                raise ValueError("dR must be given if eval_gradient is true")
             # Both the disp -> 0 and non-zero forms have the same gradient formula
-            d_scale_sq = - np.einsum('ij,jkp,ki->p', invR_y.T, dR, invR_y)  # From the quadratic form
+            d_scale_sq = -np.einsum(
+                "ij,jkp,ki->p", invR_y.T, dR, invR_y
+            )  # From the quadratic form
             # invR_diff = cho_solve((chol, True), 2 * avg_y - basis @ center)
             # invR_basis_center = cho_solve((chol, True), basis) @ center
-            invR_diff = cls.solve_sqrt(sqrt_R, 2 * avg_y - basis @ center, decomposition=decomposition)
-            invR_basis_center = cls.solve_sqrt(sqrt_R, basis, decomposition=decomposition) @ center
-            d_scale_sq += ny * np.einsum('i,ijp,j->p', invR_basis_center, dR, invR_diff)
+            invR_diff = cls.solve_sqrt(
+                sqrt_R, 2 * avg_y - basis @ center, decomposition=decomposition
+            )
+            invR_basis_center = (
+                cls.solve_sqrt(sqrt_R, basis, decomposition=decomposition) @ center
+            )
+            d_scale_sq += ny * np.einsum("i,ijp,j->p", invR_basis_center, dR, invR_diff)
             d_scale_sq /= df
             return scale_sq, d_scale_sq
         return scale_sq
 
     @classmethod
-    def compute_scale_sq(cls, y, sqrt_R, basis, center0, disp0, df0, scale0, decomposition,
-                         eval_gradient=False, dR=None):
+    def compute_scale_sq(
+        cls,
+        y,
+        sqrt_R,
+        basis,
+        center0,
+        disp0,
+        df0,
+        scale0,
+        decomposition,
+        eval_gradient=False,
+        dR=None,
+    ):
         R"""The squared scale hyperparameter :math:`\tau^2` updated based on data.
 
         Parameters
@@ -434,9 +509,17 @@ class BaseConjugateProcess:
 
         avg_y_centered = avg_y - basis @ center0
         disp = cls.compute_disp(
-            y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0, decomposition=decomposition, eval_gradient=False)
+            y=y,
+            sqrt_R=sqrt_R,
+            basis=basis,
+            disp0=disp0,
+            decomposition=decomposition,
+            eval_gradient=False,
+        )
         invR_basis = cls.solve_sqrt(sqrt_R, basis, decomposition=decomposition)
-        invR_avg_yc = cls.solve_sqrt(sqrt_R, avg_y_centered, decomposition=decomposition)
+        invR_avg_yc = cls.solve_sqrt(
+            sqrt_R, avg_y_centered, decomposition=decomposition
+        )
         # Use the Woodbury matrix identity on Melendez et al Eq. (A31):
         mat = np.eye(N) - ny * invR_basis @ disp @ basis.T
         mat_invR_avg_yc = ny * mat @ invR_avg_yc
@@ -445,13 +528,15 @@ class BaseConjugateProcess:
         quad2 = avg_y_centered @ mat_invR_avg_yc
 
         df = cls.compute_df(y=y, df0=df0)
-        scale_sq = (df0 * scale0 ** 2 + quad + quad2) / df
+        scale_sq = (df0 * scale0**2 + quad + quad2) / df
 
         if eval_gradient:
             if dR is None:
-                raise ValueError('dR must be given if eval_gradient is true')
-            d_scale_sq = - np.einsum('ji,jkp,ki->p', invR_yc, dR, invR_yc)
-            d_scale_sq -= np.einsum('i,ijp,j->p', mat_invR_avg_yc, dR, mat_invR_avg_yc) / ny
+                raise ValueError("dR must be given if eval_gradient is true")
+            d_scale_sq = -np.einsum("ji,jkp,ki->p", invR_yc, dR, invR_yc)
+            d_scale_sq -= (
+                np.einsum("i,ijp,j->p", mat_invR_avg_yc, dR, mat_invR_avg_yc) / ny
+            )
             d_scale_sq /= df
             return scale_sq, d_scale_sq
         return scale_sq
@@ -475,12 +560,12 @@ class BaseConjugateProcess:
         -------
         x
         """
-        if decomposition == 'cholesky':
+        if decomposition == "cholesky":
             return cho_solve((sqrt_mat, True), y)
-        elif decomposition == 'eig':
+        elif decomposition == "eig":
             if isinstance(sqrt_mat, tuple):
                 eig, Q = sqrt_mat
-                inv_mat = Q @ np.diag(1. / eig) @ Q.T
+                inv_mat = Q @ np.diag(1.0 / eig) @ Q.T
                 return inv_mat @ y
             return solve(sqrt_mat.T, solve(sqrt_mat, y))
         else:
@@ -503,49 +588,60 @@ class BaseConjugateProcess:
         return var
 
     def center(self):
-        """The regression coefficient hyperparameters for the mean updated by the call to `fit`.
-        """
-        if self.decomposition == 'cholesky':
+        """The regression coefficient hyperparameters for the mean updated by the call to `fit`."""
+        if self.decomposition == "cholesky":
             sqrt_R = self.corr_sqrt_
-        elif self.decomposition == 'eig':
+        elif self.decomposition == "eig":
             sqrt_R = self._eigh_tuple_
         else:
             raise ValueError('decomposition must be either "cholesky" or "eig"')
         return self.compute_center(
-            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_,
-            center0=self.center0, disp0=self.disp0, decomposition=self.decomposition)
+            y=self.y_train_,
+            sqrt_R=sqrt_R,
+            basis=self.basis_train_,
+            center0=self.center0,
+            disp0=self.disp0,
+            decomposition=self.decomposition,
+        )
 
     def disp(self):
-        """The dispersion hyperparameter updated by the call to `fit`.
-        """
-        if self.decomposition == 'cholesky':
+        """The dispersion hyperparameter updated by the call to `fit`."""
+        if self.decomposition == "cholesky":
             sqrt_R = self.corr_sqrt_
-        elif self.decomposition == 'eig':
+        elif self.decomposition == "eig":
             sqrt_R = self._eigh_tuple_
         else:
             raise ValueError('decomposition must be either "cholesky" or "eig"')
         return self.compute_disp(
-            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_, disp0=self.disp0,
-            decomposition=self.decomposition)
+            y=self.y_train_,
+            sqrt_R=sqrt_R,
+            basis=self.basis_train_,
+            disp0=self.disp0,
+            decomposition=self.decomposition,
+        )
 
     def df(self):
-        """The degrees of freedom hyperparameter for the standard deviation updated by the call to `fit`
-        """
+        """The degrees of freedom hyperparameter for the standard deviation updated by the call to `fit`"""
         return self.compute_df(y=self.y_train_, df0=self.df0)
 
     def scale(self):
-        """The scale hyperparameter for the standard deviation updated by the call to `fit`
-        """
-        if self.decomposition == 'cholesky':
+        """The scale hyperparameter for the standard deviation updated by the call to `fit`"""
+        if self.decomposition == "cholesky":
             sqrt_R = self.corr_sqrt_
-        elif self.decomposition == 'eig':
+        elif self.decomposition == "eig":
             sqrt_R = self._eigh_tuple_
         else:
             raise ValueError('decomposition must be either "cholesky" or "eig"')
         scale_sq = self.compute_scale_sq(
-            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_,
-            center0=self.center0, disp0=self.disp0, df0=self.df0, scale0=self.scale0,
-            decomposition=self.decomposition)
+            y=self.y_train_,
+            sqrt_R=sqrt_R,
+            basis=self.basis_train_,
+            center0=self.center0,
+            disp0=self.disp0,
+            df0=self.df0,
+            scale0=self.scale0,
+            decomposition=self.decomposition,
+        )
         return np.sqrt(scale_sq)
 
     def mean(self, X):
@@ -586,7 +682,9 @@ class BaseConjugateProcess:
 
         if not self._fit:  # Unfitted; predict based on GP prior
             if self.df0 <= 2:
-                raise ValueError('df must be greater than 2 for the covariance to exist')
+                raise ValueError(
+                    "df must be greater than 2 for the covariance to exist"
+                )
             cov_factor = self.compute_cov_factor(scale_sq=self.scale0**2, df=self.df0)
             if self.kernel is None:
                 kernel = self._default_kernel
@@ -597,7 +695,7 @@ class BaseConjugateProcess:
             kernel = self.kernel_
 
         return cov_factor * kernel(X, Xp)
-    
+
     @staticmethod
     def num_y(y):
         """Computes the number of curves in y"""
@@ -625,7 +723,7 @@ class BaseConjugateProcess:
         elif y.ndim == 2:
             return np.average(y, axis=1)
         else:
-            raise ValueError('y must be two-dimensional, not shape={}'.format(y.shape))
+            raise ValueError("y must be two-dimensional, not shape={}".format(y.shape))
 
     def _calibrate_kernel(self):
         if self.optimizer is not None and self.kernel_.n_dims > 0:
@@ -633,16 +731,19 @@ class BaseConjugateProcess:
             # likelihood (potentially starting from several initial values)
             def obj_func(theta, eval_gradient=True):
                 if eval_gradient:
-                    lml, grad = self.log_marginal_likelihood(
-                        theta, eval_gradient=True)
+                    lml, grad = self.log_marginal_likelihood(theta, eval_gradient=True)
                     return -lml, -grad
                 else:
                     return -self.log_marginal_likelihood(theta)
 
             # First optimize starting from theta specified in kernel
-            optima = [(self._constrained_optimization(obj_func,
-                                                      self.kernel_.theta,
-                                                      self.kernel_.bounds))]
+            optima = [
+                (
+                    self._constrained_optimization(
+                        obj_func, self.kernel_.theta, self.kernel_.bounds
+                    )
+                )
+            ]
 
             # Additional runs are performed from log-uniform chosen initial
             # theta
@@ -650,14 +751,14 @@ class BaseConjugateProcess:
                 if not np.isfinite(self.kernel_.bounds).all():
                     raise ValueError(
                         "Multiple optimizer restarts (n_restarts_optimizer>0) "
-                        "requires that all bounds are finite.")
+                        "requires that all bounds are finite."
+                    )
                 bounds = self.kernel_.bounds
                 for iteration in range(self.n_restarts_optimizer):
-                    theta_initial = \
-                        self._rng.uniform(bounds[:, 0], bounds[:, 1])
+                    theta_initial = self._rng.uniform(bounds[:, 0], bounds[:, 1])
                     optima.append(
-                        self._constrained_optimization(obj_func, theta_initial,
-                                                       bounds))
+                        self._constrained_optimization(obj_func, theta_initial, bounds)
+                    )
             # Select result from run with minimal (negative) log-marginal
             # likelihood
             lml_values = list(map(itemgetter(1), optima))
@@ -665,9 +766,10 @@ class BaseConjugateProcess:
             self.kernel_.theta = optima[np.argmin(lml_values)][0]
             self.log_marginal_likelihood_value_ = -np.min(lml_values)
         else:
-            self.log_marginal_likelihood_value_ = \
-                self.log_marginal_likelihood(self.kernel_.theta)
-    
+            self.log_marginal_likelihood_value_ = self.log_marginal_likelihood(
+                self.kernel_.theta
+            )
+
     def fit(self, X, y):
         R"""Fits the process to data (X, y) and updates all hyperparameters.
 
@@ -707,10 +809,12 @@ class BaseConjugateProcess:
         self._calibrate_kernel()
         self.corr_ = self.kernel_(X)
 
-        if self.decomposition == 'cholesky':
-            self.corr_L_ = self.corr_sqrt_ = cholesky(self.corr_ + self.nugget * np.eye(len(X)))
+        if self.decomposition == "cholesky":
+            self.corr_L_ = self.corr_sqrt_ = cholesky(
+                self.corr_ + self.nugget * np.eye(len(X))
+            )
             sqrt_R = self.corr_sqrt_
-        elif self.decomposition == 'eig':
+        elif self.decomposition == "eig":
             eig, Q = eigh(self.corr_ + self.nugget * np.eye(len(X)))
             self._eigh_tuple_ = eig, Q
             sqrt_R = eig, Q  # Passing tuple makes matrix inversion easier later on
@@ -719,21 +823,35 @@ class BaseConjugateProcess:
             raise ValueError('decomposition must be "cholesky" or "eig"')
 
         self.center_ = self.compute_center(
-            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_,
-            center0=self.center0, disp0=self.disp0, decomposition=self.decomposition
+            y=self.y_train_,
+            sqrt_R=sqrt_R,
+            basis=self.basis_train_,
+            center0=self.center0,
+            disp0=self.disp0,
+            decomposition=self.decomposition,
         )
         self.disp_ = self.compute_disp(
-            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_, disp0=self.disp0,
-            decomposition=self.decomposition
+            y=self.y_train_,
+            sqrt_R=sqrt_R,
+            basis=self.basis_train_,
+            disp0=self.disp0,
+            decomposition=self.decomposition,
         )
         self.df_ = self.compute_df(y=self.y_train_, df0=self.df0)
         scale_sq = self.compute_scale_sq(
-            y=self.y_train_, sqrt_R=sqrt_R, basis=self.basis_train_,
-            center0=self.center0, disp0=self.disp0, df0=self.df0, scale0=self.scale0,
-            decomposition=self.decomposition
+            y=self.y_train_,
+            sqrt_R=sqrt_R,
+            basis=self.basis_train_,
+            center0=self.center0,
+            disp0=self.disp0,
+            df0=self.df0,
+            scale0=self.scale0,
+            decomposition=self.decomposition,
         )
         self.scale_ = np.sqrt(scale_sq)
-        self.cov_factor_ = self.cbar_sq_mean_ = self.compute_cov_factor(scale_sq=scale_sq, df=self.df_)
+        self.cov_factor_ = self.cbar_sq_mean_ = self.compute_cov_factor(
+            scale_sq=scale_sq, df=self.df_
+        )
         self._fit = True
         return self
 
@@ -748,9 +866,11 @@ class BaseConjugateProcess:
         else:
             return y_mean
 
-    @docstrings.get_sectionsf('BaseConjugateProcess_predict')
+    @docstrings.get_sectionsf("BaseConjugateProcess_predict")
     @docstrings.dedent
-    def predict(self, X, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False):
+    def predict(
+        self, X, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False
+    ):
         """
         Predict using the Gaussian process regression model at the points `X`
 
@@ -787,27 +907,29 @@ class BaseConjugateProcess:
             Only returned when return_cov is True.
         """
         if return_std and return_cov:
-            raise RuntimeError('Only one of return_std or return_cov may be True')
+            raise RuntimeError("Only one of return_std or return_cov may be True")
 
         if not self._fit:  # Unfitted; predict based on GP prior
-            return self.underlying_properties(X=X, return_std=return_std, return_cov=return_cov)
+            return self.underlying_properties(
+                X=X, return_std=return_std, return_cov=return_cov
+            )
 
         decomp = self.decomposition
 
         if Xc is None:
             Xc = self.X_train_
-            if decomp == 'cholesky':
+            if decomp == "cholesky":
                 sqrt_R = self.corr_sqrt_
-            elif decomp == 'eig':
+            elif decomp == "eig":
                 sqrt_R = self._eigh_tuple_
             else:
                 raise ValueError('decomposition must be "cholesky" or "eig"')
         else:
             # corr_chol = cholesky(self.kernel_(Xc) + self.nugget * np.eye(len(Xc)))
             kk = self.kernel_(Xc) + self.nugget * np.eye(len(Xc))
-            if decomp == 'cholesky':
+            if decomp == "cholesky":
                 sqrt_R = cholesky(kk)
-            elif decomp == 'eig':
+            elif decomp == "eig":
                 sqrt_R = eigh(kk)  # eig, Q
             else:
                 raise ValueError('decomposition must be "cholesky" or "eig"')
@@ -821,7 +943,9 @@ class BaseConjugateProcess:
         # Now use X and y from arguments for conditioning/predictions
         R_on = self.kernel_(Xc, X)
         R_no = R_on.T
-        R_nn = self.kernel_(X)  # Only use one argument, otherwise, e.g., WhiteKernel won't work right
+        R_nn = self.kernel_(
+            X
+        )  # Only use one argument, otherwise, e.g., WhiteKernel won't work right
 
         if y.ndim == 1:
             y = y[:, None]
@@ -871,10 +995,10 @@ class BaseConjugateProcess:
         if y_mean.ndim == 1:
             y_samples = rng.multivariate_normal(y_mean, y_cov, n_samples).T
         else:
-            y_samples = \
-                [rng.multivariate_normal(y_mean[:, i], y_cov,
-                                         n_samples).T[:, np.newaxis]
-                 for i in range(y_mean.shape[1])]
+            y_samples = [
+                rng.multivariate_normal(y_mean[:, i], y_cov, n_samples).T[:, np.newaxis]
+                for i in range(y_mean.shape[1])
+            ]
             y_samples = np.hstack(y_samples)
         return y_samples
 
@@ -882,18 +1006,19 @@ class BaseConjugateProcess:
         raise NotImplementedError
 
     def _constrained_optimization(self, obj_func, initial_theta, bounds):
-        R"""A method to find the best kernel hyperparameters. Taken from scikit-learn.
-        """
+        R"""A method to find the best kernel hyperparameters. Taken from scikit-learn."""
         if self.optimizer == "fmin_l_bfgs_b":
-            theta_opt, func_min, convergence_dict = \
-                fmin_l_bfgs_b(obj_func, initial_theta, bounds=bounds)
+            theta_opt, func_min, convergence_dict = fmin_l_bfgs_b(
+                obj_func, initial_theta, bounds=bounds
+            )
             if convergence_dict["warnflag"] != 0:
-                warnings.warn("fmin_l_bfgs_b terminated abnormally with the "
-                              " state: %s" % convergence_dict,
-                              ConvergenceWarning)
+                warnings.warn(
+                    "fmin_l_bfgs_b terminated abnormally with the "
+                    " state: %s" % convergence_dict,
+                    ConvergenceWarning,
+                )
         elif callable(self.optimizer):
-            theta_opt, func_min = \
-                self.optimizer(obj_func, initial_theta, bounds=bounds)
+            theta_opt, func_min = self.optimizer(obj_func, initial_theta, bounds=bounds)
         else:
             raise ValueError("Unknown optimizer %s." % self.optimizer)
 
@@ -938,12 +1063,10 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
         """
         if theta is None and self._fit:
             if eval_gradient:
-                raise ValueError(
-                    "Gradient can only be evaluated for theta!=None"
-                )
+                raise ValueError("Gradient can only be evaluated for theta!=None")
             return self.log_marginal_likelihood_value_
 
-        if not hasattr(self, 'kernel_') or self.kernel_ is None:
+        if not hasattr(self, "kernel_") or self.kernel_ is None:
             if self.kernel is None:
                 kernel = self._default_kernel
             else:
@@ -964,17 +1087,15 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
 
         decomp = self.decomposition
 
-        if decomp == 'cholesky':
+        if decomp == "cholesky":
             try:
                 sqrt_R = cholesky(R)  # Line 2
             except np.linalg.LinAlgError:
-                return (-np.inf, np.zeros_like(theta)) \
-                    if eval_gradient else -np.inf
-        elif decomp == 'eig':
+                return (-np.inf, np.zeros_like(theta)) if eval_gradient else -np.inf
+        elif decomp == "eig":
             sqrt_R = eigh(R)  # eig, Q
         else:
             raise ValueError('decomposition must be "cholesky" or "eig"')
-
 
         # Support multi-dimensional output of self.y_train_
         if y.ndim == 1:
@@ -987,21 +1108,42 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
         basis = self.basis(X)
         if eval_gradient:
             center, grad_center = self.compute_center(
-                y, sqrt_R, basis, center0=center0, disp0=disp0,
-                eval_gradient=eval_gradient, dR=R_gradient, decomposition=decomp
+                y,
+                sqrt_R,
+                basis,
+                center0=center0,
+                disp0=disp0,
+                eval_gradient=eval_gradient,
+                dR=R_gradient,
+                decomposition=decomp,
             )
             scale2, dscale2 = self.compute_scale_sq(
-                y=y, sqrt_R=sqrt_R, basis=basis, center0=center0, disp0=disp0,
-                df0=df0, scale0=scale0, eval_gradient=eval_gradient, dR=R_gradient,
-                decomposition=decomp
+                y=y,
+                sqrt_R=sqrt_R,
+                basis=basis,
+                center0=center0,
+                disp0=disp0,
+                df0=df0,
+                scale0=scale0,
+                eval_gradient=eval_gradient,
+                dR=R_gradient,
+                decomposition=decomp,
             )
             grad_var = self.compute_cov_factor(scale_sq=dscale2, df=df)
             grad_mean = basis @ grad_center
         else:
-            center = self.compute_center(y, sqrt_R, basis, center0=center0, disp0=disp0, decomposition=decomp)
+            center = self.compute_center(
+                y, sqrt_R, basis, center0=center0, disp0=disp0, decomposition=decomp
+            )
             scale2 = self.compute_scale_sq(
-                y=y, sqrt_R=sqrt_R, basis=basis, center0=center0, disp0=disp0,
-                df0=df0, scale0=scale0, decomposition=decomp
+                y=y,
+                sqrt_R=sqrt_R,
+                basis=basis,
+                center0=center0,
+                disp0=disp0,
+                df0=df0,
+                scale0=scale0,
+                decomposition=decomp,
             )
             grad_center, grad_var, grad_mean = None, None, None
         mean = basis @ center
@@ -1010,10 +1152,10 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
         # Convert from correlation matrix to covariance and subtract mean
         # to make all calculations below identical to scikit learn implementation
         # L = np.sqrt(var) * corr_L
-        if decomp == 'cholesky':
+        if decomp == "cholesky":
             L = np.sqrt(var) * sqrt_R
             logdet_K = 2 * np.log(np.diag(L)).sum()
-        elif decomp == 'eig':
+        elif decomp == "eig":
             eig, Q = sqrt_R
             L = var * eig, Q  # Technically not lower triangular, but use L anyways
             logdet_K = np.log(var * eig).sum()
@@ -1045,8 +1187,9 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
             # Compute "0.5 * trace(tmp.dot(K_gradient))" without
             # constructing the full matrix tmp.dot(K_gradient) since only
             # its diagonal is required
-            log_likelihood_gradient_dims = \
-                0.5 * np.einsum("ijl,ijk->kl", tmp, K_gradient)
+            log_likelihood_gradient_dims = 0.5 * np.einsum(
+                "ijl,ijk->kl", tmp, K_gradient
+            )
 
             # Beyond scikit-learn: Add gradient wrt mean
             log_likelihood_gradient_dims -= grad_mean.T @ alpha
@@ -1068,16 +1211,24 @@ class ConjugateGaussianProcess(BaseConjugateProcess):
         corr = kernel(X)
         corr = corr + self.nugget * np.eye(corr.shape[-1])
         corr_chol = cholesky(corr)
-        
+
         # Setup best guesses for mean and cov
         center0, disp0, df0, scale0 = self.center0, self.disp0, self.df0, self.scale0
         df = self.compute_df(y=y, df0=df0)
         basis = self.basis(X)
-        mean = basis @ self.compute_center(y, corr_chol, basis, center0=center0, disp0=disp0)
+        mean = basis @ self.compute_center(
+            y, corr_chol, basis, center0=center0, disp0=disp0
+        )
         # sd = self.compute_std(y=y, chol=corr_chol, basis=basis, beta0=beta0, disp0=disp0, df0=df0, scale0=scale0)
         scale2 = self.compute_scale_sq(
-            y=y, chol=corr_chol, basis=basis, center0=center0, disp0=disp0,
-            df0=df0, scale0=scale0)
+            y=y,
+            chol=corr_chol,
+            basis=basis,
+            center0=center0,
+            disp0=disp0,
+            df0=df0,
+            scale0=scale0,
+        )
         var = self.compute_cov_factor(scale_sq=scale2, df=df)
         cov = var * corr
         dist = st.multivariate_normal(mean=mean, cov=cov)
@@ -1097,7 +1248,6 @@ class ConjugateStudentProcess(BaseConjugateProcess):
     """
 
     def cov(self, X, Xp=None):
-
         if not self._fit:  # Unfitted; predict based on GP prior
             df = self.df0
             scale = self.scale0
@@ -1113,7 +1263,7 @@ class ConjugateStudentProcess(BaseConjugateProcess):
             kernel = self.kernel_
 
         if df <= 2:
-            raise ValueError('df must be greater than 2 for the covariance to exist')
+            raise ValueError("df must be greater than 2 for the covariance to exist")
 
         # Call kernel before potentially reassigning Xp, else, e.g., WhiteKernel will not work properly
         corr = kernel(X, Xp)
@@ -1125,7 +1275,9 @@ class ConjugateStudentProcess(BaseConjugateProcess):
         return var * (corr + self.basis(X) @ disp @ self.basis(Xp).T)
 
     @docstrings.dedent
-    def predict(self, X, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False):
+    def predict(
+        self, X, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False
+    ):
         R"""
 
         Parameters
@@ -1134,12 +1286,18 @@ class ConjugateStudentProcess(BaseConjugateProcess):
         """
 
         pred = super(ConjugateStudentProcess, self).predict(
-            X=X, return_std=return_std, return_cov=return_cov, Xc=Xc, y=y, pred_noise=pred_noise)
+            X=X,
+            return_std=return_std,
+            return_cov=return_cov,
+            Xc=Xc,
+            y=y,
+            pred_noise=pred_noise,
+        )
 
         decomp = self.decomposition
         if not self._fit:  # Unfitted; predict based on GP prior
             disp = self.disp0
-            var = self.compute_cov_factor(scale_sq=self.scale0 ** 2, df=self.df0)
+            var = self.compute_cov_factor(scale_sq=self.scale0**2, df=self.df0)
             basis = self.basis(X)
         else:
             disp = self.disp_
@@ -1148,9 +1306,9 @@ class ConjugateStudentProcess(BaseConjugateProcess):
 
             if Xc is None:
                 basis_old = self.basis_train_
-                if decomp == 'cholesky':
+                if decomp == "cholesky":
                     sqrt_R = self.corr_sqrt_
-                elif decomp == 'eig':
+                elif decomp == "eig":
                     sqrt_R = self._eigh_tuple_
                 else:
                     raise ValueError('decomposition must be "cholesky" or "eig"')
@@ -1160,15 +1318,17 @@ class ConjugateStudentProcess(BaseConjugateProcess):
                 R_no = self.kernel_(X, Xc)
                 kk = self.kernel_(Xc) + self.nugget * np.eye(len(Xc))
                 # corr_chol = cholesky(kk)
-                if decomp == 'cholesky':
+                if decomp == "cholesky":
                     sqrt_R = cholesky(kk)
-                elif decomp == 'eig':
+                elif decomp == "eig":
                     sqrt_R = eigh(kk)  # eig, Q
                 else:
                     raise ValueError('decomposition must be "cholesky" or "eig"')
             # The conditional basis
             # basis = basis_new - R_no @ cho_solve((corr_chol, True), basis_old)
-            basis = basis_new - R_no @ self.solve_sqrt(sqrt_R, basis_old, decomposition=decomp)
+            basis = basis_new - R_no @ self.solve_sqrt(
+                sqrt_R, basis_old, decomposition=decomp
+            )
 
         mean_cov = var * (basis @ disp @ basis.T)  # From integrating out the mean
         if return_std:
@@ -1188,7 +1348,7 @@ class ConjugateStudentProcess(BaseConjugateProcess):
             X = self.X_train_
 
         ny = self.num_y(y)
-        if not hasattr(self, 'kernel_') or self.kernel_ is None:
+        if not hasattr(self, "kernel_") or self.kernel_ is None:
             if self.kernel is None:
                 kernel = self._default_kernel
             else:
@@ -1206,13 +1366,12 @@ class ConjugateStudentProcess(BaseConjugateProcess):
 
         decomp = self.decomposition
 
-        if decomp == 'cholesky':
+        if decomp == "cholesky":
             try:
                 sqrt_R = cholesky(R)  # Line 2
             except np.linalg.LinAlgError:
-                return (-np.inf, np.zeros_like(theta)) \
-                    if eval_gradient else -np.inf
-        elif decomp == 'eig':
+                return (-np.inf, np.zeros_like(theta)) if eval_gradient else -np.inf
+        elif decomp == "eig":
             sqrt_R = eigh(R)  # eig, Q
         else:
             raise ValueError('decomposition must be "cholesky" or "eig"')
@@ -1222,51 +1381,75 @@ class ConjugateStudentProcess(BaseConjugateProcess):
         basis = self.basis(X)
         if eval_gradient:
             disp, grad_disp = self.compute_disp(
-                y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0,
-                eval_gradient=eval_gradient, dR=dR, decomposition=decomp
+                y=y,
+                sqrt_R=sqrt_R,
+                basis=basis,
+                disp0=disp0,
+                eval_gradient=eval_gradient,
+                dR=dR,
+                decomposition=decomp,
             )
             scale_sq, grad_scale_sq = self.compute_scale_sq(
-                y=y, sqrt_R=sqrt_R, basis=basis, center0=center0, disp0=disp0,
-                df0=df0, scale0=scale0, eval_gradient=eval_gradient, dR=dR, decomposition=decomp
+                y=y,
+                sqrt_R=sqrt_R,
+                basis=basis,
+                center0=center0,
+                disp0=disp0,
+                df0=df0,
+                scale0=scale0,
+                eval_gradient=eval_gradient,
+                dR=dR,
+                decomposition=decomp,
             )
         else:
-            disp = self.compute_disp(y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0, decomposition=decomp)
+            disp = self.compute_disp(
+                y=y, sqrt_R=sqrt_R, basis=basis, disp0=disp0, decomposition=decomp
+            )
             scale_sq = self.compute_scale_sq(
-                y=y, sqrt_R=sqrt_R, basis=basis, center0=center0, disp0=disp0, df0=df0,
-                scale0=scale0, decomposition=decomp
+                y=y,
+                sqrt_R=sqrt_R,
+                basis=basis,
+                center0=center0,
+                disp0=disp0,
+                df0=df0,
+                scale0=scale0,
+                decomposition=decomp,
             )
             grad_disp, grad_scale_sq = None, None
         scale = np.sqrt(scale_sq)
 
         def log_norm(df_, scale_, disp_):
             """Normalization constant of the normal scaled inverse chi squared distribution"""
-            norm = loggamma(df_ / 2.) - df_ / 2. * np.log(df_ * scale_**2 / 2.)
+            norm = loggamma(df_ / 2.0) - df_ / 2.0 * np.log(df_ * scale_**2 / 2.0)
             log_det = np.linalg.slogdet(2 * np.pi * disp_)[1]
             if log_det != -np.inf:
                 norm += 0.5 * log_det
             return norm
 
-        if decomp == 'cholesky':
+        if decomp == "cholesky":
             logdet_R = 2 * np.log(np.diag(sqrt_R)).sum()
-        elif decomp == 'eig':
+        elif decomp == "eig":
             eig, Q = sqrt_R
             logdet_R = np.log(eig).sum()
         else:
             raise ValueError('decomposition must be "cholesky" or "eig"')
 
-        log_like = log_norm(df, scale, disp) - log_norm(df0, scale0, disp0) \
-            - ny / 2. * (N * np.log(2*np.pi) + logdet_R)
+        log_like = (
+            log_norm(df, scale, disp)
+            - log_norm(df0, scale0, disp0)
+            - ny / 2.0 * (N * np.log(2 * np.pi) + logdet_R)
+        )
 
         if eval_gradient:
             # cho_solve only cares about first dimension of dR. Gradient parameters are in the last dimension.
             # log_like_gradient = - (ny / 2.) * np.trace(cho_solve((corr_L, True), dR), axis1=0, axis2=1)
-            log_like_gradient = - (ny / 2.) * np.trace(
+            log_like_gradient = -(ny / 2.0) * np.trace(
                 self.solve_sqrt(sqrt_R, dR, decomposition=decomp), axis1=0, axis2=1
             )
-            log_like_gradient -= (df / 2.) * grad_scale_sq / scale_sq
+            log_like_gradient -= (df / 2.0) * grad_scale_sq / scale_sq
 
             if not np.all(disp == 0):
-                log_like_gradient += 0.5 * np.einsum('ij,ijp->p', inv(disp), grad_disp)
+                log_like_gradient += 0.5 * np.einsum("ij,ijp->p", inv(disp), grad_disp)
 
             return log_like, log_like_gradient
 
@@ -1304,8 +1487,9 @@ class TruncationProcess:
     %(BaseConjugateProcess.parameters)s
     """
 
-    def __init__(self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs):
-
+    def __init__(
+        self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs
+    ):
         if not callable(ref):
             self.ref = lambda X, ref=ref: ref * np.ones(X.shape[0])
         else:
@@ -1336,14 +1520,23 @@ class TruncationProcess:
 
     def mean(self, X, start=0, end=np.inf):
         coeff_mean = self.coeffs_process.mean(X=X)
-        ratio_sum = geometric_sum(x=self.ratio(X, **self.ratio_kws), start=start, end=end, excluded=self.excluded)
+        ratio_sum = geometric_sum(
+            x=self.ratio(X, **self.ratio_kws),
+            start=start,
+            end=end,
+            excluded=self.excluded,
+        )
         return self.ref(X) * ratio_sum * coeff_mean
 
     def cov(self, X, Xp=None, start=0, end=np.inf):
         coeff_cov = self.coeffs_process.cov(X=X, Xp=Xp)
         Xp = X if Xp is None else Xp  # Must reassign *after* calling cov
-        ratio_mat = self.ratio(X, **self.ratio_kws)[:, None] * self.ratio(Xp, **self.ratio_kws)
-        ratio_sum = geometric_sum(x=ratio_mat, start=start, end=end, excluded=self.excluded)
+        ratio_mat = self.ratio(X, **self.ratio_kws)[:, None] * self.ratio(
+            Xp, **self.ratio_kws
+        )
+        ratio_sum = geometric_sum(
+            x=ratio_mat, start=start, end=end, excluded=self.excluded
+        )
         ref_mat = self.ref(X)[:, None] * self.ref(Xp)
         return ref_mat * ratio_sum * coeff_cov
 
@@ -1354,12 +1547,12 @@ class TruncationProcess:
         return self.ref(X)[:, None] * ratio_sum * cn_basis
 
     def underlying_properties(self, X, order, return_std=False, return_cov=False):
-        y_mean = self.mean(X, start=order+1)
+        y_mean = self.mean(X, start=order + 1)
         if return_cov:
-            y_cov = self.cov(X, start=order+1)
+            y_cov = self.cov(X, start=order + 1)
             return y_mean, y_cov
         elif return_std:
-            y_std = np.sqrt(np.diag(self.cov(X, start=order+1)))
+            y_std = np.sqrt(np.diag(self.cov(X, start=order + 1)))
             return y_mean, y_std
         else:
             return y_mean
@@ -1368,7 +1561,7 @@ class TruncationProcess:
         self.X_train_ = X
         self.y_train_ = y
         self.orders_ = orders
-        orders_mask = ~ np.isin(orders, self.excluded)
+        orders_mask = ~np.isin(orders, self.excluded)
 
         self.dX_ = dX
         self.dy_ = dy
@@ -1377,16 +1570,28 @@ class TruncationProcess:
         ratio = self.ratio(X, **self.ratio_kws)
         ref = self.ref(X)
         if np.atleast_1d(ratio).ndim > 1:
-            raise ValueError('ratio must return a 1d array or a scalar')
+            raise ValueError("ratio must return a 1d array or a scalar")
         if np.atleast_1d(ref).ndim > 1:
-            raise ValueError('ref must return a 1d array or a scalar')
-        self.coeffs_ = coefficients(y=y, ratio=ratio, ref=ref, orders=orders)[:, orders_mask]
+            raise ValueError("ref must return a 1d array or a scalar")
+        self.coeffs_ = coefficients(y=y, ratio=ratio, ref=ref, orders=orders)[
+            :, orders_mask
+        ]
         # self.coeffs_process_ = self.coeffs_process_class(kernel=self.kernel, **self.coeffs_process_kwargs)
         self.coeffs_process.fit(X=X, y=self.coeffs_)
         self._fit = True
         return self
 
-    def predict(self, X, order, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False, kind='both'):
+    def predict(
+        self,
+        X,
+        order,
+        return_std=False,
+        return_cov=False,
+        Xc=None,
+        y=None,
+        pred_noise=False,
+        kind="both",
+    ):
         """Returns the predictive GP at the points X
 
         Parameters
@@ -1415,23 +1620,25 @@ class TruncationProcess:
         """
 
         if not self._fit:
-            return self.underlying_properties(X, order, return_cov=return_cov, return_std=return_std)
+            return self.underlying_properties(
+                X, order, return_cov=return_cov, return_std=return_std
+            )
 
         if Xc is None:
             Xc = self.X_train_
         if y is None:
             if order not in self.orders_:
-                raise ValueError('order must be in orders passed to `fit`')
+                raise ValueError("order must be in orders passed to `fit`")
             if self.y_train_.ndim == 1:
                 y = self.y_train_
             else:
                 y = np.squeeze(self.y_train_[:, self.orders_ == order])
 
-        if kind not in ['both', 'interp', 'trunc']:
+        if kind not in ["both", "interp", "trunc"]:
             raise ValueError('kind must be one of "both", "interp" or "trunc"')
 
         m_pred, K_pred = 0, 0
-        if kind == 'both' or kind == 'interp':
+        if kind == "both" or kind == "interp":
             # ----------------------------------------------------
             # Get mean & cov for (interpolating) prediction y_order
             #
@@ -1453,7 +1660,7 @@ class TruncationProcess:
             #
             # ----------------------------------------------------
 
-        if kind == 'both' or kind == 'trunc':
+        if kind == "both" or kind == "trunc":
             # ----------------------------------------------------
             # Get the mean & cov for truncation error
             #
@@ -1462,9 +1669,11 @@ class TruncationProcess:
 
             X_trunc = self.dX_
             if X_trunc is not None:  # truncation error is constrained
-                m_old_trunc = self.mean(X=X_trunc, start=order+1, end=np.inf)
-                K_oo_trunc = self.cov(X=X_trunc, Xp=X_trunc, start=order+1, end=np.inf)
-                K_on_trunc = self.cov(X=X_trunc, Xp=X, start=order+1, end=np.inf)
+                m_old_trunc = self.mean(X=X_trunc, start=order + 1, end=np.inf)
+                K_oo_trunc = self.cov(
+                    X=X_trunc, Xp=X_trunc, start=order + 1, end=np.inf
+                )
+                K_on_trunc = self.cov(X=X_trunc, Xp=X, start=order + 1, end=np.inf)
                 K_no_trunc = K_on_trunc.T
 
                 alpha_trunc = solve(K_oo_trunc, (self.dy_ - m_old_trunc))
@@ -1482,7 +1691,9 @@ class TruncationProcess:
             return m_pred, np.sqrt(np.diag(K_pred))
         return m_pred
 
-    def log_marginal_likelihood(self, theta, eval_gradient=False, X=None, y=None, orders=None, **ratio_kws):
+    def log_marginal_likelihood(
+        self, theta, eval_gradient=False, X=None, y=None, orders=None, **ratio_kws
+    ):
         if X is None:
             X = self.X_train_
         if y is None:
@@ -1492,9 +1703,11 @@ class TruncationProcess:
         ref = self.ref(X)
         ratio = self.ratio(X, **ratio_kws)
 
-        orders_mask = ~ np.isin(orders, self.excluded)
+        orders_mask = ~np.isin(orders, self.excluded)
         coeffs = coefficients(y=y, ratio=ratio, ref=ref, orders=orders)[:, orders_mask]
-        result = self.coeffs_process.log_marginal_likelihood(theta, eval_gradient=eval_gradient, X=X, y=coeffs)
+        result = self.coeffs_process.log_marginal_likelihood(
+            theta, eval_gradient=eval_gradient, X=X, y=coeffs
+        )
         if eval_gradient:
             coeff_log_like, coeff_log_like_gradient = result
         else:
@@ -1502,7 +1715,9 @@ class TruncationProcess:
 
         orders_in = orders[orders_mask]
         n = len(orders_in)
-        det_factor = np.sum(n * np.log(np.abs(ref)) + np.sum(orders_in) * np.log(np.abs(ratio)))
+        det_factor = np.sum(
+            n * np.log(np.abs(ref)) + np.sum(orders_in) * np.log(np.abs(ratio))
+        )
         y_log_like = coeff_log_like - det_factor
         return y_log_like
 
@@ -1510,24 +1725,55 @@ class TruncationProcess:
 class TruncationGP(TruncationProcess):
     R"""A Gaussian Process Truncation class"""
 
-    def __init__(self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs):
+    def __init__(
+        self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs
+    ):
         super().__init__(
-            kernel=kernel, ref=ref, ratio=ratio, excluded=excluded, ratio_kws=ratio_kws, **kwargs)
+            kernel=kernel,
+            ref=ref,
+            ratio=ratio,
+            excluded=excluded,
+            ratio_kws=ratio_kws,
+            **kwargs,
+        )
         self.coeffs_process = ConjugateGaussianProcess(kernel=kernel, **kwargs)
 
 
 class TruncationTP(TruncationProcess):
     R"""A Student-t Process Truncation class"""
 
-    def __init__(self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs):
+    def __init__(
+        self, kernel=None, ratio=0.5, ref=1, excluded=None, ratio_kws=None, **kwargs
+    ):
         super().__init__(
-            kernel=kernel, ratio=ratio, ref=ref, excluded=excluded, ratio_kws=ratio_kws, **kwargs)
+            kernel=kernel,
+            ratio=ratio,
+            ref=ref,
+            excluded=excluded,
+            ratio_kws=ratio_kws,
+            **kwargs,
+        )
         self.coeffs_process = ConjugateStudentProcess(kernel=kernel, **kwargs)
 
-    def predict(self, X, order, return_std=False, return_cov=False, Xc=None, y=None, pred_noise=False, kind='both'):
+    def predict(
+        self,
+        X,
+        order,
+        return_std=False,
+        return_cov=False,
+        Xc=None,
+        y=None,
+        pred_noise=False,
+        kind="both",
+    ):
         pred = super(TruncationTP, self).predict(
-            X=X, order=order, return_std=return_std, return_cov=return_cov,
-            Xc=Xc, y=y, pred_noise=pred_noise
+            X=X,
+            order=order,
+            return_std=return_std,
+            return_cov=return_cov,
+            Xc=Xc,
+            y=y,
+            pred_noise=pred_noise,
         )
 
         if not return_std and not return_cov:
@@ -1537,9 +1783,12 @@ class TruncationTP(TruncationProcess):
             Xc = self.X_train_
 
         var, disp = self.coeffs_process.cov_factor_, self.coeffs_process.disp_
-        basis_lower, basis_trunc = np.zeros((X.shape[0], disp.shape[0])), np.zeros((X.shape[0], disp.shape[0]))
+        basis_lower, basis_trunc = (
+            np.zeros((X.shape[0], disp.shape[0])),
+            np.zeros((X.shape[0], disp.shape[0])),
+        )
 
-        if kind == 'both' or kind == 'interp':
+        if kind == "both" or kind == "interp":
             # Use Xc from argument to define old points
             K_oo = self.cov(X=Xc, Xp=Xc, start=0, end=order)
             K_no = self.cov(X=X, Xp=Xc, start=0, end=order)
@@ -1548,19 +1797,25 @@ class TruncationTP(TruncationProcess):
             basis_lower_new = self.basis(X=X, start=0, end=order)
             basis_lower = basis_lower_new - K_no @ solve(K_oo, basis_lower_old)
 
-        if kind == 'both' or kind == 'trunc':
+        if kind == "both" or kind == "trunc":
             X_trunc = self.dX_
             if X_trunc is not None:  # truncation error is constrained
-                K_oo_trunc = self.cov(X=X_trunc, Xp=X_trunc, start=order+1, end=np.inf)
-                K_no_trunc = self.cov(X=X, Xp=X_trunc, start=order+1, end=np.inf)
+                K_oo_trunc = self.cov(
+                    X=X_trunc, Xp=X_trunc, start=order + 1, end=np.inf
+                )
+                K_no_trunc = self.cov(X=X, Xp=X_trunc, start=order + 1, end=np.inf)
 
-                basis_trunc_old = self.basis(X=X_trunc, start=order+1, end=np.inf)
-                basis_trunc_new = self.basis(X=X, start=order+1, end=np.inf)
-                basis_trunc = basis_trunc_new - K_no_trunc @ solve(K_oo_trunc, basis_trunc_old)
+                basis_trunc_old = self.basis(X=X_trunc, start=order + 1, end=np.inf)
+                basis_trunc_new = self.basis(X=X, start=order + 1, end=np.inf)
+                basis_trunc = basis_trunc_new - K_no_trunc @ solve(
+                    K_oo_trunc, basis_trunc_old
+                )
             else:  # not constrained
                 basis_trunc = self.basis(start=order + 1, end=np.inf, X=X)
 
-        mean_cov = var * (basis_lower + basis_trunc) @ disp @ (basis_lower + basis_trunc).T
+        mean_cov = (
+            var * (basis_lower + basis_trunc) @ disp @ (basis_lower + basis_trunc).T
+        )
 
         if return_std:
             mean, std = pred
@@ -1626,7 +1881,7 @@ class TruncationPointwise:
 
     @classmethod
     def _compute_scale(cls, c, df0, scale0):
-        c_sq = (c ** 2).sum(-1)
+        c_sq = (c**2).sum(-1)
         df = cls._compute_df(c, df0)
         return np.sqrt((df0 * scale0**2 + c_sq) / df)
 
@@ -1641,7 +1896,9 @@ class TruncationPointwise:
         if orders is None:
             return slice(None)
         orders = np.atleast_1d(orders)
-        return np.squeeze([np.nonzero(self._orders_masked == order) for order in orders])
+        return np.squeeze(
+            [np.nonzero(self._orders_masked == order) for order in orders]
+        )
 
     def fit(self, y, ratio, ref=1, orders=None):
         R"""
@@ -1670,18 +1927,28 @@ class TruncationPointwise:
             orders = np.arange(y.shape[-1])
 
         if y.shape[-1] != orders.size:
-            raise ValueError('The last dimension of `y` must have the same size as `orders`')
+            raise ValueError(
+                "The last dimension of `y` must have the same size as `orders`"
+            )
 
         self.orders_ = orders
-        self.orders_mask_ = orders_mask = ~ np.isin(orders, self.excluded)
-        self.coeffs_ = coefficients(y=y, ratio=ratio, ref=ref, orders=orders)[:, orders_mask]
+        self.orders_mask_ = orders_mask = ~np.isin(orders, self.excluded)
+        self.coeffs_ = coefficients(y=y, ratio=ratio, ref=ref, orders=orders)[
+            :, orders_mask
+        ]
         self.df_ = self._compute_df(c=self.coeffs_, df0=self.df0)
-        self.scale_ = self._compute_scale(c=self.coeffs_, df0=self.df0, scale0=self.scale0)
+        self.scale_ = self._compute_scale(
+            c=self.coeffs_, df0=self.df0, scale0=self.scale0
+        )
 
         self.y_masked_ = y[:, orders_mask]
         self._orders_masked = orders_masked = orders[orders_mask]
-        ratio_sums = np.array([geometric_sum(ratio**2, k+1, np.inf, excluded=self.excluded)
-                               for k in orders_masked]).T
+        ratio_sums = np.array(
+            [
+                geometric_sum(ratio**2, k + 1, np.inf, excluded=self.excluded)
+                for k in orders_masked
+            ]
+        ).T
         trunc_scale = ref[:, None] * np.sqrt(ratio_sums) * self.scale_[:, None]
         self.coeffs_dist_ = st.t(loc=0, scale=self.scale_, df=self.df_)
         self.dist_ = st.t(loc=self.y_masked_, scale=trunc_scale, df=self.df_)
@@ -1775,7 +2042,7 @@ class TruncationPointwise:
             The log likelihood
         """
         if not self._fit:
-            raise ValueError('Must call fit before calling log_likelihood')
+            raise ValueError("Must call fit before calling log_likelihood")
 
         if ratio is None:
             ratio = self.ratio_
@@ -1789,14 +2056,20 @@ class TruncationPointwise:
         scale = self._compute_scale(c=coeffs, df0=df0, scale0=scale0)
 
         n = self._num_orders(coeffs)
-        log_like = loggamma(df / 2.) - 0.5 * n * np.log(2 * np.pi)
+        log_like = loggamma(df / 2.0) - 0.5 * n * np.log(2 * np.pi)
         if df0 > 0:  # Ignore this infinite constant for scale invariant prior, df0 == 0
-            log_like += 0.5 * np.sum(df0 * np.log(df0 * scale0 ** 2 / 2.)) - loggamma(df0 / 2.)
-        log_like -= 0.5 * np.sum(df * np.log(df * scale**2 / 2.))
-        log_like -= np.sum(np.log(np.abs(ref)) + np.sum(orders[mask]) * np.log(ratio))  # From change of variables
+            log_like += 0.5 * np.sum(df0 * np.log(df0 * scale0**2 / 2.0)) - loggamma(
+                df0 / 2.0
+            )
+        log_like -= 0.5 * np.sum(df * np.log(df * scale**2 / 2.0))
+        log_like -= np.sum(
+            np.log(np.abs(ref)) + np.sum(orders[mask]) * np.log(ratio)
+        )  # From change of variables
         return log_like
 
-    def credible_diagnostic(self, data, dobs, band_intervals=None, band_dobs=None, beta=True):
+    def credible_diagnostic(
+        self, data, dobs, band_intervals=None, band_dobs=None, beta=True
+    ):
         dist = self.dist_
         dobs = np.atleast_1d(dobs)
         if data.ndim == 1:
@@ -1805,7 +2078,7 @@ class TruncationPointwise:
 
         def diagnostic(data_, lower_, upper_):
             indicator = (lower_ < data_) & (data_ < upper_)  # 1 if in, 0 if out
-            return np.average(indicator, axis=1)   # The diagnostic
+            return np.average(indicator, axis=1)  # The diagnostic
 
         # D_CI = np.apply_along_axis(
         #         diagnostic, axis=0, arr=data, lower_=lower,
@@ -1824,8 +2097,11 @@ class TruncationPointwise:
                 bands = np.zeros((len(band_intervals), 2, len(band_dobs)))
                 for i, p in enumerate(band_intervals):
                     bands[i] = np.array(
-                        [hpd(sp.stats.beta, p, N*s+1, N-N*s+1)
-                         for s in band_dobs]).T
+                        [
+                            hpd(sp.stats.beta, p, N * s + 1, N - N * s + 1)
+                            for s in band_dobs
+                        ]
+                    ).T
                 # bands = np.transpose(bands, [0, 1, 2])
             else:
                 band_dist = st.binom(n=N, p=band_dobs)

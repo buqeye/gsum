@@ -9,10 +9,24 @@ import inspect
 
 
 __all__ = [
-    'cartesian', 'toy_data', 'coefficients', 'partials', 'stabilize', 'geometric_sum',
-    'predictions', 'gaussian', 'hpd', 'kl_gauss', 'rbf', 'default_attributes',
-    'cholesky_errors', 'mahalanobis', 'VariogramFourthRoot', 'median_pdf', 'hpd_pdf',
-    'pivoted_cholesky',
+    "cartesian",
+    "toy_data",
+    "coefficients",
+    "partials",
+    "stabilize",
+    "geometric_sum",
+    "predictions",
+    "gaussian",
+    "hpd",
+    "kl_gauss",
+    "rbf",
+    "default_attributes",
+    "cholesky_errors",
+    "mahalanobis",
+    "VariogramFourthRoot",
+    "median_pdf",
+    "hpd_pdf",
+    "pivoted_cholesky",
 ]
 
 
@@ -30,11 +44,21 @@ def cartesian(*arrays):
         The cartesian product
     """
     N = len(arrays)
-    return np.stack(np.meshgrid(*arrays, indexing='ij'), -1).reshape(-1, N)
+    return np.stack(np.meshgrid(*arrays, indexing="ij"), -1).reshape(-1, N)
 
 
-def toy_data(X, orders, basis=None, corr=None, beta=0, sd=1, ratio=0.5,
-             ref=1, noise=1e-5, **corr_kwargs):
+def toy_data(
+    X,
+    orders,
+    basis=None,
+    corr=None,
+    beta=0,
+    sd=1,
+    ratio=0.5,
+    ref=1,
+    noise=1e-5,
+    **corr_kwargs,
+):
     # Set up covariance matrix
     if corr is None:
         corr = gaussian
@@ -48,12 +72,12 @@ def toy_data(X, orders, basis=None, corr=None, beta=0, sd=1, ratio=0.5,
     mean = np.dot(basis, np.atleast_1d(beta))
 
     coeffs = np.random.multivariate_normal(mean, K, size=len(orders))
-    return partials(coeffs=coeffs, ratio=ratio, ref=ref,
-                    orders=orders)
+    return partials(coeffs=coeffs, ratio=ratio, ref=ref, orders=orders)
 
 
-def generate_coefficients(X, size=1, basis=None, corr=None, beta=0, sd=1,
-                          noise=1e-5, **corr_kwargs):
+def generate_coefficients(
+    X, size=1, basis=None, corr=None, beta=0, sd=1, noise=1e-5, **corr_kwargs
+):
     # Set up covariance matrix
     if corr is None:
         corr = gaussian
@@ -84,20 +108,20 @@ def coefficients(y, ratio, ref=1, orders=None):
     An (n_samples, n_curves) array of the extracted coefficients
     """
     if y.ndim != 2:
-        raise ValueError('y must be 2d')
+        raise ValueError("y must be 2d")
     if orders is None:
         orders = np.arange(y.shape[-1])
     if len(orders) != y.shape[-1]:
-        raise ValueError('partials and orders must have the same length')
+        raise ValueError("partials and orders must have the same length")
 
     ref, ratio, orders = np.atleast_1d(ref, ratio, orders)
     ref = ref[:, None]
     ratio = ratio[:, None]
 
     # Make coefficients
-    coeffs = np.diff(y, axis=-1)                       # Find differences
+    coeffs = np.diff(y, axis=-1)  # Find differences
     coeffs = np.insert(coeffs, 0, y[..., 0], axis=-1)  # But keep leading term
-    coeffs = coeffs / (ref * ratio**orders)            # Scale each order appropriately
+    coeffs = coeffs / (ref * ratio**orders)  # Scale each order appropriately
     return coeffs
 
 
@@ -171,26 +195,29 @@ def geometric_sum(x, start, end, excluded=None):
         The geometric sum
     """
     if end < start:
-        raise ValueError('end must be greater than or equal to start')
+        raise ValueError("end must be greater than or equal to start")
 
-    s = (x ** start - x ** (end + 1)) / (1 - x)
+    s = (x**start - x ** (end + 1)) / (1 - x)
     if excluded is not None:
         excluded = np.atleast_1d(excluded)
         for n in excluded:
             if (n >= start) and (n <= end):
-                s -= x ** n
+                s -= x**n
     return s
 
 
 def pivoted_cholesky(M):
     from scipy.linalg.lapack import get_lapack_funcs
-    compute_pc, = get_lapack_funcs(('pstrf',), arrays=(M,))
+
+    (compute_pc,) = get_lapack_funcs(("pstrf",), arrays=(M,))
     c, p, _, info = compute_pc(M, lower=True)
     if info > 0:
-        raise np.linalg.LinAlgError('M is not positive-semidefinite')
+        raise np.linalg.LinAlgError("M is not positive-semidefinite")
     elif info < 0:
-        raise ValueError('LAPACK reported an illegal value in {}-th argument'
-                         'on entry to "pstrf".'.format(-info))
+        raise ValueError(
+            "LAPACK reported an illegal value in {}-th argument"
+            'on entry to "pstrf".'.format(-info)
+        )
 
     # Compute G where M = G @ G.T
     L = np.tril(c)
@@ -239,7 +266,7 @@ def gaussian(X, Xp=None, ls=1):
     Xp : (M, d) array, optional
     ls : scalar
     """
-    X = X * 1.0/ls
+    X = X * 1.0 / ls
     X2 = np.sum(X**2, axis=1)
     if Xp is None:
         Xp = X
@@ -257,8 +284,8 @@ def rbf(X, Xp=None, ls=1):
     diff = X[:, None, ...] - Xp[None, ...]
     dist = np.linalg.norm(diff, axis=-1)
     if ls == 0:
-        return np.where(dist == 0, 1., 0.)
-    return np.exp(- 0.5 * dist**2 / ls**2)
+        return np.where(dist == 0, 1.0, 0.0)
+    return np.exp(-0.5 * dist**2 / ls**2)
 
 
 def hpd(dist, alpha, *args):
@@ -272,8 +299,9 @@ def hpd(dist, alpha, *args):
 
     def interval_length(start_):
         return dist.ppf(start_ + alpha) - dist.ppf(start_)
+
     # find start of cdf interval that minimizes the pdf interval length
-    start = fmin(interval_length, 1-alpha, ftol=1e-8, disp=False)[0]
+    start = fmin(interval_length, 1 - alpha, ftol=1e-8, disp=False)[0]
     # return interval as array([low, high])
     return dist.ppf([start, alpha + start])
 
@@ -296,12 +324,10 @@ def hpd_pdf(pdf, alpha, x):
 
 
 def median_pdf(pdf, x):
-    R"""Returns the median given the pdf.
-
-    """
+    R"""Returns the median given the pdf."""
     i = 0
     for i in range(len(x)):
-        p = np.trapz(pdf[:i+1], x[:i+1])
+        p = np.trapz(pdf[: i + 1], x[: i + 1])
         if p > 0.5:
             break
     return x[i]
@@ -309,7 +335,7 @@ def median_pdf(pdf, x):
 
 def kl_gauss(mu0, cov0, mu1, cov1=None, chol1=None):
     R"""The Kullbeck-Liebler divergence between two mv Gaussians
-    
+
     The divergence from :math:`\mathcal{N}_1` to :math:`\mathcal{N}_0` is given by
 
     .. math::
@@ -319,7 +345,7 @@ def kl_gauss(mu0, cov0, mu1, cov1=None, chol1=None):
                 \left( \mu_1 - \mu_0\right)^\text{T} \Sigma_1^{-1} ( \mu_1 - \mu_0 ) -
                 k + \ln \left( \frac{\det \Sigma_1}{\det \Sigma_0} \right)
             \right],
-    
+
     which can be thought of as the amount of information lost when :math:`\mathcal{N}_1`
     is used to approximate :math:`\mathcal{N}_0`.
 
@@ -335,12 +361,12 @@ def kl_gauss(mu0, cov0, mu1, cov1=None, chol1=None):
         The covariance of the prior
     chol1 : Scalar or 2d array
         The Cholesky decomposition of the prior
-    
+
     Returns
     -------
     float
         The KL divergence
-    
+
     Raises
     ------
     ValueError
@@ -354,13 +380,13 @@ def kl_gauss(mu0, cov0, mu1, cov1=None, chol1=None):
         cov1 = np.atleast_2d(cov1)
         chol1 = np.linalg.cholesky(stabilize(cov1))
     else:
-        raise ValueError('Exactly one of cov1 or chol1 must be given.')
-    
+        raise ValueError("Exactly one of cov1 or chol1 must be given.")
+
     k = cov0.shape[0]
     _, logdet0 = np.linalg.slogdet(cov0)
-    logdet1 = 2*np.sum(np.log(np.diag(chol1)))
+    logdet1 = 2 * np.sum(np.log(np.diag(chol1)))
 
-    right_quad = np.linalg.solve(chol1, mu1-mu0)
+    right_quad = np.linalg.solve(chol1, mu1 - mu0)
     quad = np.dot(right_quad.T, right_quad)
 
     tr_mat = np.trace(sp.linalg.cho_solve((chol1, True), cov0))
@@ -370,11 +396,11 @@ def kl_gauss(mu0, cov0, mu1, cov1=None, chol1=None):
 
 def lazy_property(function):
     R"""Stores as a hidden attribute if it doesn't exist yet, else it returns the hidden attribute.
-    
+
     This means that any method decorated with this function will only be computed if necessary, and will be
     stored if needed to be called again.
     """
-    attribute = '_cache_' + function.__name__
+    attribute = "_cache_" + function.__name__
 
     @property
     @wraps(function)
@@ -383,64 +409,69 @@ def lazy_property(function):
             setattr(self, attribute, function(self))
         return getattr(self, attribute)
 
-    return decorator            
+    return decorator
 
 
 def lazy(function):
-    attribute = '_cache_' + function.__name__
+    attribute = "_cache_" + function.__name__
 
     @wraps(function)
     def decorator(self, *args, **kwargs):
         is_lazy = True
 
         # If y are passed and are not the defaults
-        y = kwargs.pop('y', None)
+        y = kwargs.pop("y", None)
         if y is not None and not np.allclose(y, self.y):
             is_lazy = False
         else:
             y = self.y
 
         # If cholesky is passed and are not the defaults
-        corr_chol = kwargs.pop('corr_chol', None)
+        corr_chol = kwargs.pop("corr_chol", None)
         if corr_chol is not None and not np.allclose(corr_chol, self._corr_chol):
             is_lazy = False
         else:
             corr_chol = self._corr_chol
 
         if not is_lazy or not hasattr(self, attribute):
-            setattr(self, attribute, function(self, *args, y=y, corr_chol=corr_chol, **kwargs))
+            setattr(
+                self,
+                attribute,
+                function(self, *args, y=y, corr_chol=corr_chol, **kwargs),
+            )
         return getattr(self, attribute)
+
     return decorator
 
 
 def default_attributes(**kws):
     R"""Sets `None` or empty `*args`/`**kwargs` arguments to attributes already stored in a class.
-    
+
     This is a handy decorator to avoid `if` statements at the beginning of method
     calls:
-    
+
     def func(self, x=None):
         if x is None:
             x = self.x
         ...
-    
+
     but is particularly useful when the function uses a cache to avoid
     unnecessary computations. Caches don't recognize when the attributes change,
     so could result in incorrect returned values. This decorator **must** be put
     outside of the cache decorator though.
-    
+
     Parameters
     ----------
     kws : dict
         The key must match the parameter name in the decorated function, and the value
         corresponds to the name of the attribute to use as the default
-        
+
     Example
     -------
     from fastcache import lru_cache
-    
+
     class TestClass:
-    
+
         def __init__(self, x, y):
             self.x = x
             self._y = y
@@ -470,6 +501,7 @@ def default_attributes(**kws):
     tc._y = 5
     print(tc.add(), tc.add2(), tc.add_correctly())  # Prints 5 5 25
     """
+
     def decorator(function):
         sig = inspect.signature(function)
 
@@ -482,11 +514,13 @@ def default_attributes(**kws):
                 param = sig.parameters[key]
                 if isinstance(value, np.ndarray):
                     continue
-                
+
                 # Update standard arguments if they are `None`, but also allow for
                 # *args and **kwargs to be set to defaults if they are empty.
                 # Standard arguments:
-                default_poskey = value is None and param.kind == param.POSITIONAL_OR_KEYWORD
+                default_poskey = (
+                    value is None and param.kind == param.POSITIONAL_OR_KEYWORD
+                )
                 # Keyword only arguments (comes after *args):
                 default_key = value is None and param.kind == param.KEYWORD_ONLY
                 # *args argument:
@@ -494,10 +528,14 @@ def default_attributes(**kws):
                 # **kwargs argument:
                 default_varkey = value == {} and param.kind == param.VAR_KEYWORD
 
-                if (default_poskey or default_key or default_varpos or default_varkey) and key in kws:
+                if (
+                    default_poskey or default_key or default_varpos or default_varkey
+                ) and key in kws:
                     bound_args.arguments[key] = getattr(self, kws[key])
             return function(*bound_args.args, **bound_args.kwargs)
+
         return new_func
+
     return decorator
 
 
@@ -511,7 +549,7 @@ def general_sqrt_errors(y, mean, sqrt_mat):
 
 def mahalanobis(y, mean, chol=None, inv=None, sqrt_mat=None):
     if (chol is not None) and (inv is not None) and (sqrt_mat is not None):
-        raise ValueError('Only one of chol, inv, or sqrt_mat can be given')
+        raise ValueError("Only one of chol, inv, or sqrt_mat can be given")
     if chol is not None:
         err = cholesky_errors(y, mean, chol)
         return np.linalg.norm(err, axis=-1)
@@ -542,8 +580,8 @@ class VariogramFourthRoot:
     """
 
     mean_factor = np.sqrt(2 / np.pi) * gamma(0.75)
-    var_factor = 2. / np.pi * (np.sqrt(np.pi) - gamma(0.75)**2)
-    corr_factor = gamma(0.75)**2 / (np.sqrt(np.pi) - gamma(0.75)**2)
+    var_factor = 2.0 / np.pi * (np.sqrt(np.pi) - gamma(0.75) ** 2)
+    corr_factor = gamma(0.75) ** 2 / (np.sqrt(np.pi) - gamma(0.75) ** 2)
 
     def __init__(self, X, z, bin_bounds):
         # Set up NxN grid of distances and determine bins
@@ -552,9 +590,9 @@ class VariogramFourthRoot:
         bin_grid = np.digitize(hij, bin_bounds)  # NxN
 
         # Put all NxN data in a structured array so they can all be manipulated at once
-        inputs = np.recarray((N, N), dtype=[
-            ('hij', float), ('bin_idxs', int),
-            ('i', int), ('j', int)])
+        inputs = np.recarray(
+            (N, N), dtype=[("hij", float), ("bin_idxs", int), ("i", int), ("j", int)]
+        )
         inputs.hij = hij
         inputs.i = np.arange(N)[:, None]
         inputs.j = np.arange(N)
@@ -564,8 +602,9 @@ class VariogramFourthRoot:
         # for the observations
         z = np.atleast_2d(z)
         Ncurves = z.shape[0]
-        data = np.recarray((N, N, Ncurves), dtype=[
-            ('dij', float), ('zi', float), ('zj', float)])
+        data = np.recarray(
+            (N, N, Ncurves), dtype=[("dij", float), ("zi", float), ("zj", float)]
+        )
         data.zi = zi = z.T[:, None, :]
         data.zj = zj = z.T[None, :, :]
         data.dij = np.sqrt(np.abs(zi - zj))
@@ -647,8 +686,8 @@ class VariogramFourthRoot:
         # 0.96 is the cutoff used in the Fortran file for the `sm` R package
         # corr[rho >= 0.96] = 1.
         # corr[rho <= -0.96] = -1.
-        corr[rho >= 1.] = 1.
-        corr[rho <= -1.] = -1.
+        corr[rho >= 1.0] = 1.0
+        corr[rho <= -1.0] = -1.0
         return corr
 
     def cov_ijkl(self, i, j, k, l):
@@ -658,10 +697,15 @@ class VariogramFourthRoot:
         """
         i, j, k, l = np.atleast_1d(i, j, k, l)
         if not (i.shape == j.shape == k.shape == l.shape):
-            raise ValueError(i.shape == j.shape == k.shape == l.shape, 'i, j, k, l must have the same shape')
+            raise ValueError(
+                i.shape == j.shape == k.shape == l.shape,
+                "i, j, k, l must have the same shape",
+            )
         # If (i, j) == (k, l), then return 1, else use corr formula
         n = i.shape[0], self.Ncurves
-        corr = np.where((i == k) & (j == l), np.ones(n).T, self.corr_ijkl(i, j, k, l).T).T
+        corr = np.where(
+            (i == k) & (j == l), np.ones(n).T, self.corr_ijkl(i, j, k, l).T
+        ).T
         return corr * np.sqrt(self.var_ij(i, j) * self.var_ij(k, l))
 
     def var_ij(self, i, j):
@@ -683,13 +727,18 @@ class VariogramFourthRoot:
             data2 = self.inputs[mask2]
 
         if (nb1 * nb2) == 0:
-            return 0.
+            return 0.0
 
         # I get a deprecation warning if I don't use copy()
-        ijkl = cartesian(data1[['i', 'j']].copy(), data2[['i', 'j']].copy())
-        cov = 0.
+        ijkl = cartesian(data1[["i", "j"]].copy(), data2[["i", "j"]].copy())
+        cov = 0.0
         if ijkl.size > 0:
-            i, j, k, ell = ijkl[:, 0]['i'], ijkl[:, 0]['j'], ijkl[:, 1]['i'], ijkl[:, 1]['j']
+            i, j, k, ell = (
+                ijkl[:, 0]["i"],
+                ijkl[:, 0]["j"],
+                ijkl[:, 1]["i"],
+                ijkl[:, 1]["j"],
+            )
             cov += np.sum(self.cov_ijkl(i, j, k, ell), axis=0)
         cov /= nb1 * nb2
         return cov
@@ -698,18 +747,18 @@ class VariogramFourthRoot:
         return (x / self.mean_factor) ** 4
 
     def fourth_root_scale(self, x):
-        return self.mean_factor * x ** 0.25
+        return self.mean_factor * x**0.25
 
     def compute(self, rt_scale=False):
         R"""Returns the mean semivariogram and approximate 68% confidence intervals.
-        
+
         Can be given on the 4th root scale or the variogram scale (default).
-        
+
         Parameters
         ----------
         rt_scale : bool
             Returns results on 4th root scale if True (default is False)
-        
+
         Returns
         -------
         gamma, lower, upper
